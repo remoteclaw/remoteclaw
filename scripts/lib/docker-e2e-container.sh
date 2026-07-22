@@ -61,7 +61,7 @@ const signalExitCodes = new Map([
   ["SIGTERM", 143],
 ]);
 const killGraceMs = Number.parseInt(
-  process.env.OPENCLAW_DOCKER_TIMEOUT_KILL_GRACE_MS || "30000",
+  process.env.REMOTECLAW_DOCKER_TIMEOUT_KILL_GRACE_MS || "30000",
   10,
 );
 const killTarget = process.platform === "win32" ? child.pid : -child.pid;
@@ -99,6 +99,7 @@ const forwardSignal = (signal) => {
 };
 process.once("SIGINT", forwardSignal);
 process.once("SIGTERM", forwardSignal);
+process.once("SIGHUP", forwardSignal);
 child.on("exit", (code, signal) => {
   clearTimeout(timer);
   if (parentSignalTimer) {
@@ -141,7 +142,7 @@ docker_e2e_docker_cmd() {
 }
 
 docker_e2e_docker_run_cmd() {
-  docker_e2e_timeout_cmd "${DOCKER_COMMAND_TIMEOUT:-${OPENCLAW_DOCKER_E2E_RUN_TIMEOUT:-3600s}}" docker "$@"
+  docker_e2e_timeout_cmd "${DOCKER_COMMAND_TIMEOUT:-${REMOTECLAW_DOCKER_E2E_RUN_TIMEOUT:-3600s}}" docker "$@"
 }
 
 docker_e2e_container_running() {

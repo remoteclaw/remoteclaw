@@ -1,4 +1,4 @@
-import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
+import { normalizeOptionalLowercaseString } from "@remoteclaw/normalization-core/string-coerce";
 
 export function normalizeCapabilityProviderId(providerId: string | undefined): string | undefined {
   return normalizeOptionalLowercaseString(providerId);

@@ -1,3 +1,5 @@
+import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import type { SessionScope } from "../config/types.base.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { resolveAgentRoute } from "../routing/resolve-route.js";
@@ -10,8 +12,6 @@ import {
 import { resolveEventSessionKey, scopedHeartbeatWakeOptions } from "../routing/session-key.js";
 import { resolvePinnedMainDmOwnerFromAllowlist } from "../security/dm-policy-shared.js";
 import { deriveSessionChatTypeFromKey } from "../sessions/session-chat-type-shared.js";
-import { isRecord } from "../shared/record-coerce.js";
-import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 
 type UnknownRecord = Record<string, unknown>;
 

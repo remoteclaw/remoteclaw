@@ -1,8 +1,8 @@
 import type { CancelNotification, PromptRequest, PromptResponse } from "@agentclientprotocol/sdk";
+import { createInMemorySessionStore } from "@remoteclaw/acp-core/session";
 import { describe, expect, it, vi } from "vitest";
+import type { EventFrame } from "../../packages/gateway-protocol/src/index.js";
 import type { GatewayClient } from "../gateway/client.js";
-import type { EventFrame } from "../gateway/protocol/index.js";
-import { createInMemorySessionStore } from "./session.js";
 import { AcpGatewayAgent } from "./translator.js";
 import { createAcpConnection, createAcpGateway } from "./translator.test-helpers.js";
 
@@ -12,6 +12,16 @@ type Harness = {
   sessionUpdateSpy: ReturnType<typeof vi.fn>;
   sessionStore: ReturnType<typeof createInMemorySessionStore>;
   sentRunIds: string[];
+};
+
+type SessionUpdatePayload = {
+  sessionId?: string;
+  update?: {
+    sessionUpdate?: string;
+    content?: unknown;
+    toolCallId?: string;
+    status?: string;
+  };
 };
 
 function createPromptRequest(sessionId: string): PromptRequest {
@@ -63,16 +73,13 @@ function createHarness(sessions: Array<{ sessionId: string; sessionKey: string }
   const agent = new AcpGatewayAgent(
     connection,
     createAcpGateway(requestSpy as unknown as GatewayClient["request"]),
-    {
-      sessionStore,
-    },
+    { sessionStore },
   );
 
   return {
     agent,
     requestSpy,
-    // eslint-disable-next-line @typescript-eslint/unbound-method
-    sessionUpdateSpy: connection.sessionUpdate as unknown as ReturnType<typeof vi.fn>,
+    sessionUpdateSpy: connection["sessionUpdate"] as unknown as ReturnType<typeof vi.fn>,
     sessionStore,
     sentRunIds,
   };
@@ -93,19 +100,53 @@ async function startPendingPrompt(
   };
 }
 
+async function cancelAndExpectAbortForPendingRun(
+  harness: Harness,
+  sessionId: string,
+  sessionKey: string,
+  pending: { promptPromise: Promise<PromptResponse>; runId: string },
+) {
+  await harness.agent.cancel({ sessionId } as CancelNotification);
+
+  expect(harness.requestSpy).toHaveBeenCalledWith("chat.abort", {
+    sessionKey,
+    runId: pending.runId,
+  });
+  await expect(pending.promptPromise).resolves.toEqual({ stopReason: "cancelled" });
+}
+
+async function deliverFinalChatEventAndExpectEndTurn(
+  harness: Harness,
+  sessionKey: string,
+  pending: { promptPromise: Promise<PromptResponse>; runId: string },
+  seq: number,
+) {
+  await harness.agent.handleGatewayEvent(
+    createChatEvent({
+      runId: pending.runId,
+      sessionKey,
+      seq,
+      state: "final",
+    }),
+  );
+  await expect(pending.promptPromise).resolves.toEqual({ stopReason: "end_turn" });
+}
+
+function sessionUpdatePayloadAt(harness: Harness, index: number): SessionUpdatePayload {
+  const [payload] = harness.sessionUpdateSpy.mock.calls[index] ?? [];
+  if (!payload) {
+    throw new Error(`expected session update call ${index + 1}`);
+  }
+  return payload as SessionUpdatePayload;
+}
+
 describe("acp translator cancel and run scoping", () => {
   it("cancel passes active runId to chat.abort", async () => {
     const sessionKey = "agent:main:shared";
     const harness = createHarness([{ sessionId: "session-1", sessionKey }]);
     const pending = await startPendingPrompt(harness, "session-1");
 
-    await harness.agent.cancel({ sessionId: "session-1" } as CancelNotification);
-
-    expect(harness.requestSpy).toHaveBeenCalledWith("chat.abort", {
-      sessionKey,
-      runId: pending.runId,
-    });
-    await expect(pending.promptPromise).resolves.toEqual({ stopReason: "cancelled" });
+    await cancelAndExpectAbortForPendingRun(harness, "session-1", sessionKey, pending);
   });
 
   it("cancel uses pending runId when there is no active run", async () => {
@@ -114,13 +155,7 @@ describe("acp translator cancel and run scoping", () => {
     const pending = await startPendingPrompt(harness, "session-1");
     harness.sessionStore.clearActiveRun("session-1");
 
-    await harness.agent.cancel({ sessionId: "session-1" } as CancelNotification);
-
-    expect(harness.requestSpy).toHaveBeenCalledWith("chat.abort", {
-      sessionKey,
-      runId: pending.runId,
-    });
-    await expect(pending.promptPromise).resolves.toEqual({ stopReason: "cancelled" });
+    await cancelAndExpectAbortForPendingRun(harness, "session-1", sessionKey, pending);
   });
 
   it("cancel skips chat.abort when there is no active run and no pending prompt", async () => {
@@ -147,15 +182,7 @@ describe("acp translator cancel and run scoping", () => {
     expect(abortCalls).toHaveLength(0);
     expect(harness.sessionStore.getSession("session-2")?.activeRunId).toBe(pending2.runId);
 
-    await harness.agent.handleGatewayEvent(
-      createChatEvent({
-        runId: pending2.runId,
-        sessionKey,
-        seq: 1,
-        state: "final",
-      }),
-    );
-    await expect(pending2.promptPromise).resolves.toEqual({ stopReason: "end_turn" });
+    await deliverFinalChatEventAndExpectEndTurn(harness, sessionKey, pending2, 1);
   });
 
   it("drops chat events when runId does not match the active prompt", async () => {
@@ -182,6 +209,44 @@ describe("acp translator cancel and run scoping", () => {
       }),
     );
     await expect(pending.promptPromise).resolves.toEqual({ stopReason: "end_turn" });
+  });
+
+  it("projects gateway thinking blocks into hidden ACP thought chunks", async () => {
+    const sessionKey = "agent:main:shared";
+    const harness = createHarness([{ sessionId: "session-1", sessionKey }]);
+    const pending = await startPendingPrompt(harness, "session-1");
+    harness.sessionUpdateSpy.mockClear();
+
+    await harness.agent.handleGatewayEvent(
+      createChatEvent({
+        runId: pending.runId,
+        sessionKey,
+        seq: 1,
+        state: "delta",
+        message: {
+          content: [
+            { type: "thinking", thinking: "Internal loop about NO_REPLY" },
+            { type: "text", text: "Final visible reply" },
+          ],
+        },
+      }),
+    );
+
+    const thoughtPayload = sessionUpdatePayloadAt(harness, 0);
+    expect(thoughtPayload.sessionId).toBe("session-1");
+    expect(thoughtPayload.update?.sessionUpdate).toBe("agent_thought_chunk");
+    expect(thoughtPayload.update?.content).toEqual({
+      type: "text",
+      text: "Internal loop about NO_REPLY",
+    });
+
+    const messagePayload = sessionUpdatePayloadAt(harness, 1);
+    expect(messagePayload.sessionId).toBe("session-1");
+    expect(messagePayload.update?.sessionUpdate).toBe("agent_message_chunk");
+    expect(messagePayload.update?.content).toEqual({
+      type: "text",
+      text: "Final visible reply",
+    });
   });
 
   it("drops tool events when runId does not match the active prompt", async () => {
@@ -240,27 +305,14 @@ describe("acp translator cancel and run scoping", () => {
         },
       }),
     );
-    expect(harness.sessionUpdateSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        sessionId: "session-2",
-        update: expect.objectContaining({
-          sessionUpdate: "tool_call",
-          toolCallId: "tool-2",
-          status: "in_progress",
-        }),
-      }),
-    );
     expect(harness.sessionUpdateSpy).toHaveBeenCalledTimes(1);
+    const toolPayload = sessionUpdatePayloadAt(harness, 0);
+    expect(toolPayload.sessionId).toBe("session-2");
+    expect(toolPayload.update?.sessionUpdate).toBe("tool_call");
+    expect(toolPayload.update?.toolCallId).toBe("tool-2");
+    expect(toolPayload.update?.status).toBe("in_progress");
 
-    await harness.agent.handleGatewayEvent(
-      createChatEvent({
-        runId: pending2.runId,
-        sessionKey,
-        seq: 1,
-        state: "final",
-      }),
-    );
-    await expect(pending2.promptPromise).resolves.toEqual({ stopReason: "end_turn" });
+    await deliverFinalChatEventAndExpectEndTurn(harness, sessionKey, pending2, 1);
     expect(harness.sessionStore.getSession("session-1")?.activeRunId).toBe(pending1.runId);
 
     await harness.agent.handleGatewayEvent(

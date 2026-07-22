@@ -20,6 +20,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 
+/** Foreground service that keeps the Android node connection and voice capture visible to the OS. */
 class NodeForegroundService : Service() {
   private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
   private var notificationJob: Job? = null
@@ -165,11 +166,13 @@ class NodeForegroundService : Service() {
 
     private const val ACTION_STOP = "org.remoteclaw.app.action.STOP"
 
+    /** Starts the persistent node foreground service from UI lifecycle code. */
     fun start(context: Context) {
       val intent = Intent(context, NodeForegroundService::class.java)
       context.startForegroundService(intent)
     }
 
+    /** Requests disconnect through the service action path so notification actions and UI share behavior. */
     fun stop(context: Context) {
       val intent = Intent(context, NodeForegroundService::class.java).setAction(ACTION_STOP)
       context.startService(intent)

@@ -1,3 +1,4 @@
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import {
   classifySilentReplyConversationType,
   resolveSilentReplyPolicyFromPolicies,
@@ -5,7 +6,6 @@ import {
   type SilentReplyPolicy,
   type SilentReplyPolicyShape,
 } from "../shared/silent-reply-policy.js";
-import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import type { RemoteClawConfig } from "./types.remoteclaw.js";
 
 type ResolveSilentReplyParams = {

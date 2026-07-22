@@ -1,11 +1,11 @@
 import fs from "node:fs";
 import path from "node:path";
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { resolveStateDir } from "../config/paths.js";
 import type { SessionScope } from "../config/sessions.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { normalizeAgentId, normalizeMainKey } from "../routing/session-key.js";
-import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 type GatewayAgentListRow = {
   id: string;

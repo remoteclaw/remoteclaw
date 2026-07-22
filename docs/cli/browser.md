@@ -142,6 +142,9 @@ the optional label, and the raw `targetId`. Agents should pass
 `suggestedTargetId` back into `focus`, `close`, snapshots, and actions. You can
 assign a label with `open --label`, `tab new --label`, or `tab label`; labels,
 tab ids, raw target ids, and unique target-id prefixes are all accepted.
+The request field is still named `targetId` for compatibility, but it accepts
+these tab references. Treat raw target ids as diagnostic handles, not durable
+agent memory.
 When Chromium replaces the underlying raw target during a navigation or form
 submit, RemoteClaw keeps the stable `tabId`/label attached to the replacement tab
 when it can prove the match. Raw target ids remain volatile; prefer
@@ -205,6 +208,7 @@ File + dialog helpers:
 
 ```bash
 remoteclaw browser upload /tmp/remoteclaw/uploads/file.pdf --ref <ref>
+remoteclaw browser upload media://inbound/file.pdf --ref <ref>
 remoteclaw browser waitfordownload
 remoteclaw browser download <ref> report.pdf
 remoteclaw browser dialog --accept
@@ -215,6 +219,10 @@ Managed Chrome profiles save ordinary click-triggered downloads into the RemoteC
 downloads directory (`/tmp/remoteclaw/downloads` by default, or the configured temp
 root). Use `waitfordownload` or `download` when the agent needs to wait for a
 specific file and return its path; those explicit waiters own the next download.
+Uploads accept files from the RemoteClaw temp uploads root and RemoteClaw-managed
+inbound media, including `media://inbound/<id>` and sandbox-relative
+`media/inbound/<id>` references. Nested media refs, traversal, and arbitrary
+local paths remain rejected.
 When an action opens a modal dialog, the action response returns
 `blockedByDialog` with `browserState.dialogs.pending`; pass `--dialog-id` to
 answer it directly. Dialogs handled outside RemoteClaw appear under

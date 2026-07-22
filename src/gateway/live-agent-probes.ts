@@ -1,9 +1,16 @@
 import { execFile } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { promisify } from "node:util";
-import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
+import {
+  resolveExpiresAtMsFromDurationSeconds,
+  resolveTimestampMsToIsoString,
+} from "@remoteclaw/normalization-core/number-coercion";
+import { normalizeOptionalLowercaseString } from "@remoteclaw/normalization-core/string-coerce";
 
 const execFileAsync = promisify(execFile);
+const LIVE_CRON_PROBE_DELAY_SECONDS = 7 * 24 * 60 * 60;
+const REMOTECLAW_CLI_GATEWAY_TIMEOUT_MS = 30_000;
+const REMOTECLAW_CLI_CHILD_TIMEOUT_MS = REMOTECLAW_CLI_GATEWAY_TIMEOUT_MS + 45_000;
 
 type CronListCliResult = {
   jobs?: Array<{
@@ -64,7 +71,9 @@ export function createLiveCronProbeSpec(
   const normalizedNonce = normalizeOptionalLowercaseString(nonce) ?? "";
   const name = `live-mcp-${normalizedNonce}`;
   const message = `probe-${normalizedNonce}`;
-  const at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  const at = resolveTimestampMsToIsoString(
+    resolveExpiresAtMsFromDurationSeconds(LIVE_CRON_PROBE_DELAY_SECONDS) ?? Date.now(),
+  );
   const argsJson = JSON.stringify({
     action: "add",
     job: {
@@ -128,10 +137,13 @@ export async function runRemoteClawCliJson<T>(args: string[], env: NodeJS.Proces
   delete childEnv.VITEST_MODE;
   delete childEnv.VITEST_POOL_ID;
   delete childEnv.VITEST_WORKER_ID;
-  const { stdout, stderr } = await execFileAsync(process.execPath, ["remoteclaw.mjs", ...args], {
+  const cliArgs = args.includes("--timeout")
+    ? args
+    : [...args, "--timeout", String(REMOTECLAW_CLI_GATEWAY_TIMEOUT_MS)];
+  const { stdout, stderr } = await execFileAsync(process.execPath, ["remoteclaw.mjs", ...cliArgs], {
     cwd: process.cwd(),
     env: childEnv,
-    timeout: 30_000,
+    timeout: REMOTECLAW_CLI_CHILD_TIMEOUT_MS,
     maxBuffer: 1024 * 1024,
   });
   const trimmed = stdout.trim();

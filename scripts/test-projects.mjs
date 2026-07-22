@@ -49,6 +49,25 @@ const releaseLockOnce = () => {
   releaseLock();
 };
 
+function isWrapperMetadataRequest(args) {
+  for (const arg of args) {
+    if (arg === "--") {
+      return false;
+    }
+    if (arg === "--help" || arg === "-h") {
+      return true;
+    }
+  }
+  return false;
+}
+
+function printHelp() {
+  console.log(`Usage: node scripts/test-projects.mjs [--changed <base>] [--watch] [targets...] [-- vitest-args...]
+
+Runs the Vitest project shards that own the requested targets. With no targets,
+this runs the full local suite. Use explicit targets for local edit loops.`);
+}
+
 function cleanupVitestRunSpec(spec) {
   if (!spec.includeFilePath) {
     return;
@@ -94,7 +113,7 @@ function runVitestSpec(spec) {
 }
 
 function applyDefaultParallelVitestWorkerBudget(specs, env) {
-  if (env.OPENCLAW_VITEST_MAX_WORKERS || env.OPENCLAW_TEST_WORKERS || isCiLikeEnv(env)) {
+  if (env.REMOTECLAW_VITEST_MAX_WORKERS || env.REMOTECLAW_TEST_WORKERS || isCiLikeEnv(env)) {
     return specs;
   }
   const { vitestMaxWorkers } = resolveLocalFullSuiteProfile(env);
@@ -102,7 +121,7 @@ function applyDefaultParallelVitestWorkerBudget(specs, env) {
     ...spec,
     env: {
       ...spec.env,
-      OPENCLAW_VITEST_MAX_WORKERS: String(vitestMaxWorkers),
+      REMOTECLAW_VITEST_MAX_WORKERS: String(vitestMaxWorkers),
     },
   }));
 }
@@ -192,6 +211,10 @@ async function runVitestSpecsParallel(specs, concurrency) {
 async function main() {
   const suiteStartedAt = performance.now();
   const args = process.argv.slice(2);
+  if (isWrapperMetadataRequest(args)) {
+    printHelp();
+    return;
+  }
   const baseEnv = resolveLocalVitestEnv(process.env);
   const { targetArgs } = parseTestProjectsArgs(args, process.cwd());
   const unmatchedExplicitTargets = findUnmatchedExplicitTestTargets(args, process.cwd());
@@ -258,7 +281,7 @@ async function main() {
     changedTargetArgs === null &&
     !runSpecs.some((spec) => spec.watchMode);
   const isExplicitParallelMultiConfigRun =
-    Boolean(baseEnv.OPENCLAW_TEST_PROJECTS_PARALLEL) &&
+    Boolean(baseEnv.REMOTECLAW_TEST_PROJECTS_PARALLEL) &&
     runSpecs.length > 1 &&
     !runSpecs.some((spec) => spec.watchMode);
   const isParallelShardRun =
@@ -282,9 +305,9 @@ async function main() {
       );
       if (
         !isCiLikeEnv(baseEnv) &&
-        !baseEnv.OPENCLAW_TEST_PROJECTS_PARALLEL &&
-        !baseEnv.OPENCLAW_VITEST_MAX_WORKERS &&
-        !baseEnv.OPENCLAW_TEST_WORKERS &&
+        !baseEnv.REMOTECLAW_TEST_PROJECTS_PARALLEL &&
+        !baseEnv.REMOTECLAW_VITEST_MAX_WORKERS &&
+        !baseEnv.REMOTECLAW_TEST_WORKERS &&
         localFullSuiteProfile.shardParallelism === 10 &&
         localFullSuiteProfile.vitestMaxWorkers === 2
       ) {
@@ -355,8 +378,10 @@ function printTestSummary(status, shardCount, durationMs, detail) {
   );
 }
 
-main().catch((error) => {
-  releaseLockOnce();
-  console.error(error);
-  process.exit(1);
-});
+main().catch(
+  /** @param {unknown} error */ (error) => {
+    releaseLockOnce();
+    console.error(error);
+    process.exit(1);
+  },
+);

@@ -1,5 +1,5 @@
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { normalizeOptionalString } from "../shared/string-coerce.js";
 import { isControlCommandMessage } from "./command-detection.js";
 import {
   isExplicitCommandTurn,

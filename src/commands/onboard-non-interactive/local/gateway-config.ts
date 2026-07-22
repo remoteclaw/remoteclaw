@@ -1,10 +1,10 @@
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import { formatCliCommand } from "../../../cli/command-format.js";
 import { formatInvalidPortOption } from "../../../cli/error-format.js";
 import type { RemoteClawConfig } from "../../../config/types.remoteclaw.js";
 import { isValidEnvSecretRefId, resolveSecretInputRef } from "../../../config/types.secrets.js";
 import type { RuntimeEnv } from "../../../runtime.js";
 import { resolveDefaultSecretProviderAlias } from "../../../secrets/ref-contract.js";
-import { normalizeOptionalString } from "../../../shared/string-coerce.js";
 import { normalizeGatewayTokenInput, randomToken } from "../../onboard-helpers.js";
 import type { OnboardOptions } from "../../onboard-types.js";
 
@@ -96,7 +96,6 @@ export function applyNonInteractiveGatewayConfig(params: {
         runtime.exit(1);
         return null;
       }
-      gatewayToken = resolvedFromEnv;
       nextConfig = {
         ...nextConfig,
         gateway: {

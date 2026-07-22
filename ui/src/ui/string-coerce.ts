@@ -3,9 +3,9 @@ export {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
   normalizeStringifiedOptionalString,
-} from "../../../src/shared/string-coerce.js";
+} from "@remoteclaw/normalization-core/string-coerce";
 export {
   normalizeStringEntries,
   sortUniqueStrings,
   uniqueStrings,
-} from "../../../src/shared/string-normalization.js";
+} from "@remoteclaw/normalization-core/string-normalization";

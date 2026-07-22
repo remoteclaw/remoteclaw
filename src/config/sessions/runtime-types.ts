@@ -39,7 +39,6 @@ export type SessionMaintenanceApplyReportRuntime = {
 export type SaveSessionStoreOptions = {
   skipMaintenance?: boolean;
   activeSessionKey?: string;
-  allowDropAcpMetaSessionKeys?: string[];
   onWarn?: (warning: SessionMaintenanceWarningRuntime) => void | Promise<void>;
   onMaintenanceApplied?: (report: SessionMaintenanceApplyReportRuntime) => void | Promise<void>;
   maintenanceOverride?: Partial<ResolvedSessionMaintenanceConfigRuntime>;

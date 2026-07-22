@@ -1,9 +1,9 @@
-import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
-import type { RuntimeEnv } from "../../runtime.js";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "../../shared/string-coerce.js";
+} from "@remoteclaw/normalization-core/string-coerce";
+import { mapAllowFromEntries } from "remoteclaw/plugin-sdk/channel-config-helpers";
+import type { RuntimeEnv } from "../../runtime.js";
 import { summarizeStringEntries } from "../../shared/string-sample.js";
 
 export type AllowlistUserResolutionLike = {

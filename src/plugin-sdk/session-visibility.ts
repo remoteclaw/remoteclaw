@@ -1,11 +1,11 @@
-import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { callGateway as defaultCallGateway } from "../gateway/call.js";
-import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
-} from "../shared/string-coerce.js";
-import { normalizeTrimmedStringList } from "../shared/string-normalization.js";
+} from "../../packages/normalization-core/src/string-coerce.js";
+import { normalizeTrimmedStringList } from "../../packages/normalization-core/src/string-normalization.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
+import { callGateway as defaultCallGateway } from "../gateway/call.js";
+import { resolveAgentIdFromSessionKey } from "../routing/session-key.js";
 
 type GatewayCaller = typeof defaultCallGateway;
 

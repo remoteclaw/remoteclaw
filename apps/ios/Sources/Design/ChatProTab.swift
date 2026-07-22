@@ -1,27 +1,27 @@
-import OpenClawChatUI
+import RemoteClawChatUI
 import RemoteClawProtocol
 import SwiftUI
 
 struct ChatProTab: View {
     @Environment(NodeAppModel.self) private var appModel
     @Environment(\.colorScheme) private var colorScheme
-    @State private var viewModel: OpenClawChatViewModel?
+    @State private var viewModel: RemoteClawChatViewModel?
 
     var body: some View {
         NavigationStack {
             ZStack {
-                OpenClawProBackground()
+                RemoteClawProBackground()
                 VStack(spacing: 0) {
                     self.header
                     if let viewModel {
-                        OpenClawChatView(
+                        RemoteClawChatView(
                             viewModel: viewModel,
                             drawsBackground: false,
                             showsSessionSwitcher: false,
                             userAccent: self.chatUserAccent,
                             assistantName: self.agentDisplayName,
                             assistantAvatarText: self.agentBadge,
-                            assistantAvatarTint: OpenClawBrand.accent,
+                            assistantAvatarTint: RemoteClawBrand.accent,
                             showsAssistantAvatars: false,
                             composerChrome: .clean,
                             messagePlaceholder: "Message \(self.agentDisplayName)...",
@@ -50,6 +50,11 @@ struct ChatProTab: View {
         .onChange(of: self.appModel.chatSessionKey) { _, _ in
             self.syncChatViewModel()
         }
+        .onChange(of: self.appModel.isOperatorGatewayConnected) { _, connected in
+            guard connected else { return }
+            self.syncChatViewModel()
+            self.viewModel?.refresh()
+        }
     }
 
     private var header: some View {
@@ -65,13 +70,13 @@ struct ChatProTab: View {
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    OpenClawBrand.accent,
-                                    OpenClawBrand.accentHot,
+                                    RemoteClawBrand.accent,
+                                    RemoteClawBrand.accentHot,
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing)))
                 .overlay(Circle().strokeBorder(.white.opacity(0.18), lineWidth: 1))
-                .shadow(color: OpenClawBrand.accent.opacity(0.18), radius: 10, y: 5)
+                .shadow(color: RemoteClawBrand.accent.opacity(0.18), radius: 10, y: 5)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(self.agentDisplayName)
@@ -87,7 +92,7 @@ struct ChatProTab: View {
 
             self.connectionPill
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
         .padding(.top, 8)
         .padding(.bottom, 4)
     }
@@ -95,7 +100,7 @@ struct ChatProTab: View {
     private func syncChatViewModel() {
         let sessionKey = self.appModel.chatSessionKey
         guard let viewModel else {
-            self.viewModel = OpenClawChatViewModel(
+            self.viewModel = RemoteClawChatViewModel(
                 sessionKey: sessionKey,
                 transport: IOSGatewayChatTransport(gateway: self.appModel.operatorSession),
                 onSessionChanged: { sessionKey in
@@ -110,8 +115,8 @@ struct ChatProTab: View {
         viewModel.switchSession(to: sessionKey)
     }
 
-    private var talkControl: OpenClawChatTalkControl {
-        OpenClawChatTalkControl(
+    private var talkControl: RemoteClawChatTalkControl {
+        RemoteClawChatTalkControl(
             isEnabled: self.appModel.talkMode.isEnabled,
             isListening: self.appModel.talkMode.isListening,
             isSpeaking: self.appModel.talkMode.isSpeaking,
@@ -132,30 +137,31 @@ struct ChatProTab: View {
 
     private var connectionPill: some View {
         HStack(spacing: 6) {
-            ProStatusDot(color: self.gatewayConnected ? OpenClawBrand.ok : .orange)
+            ProStatusDot(color: self.gatewayConnected ? RemoteClawBrand.ok : .orange)
             Text(self.gatewayConnected ? "Connected" : "Connecting")
                 .font(.caption.weight(.semibold))
                 .lineLimit(1)
         }
-        .foregroundStyle(self.gatewayConnected ? OpenClawBrand.ok : .orange)
+        .foregroundStyle(self.gatewayConnected ? RemoteClawBrand.ok : .orange)
         .padding(.horizontal, 10)
         .frame(height: 30)
         .background {
             Capsule()
-                .fill((self.gatewayConnected ? OpenClawBrand.ok : Color.orange).opacity(0.11))
+                .fill((self.gatewayConnected ? RemoteClawBrand.ok : Color.orange).opacity(0.11))
         }
         .overlay {
             Capsule()
-                .strokeBorder((self.gatewayConnected ? OpenClawBrand.ok : Color.orange).opacity(0.16), lineWidth: 1)
+                .strokeBorder((self.gatewayConnected ? RemoteClawBrand.ok : Color.orange).opacity(0.16), lineWidth: 1)
         }
     }
 
     private var gatewayConnected: Bool {
-        GatewayStatusBuilder.build(appModel: self.appModel) == .connected
+        GatewayStatusBuilder.build(appModel: self.appModel) == .connected &&
+            self.appModel.isOperatorGatewayConnected
     }
 
     private var chatUserAccent: Color {
-        self.colorScheme == .light ? Color(red: 0 / 255.0, green: 122 / 255.0, blue: 255 / 255.0) : OpenClawBrand.accent
+        self.colorScheme == .light ? Color(red: 0 / 255.0, green: 122 / 255.0, blue: 255 / 255.0) : RemoteClawBrand.accent
     }
 
     private var activeAgent: AgentSummary? {

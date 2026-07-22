@@ -1,5 +1,5 @@
+import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { normalizeStringEntries } from "../shared/string-normalization.js";
 import { isRecord } from "../utils.js";
 import { projectSafeChannelAccountSnapshotFields } from "./account-snapshot-fields.js";
 import type { ChannelAccountSnapshot } from "./plugins/types.core.js";

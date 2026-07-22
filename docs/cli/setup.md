@@ -22,6 +22,7 @@ Initialize the baseline config and agent workspace. With any onboarding flag pre
 | `--workspace <dir>`        | Agent workspace directory (default `~/.remoteclaw/workspace`; stored as `agents.defaults.workspace`). |
 | `--wizard`                 | Run interactive onboarding.                                                                           |
 | `--non-interactive`        | Run onboarding without prompts.                                                                       |
+| `--accept-risk`            | Acknowledge full-system agent access risk; required with `--non-interactive`.                         |
 | `--mode <mode>`            | Onboarding mode: `local` or `remote`.                                                                 |
 | `--import-from <provider>` | Migration provider to run during onboarding.                                                          |
 | `--import-source <path>`   | Source agent home for `--import-from`.                                                                |
@@ -33,7 +34,7 @@ Initialize the baseline config and agent workspace. With any onboarding flag pre
 
 `remoteclaw setup` runs the wizard when any of these flags are explicitly present, even without `--wizard`:
 
-`--wizard`, `--non-interactive`, `--mode`, `--import-from`, `--import-source`, `--import-secrets`, `--remote-url`, `--remote-token`.
+`--wizard`, `--non-interactive`, `--accept-risk`, `--mode`, `--import-from`, `--import-source`, `--import-secrets`, `--remote-url`, `--remote-token`.
 
 ## Examples
 
@@ -42,7 +43,7 @@ remoteclaw setup
 remoteclaw setup --workspace ~/.remoteclaw/workspace
 remoteclaw setup --wizard
 remoteclaw setup --wizard --import-from hermes --import-source ~/.hermes
-remoteclaw setup --non-interactive --mode remote --remote-url wss://gateway-host:18789 --remote-token <token>
+remoteclaw setup --non-interactive --accept-risk --mode remote --remote-url wss://gateway-host:18789 --remote-token <token>
 ```
 
 ## Notes

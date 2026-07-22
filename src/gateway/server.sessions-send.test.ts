@@ -43,6 +43,20 @@ function getSessionsSendTool(): SessionSendTool {
   return cachedSessionsSendTool;
 }
 
+function expectSessionsSendDetails(
+  result: { details?: unknown },
+  expected: { reply: string; sessionKey: string },
+): void {
+  const details = result.details as {
+    status?: string;
+    reply?: string;
+    sessionKey?: string;
+  };
+  expect(details.status).toBe("ok");
+  expect(details.reply).toBe(expected.reply);
+  expect(details.sessionKey).toBe(expected.sessionKey);
+}
+
 async function emitLifecycleAssistantReply(params: {
   opts: unknown;
   defaultSessionId: string;
@@ -196,14 +210,10 @@ describe("sessions_send label lookup", () => {
         message: "hello labeled session",
         timeoutSeconds: 5,
       });
-      const details = result.details as {
-        status?: string;
-        reply?: string;
-        sessionKey?: string;
-      };
-      expect(details.status).toBe("ok");
-      expect(details.reply).toBe("labeled response");
-      expect(details.sessionKey).toBe("agent:main:test-labeled-session");
+      expectSessionsSendDetails(result, {
+        reply: "labeled response",
+        sessionKey: "agent:main:test-labeled-session",
+      });
     },
   );
 });

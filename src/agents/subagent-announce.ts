@@ -1420,7 +1420,7 @@ export async function runSubagentAnnounceFlow(params: {
       directOrigin,
       targetRequesterSessionKey,
       requesterIsSubagent,
-      expectsCompletionMessage: expectsCompletionMessage,
+      expectsCompletionMessage,
       bestEffortDeliver: params.bestEffortDeliver,
       completionRouteMode: completionResolution.routeMode,
       spawnMode: params.spawnMode,

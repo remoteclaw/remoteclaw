@@ -37,8 +37,7 @@ export function resolveDiscordToken(
   };
   const accountCfg = resolveAccountCfg(accountId);
   const hasAccountToken = Boolean(
-    accountCfg &&
-    Object.prototype.hasOwnProperty.call(accountCfg as Record<string, unknown>, "token"),
+    accountCfg && Object.hasOwn(accountCfg as Record<string, unknown>, "token"),
   );
   const accountToken = normalizeDiscordToken(
     (accountCfg as { token?: unknown } | undefined)?.token ?? undefined,

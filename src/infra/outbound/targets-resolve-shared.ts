@@ -7,8 +7,14 @@ import type { GatewayMessageChannel } from "../../utils/message-channel.js";
 import { INTERNAL_MESSAGE_CHANNEL } from "../../utils/message-channel.js";
 import { missingTargetError } from "./target-errors.js";
 
+/**
+ * Result of resolving a concrete outbound target for a channel send.
+ */
 export type OutboundTargetResolution = { ok: true; to: string } | { ok: false; error: Error };
 
+/**
+ * Inputs shared by direct and heartbeat outbound target resolution.
+ */
 export type ResolveOutboundTargetParams = {
   channel: GatewayMessageChannel;
   to?: string;
@@ -24,6 +30,9 @@ function buildWebChatDeliveryError(): Error {
   );
 }
 
+/**
+ * Resolves a target through a channel plugin or the generic fallback path.
+ */
 export function resolveOutboundTargetWithPlugin(params: {
   plugin: ChannelPlugin | undefined;
   target: ResolveOutboundTargetParams;
@@ -41,6 +50,7 @@ export function resolveOutboundTargetWithPlugin(params: {
     return params.onMissingPlugin?.();
   }
 
+  // Plugin defaults and allowlists can be account-scoped; resolve them before target validation.
   const allowFromRaw =
     params.target.allowFrom ??
     (params.target.cfg && plugin.config.resolveAllowFrom

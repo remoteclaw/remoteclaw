@@ -417,8 +417,10 @@ export async function sendMSTeamsMessages(params: {
       return await sendOnce();
     }
 
-    let attempt = 1;
-    while (true) {
+    for (const attempt of Array.from(
+      { length: retryOptions.maxAttempts },
+      (_, index) => index + 1,
+    )) {
       try {
         return await sendOnce();
       } catch (err) {
@@ -440,9 +442,9 @@ export async function sendMSTeamsMessages(params: {
         });
 
         await sleep(delayMs);
-        attempt = nextAttempt;
       }
     }
+    throw new Error("unreachable Teams send retry loop exit");
   };
 
   const sendMessageInContext = async (

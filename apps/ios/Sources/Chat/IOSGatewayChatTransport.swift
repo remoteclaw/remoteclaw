@@ -1,11 +1,11 @@
 import Foundation
-import OpenClawChatUI
+import RemoteClawChatUI
 import RemoteClawKit
 import RemoteClawProtocol
 import OSLog
 
-struct IOSGatewayChatTransport: OpenClawChatTransport {
-    private static let logger = Logger(subsystem: "ai.openclaw", category: "ios.chat.transport")
+struct IOSGatewayChatTransport: RemoteClawChatTransport {
+    static let logger = Logger(subsystem: "org.remoteclaw", category: "ios.chat.transport")
     static let defaultChatSendTimeoutMs = 30000
     private let gateway: GatewayNodeSession
 
@@ -34,7 +34,7 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
         var sessionKey: String
         var message: String
         var thinking: String
-        var attachments: [OpenClawChatAttachmentPayload]?
+        var attachments: [RemoteClawChatAttachmentPayload]?
         var timeoutMs: Int
         var idempotencyKey: String
     }
@@ -82,7 +82,7 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
         message: String,
         thinking: String,
         idempotencyKey: String,
-        attachments: [OpenClawChatAttachmentPayload]) throws -> String
+        attachments: [RemoteClawChatAttachmentPayload]) throws -> String
     {
         let params = ChatSendParams(
             sessionKey: sessionKey,
@@ -145,14 +145,14 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
     func createSession(
         key: String,
         label: String?,
-        parentSessionKey: String?) async throws -> OpenClawChatCreateSessionResponse
+        parentSessionKey: String?) async throws -> RemoteClawChatCreateSessionResponse
     {
         let json = try Self.makeCreateSessionParamsJSON(
             key: key,
             label: label,
             parentSessionKey: parentSessionKey)
         let res = try await self.gateway.request(method: "sessions.create", paramsJSON: json, timeoutSeconds: 15)
-        return try JSONDecoder().decode(OpenClawChatCreateSessionResponse.self, from: res)
+        return try JSONDecoder().decode(RemoteClawChatCreateSessionResponse.self, from: res)
     }
 
     func abortRun(sessionKey: String, runId: String) async throws {
@@ -160,15 +160,20 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
         _ = try await self.gateway.request(method: "chat.abort", paramsJSON: json, timeoutSeconds: 10)
     }
 
-    func listSessions(limit: Int?) async throws -> OpenClawChatSessionsListResponse {
+    func listSessions(limit: Int?) async throws -> RemoteClawChatSessionsListResponse {
         let json = try Self.makeListSessionsParamsJSON(limit: limit)
         let res = try await self.gateway.request(method: "sessions.list", paramsJSON: json, timeoutSeconds: 15)
-        return try JSONDecoder().decode(OpenClawChatSessionsListResponse.self, from: res)
+        return try JSONDecoder().decode(RemoteClawChatSessionsListResponse.self, from: res)
     }
 
     func setActiveSessionKey(_ sessionKey: String) async throws {
-        // Operator clients receive chat events without node-style subscriptions.
-        // (chat.subscribe is a node event, not an operator RPC method.)
+        struct Params: Codable { var key: String }
+        let data = try JSONEncoder().encode(Params(key: sessionKey))
+        let json = String(data: data, encoding: .utf8)
+        _ = try await self.gateway.request(
+            method: "sessions.messages.subscribe",
+            paramsJSON: json,
+            timeoutSeconds: 10)
     }
 
     func resetSession(sessionKey: String) async throws {
@@ -181,10 +186,10 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
         _ = try await self.gateway.request(method: "sessions.compact", paramsJSON: json, timeoutSeconds: 10)
     }
 
-    func requestHistory(sessionKey: String) async throws -> OpenClawChatHistoryPayload {
+    func requestHistory(sessionKey: String) async throws -> RemoteClawChatHistoryPayload {
         let json = try Self.makeHistoryParamsJSON(sessionKey: sessionKey)
         let res = try await self.gateway.request(method: "chat.history", paramsJSON: json, timeoutSeconds: 15)
-        return try JSONDecoder().decode(OpenClawChatHistoryPayload.self, from: res)
+        return try JSONDecoder().decode(RemoteClawChatHistoryPayload.self, from: res)
     }
 
     func sendMessage(
@@ -192,7 +197,7 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
         message: String,
         thinking: String,
         idempotencyKey: String,
-        attachments: [OpenClawChatAttachmentPayload]) async throws -> OpenClawChatSendResponse
+        attachments: [RemoteClawChatAttachmentPayload]) async throws -> RemoteClawChatSendResponse
     {
         let startLogMessage =
             "chat.send start sessionKey=\(sessionKey) "
@@ -208,7 +213,7 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
             attachments: attachments)
         do {
             let res = try await self.gateway.request(method: "chat.send", paramsJSON: json, timeoutSeconds: 35)
-            let decoded = try JSONDecoder().decode(OpenClawChatSendResponse.self, from: res)
+            let decoded = try JSONDecoder().decode(RemoteClawChatSendResponse.self, from: res)
             Self.logger.info("chat.send ok runId=\(decoded.runId, privacy: .public)")
             GatewayDiagnostics.log("chat.send ok runId=\(decoded.runId) status=\(decoded.status)")
             return decoded
@@ -248,44 +253,17 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
     func requestHealth(timeoutMs: Int) async throws -> Bool {
         let seconds = max(1, Int(ceil(Double(timeoutMs) / 1000.0)))
         let res = try await self.gateway.request(method: "health", paramsJSON: nil, timeoutSeconds: seconds)
-        return (try? JSONDecoder().decode(OpenClawGatewayHealthOK.self, from: res))?.ok ?? true
+        return (try? JSONDecoder().decode(RemoteClawGatewayHealthOK.self, from: res))?.ok ?? true
     }
 
-    func events() -> AsyncStream<OpenClawChatTransportEvent> {
+    func events() -> AsyncStream<RemoteClawChatTransportEvent> {
         AsyncStream { continuation in
             let task = Task {
                 let stream = await self.gateway.subscribeServerEvents()
                 for await evt in stream {
                     if Task.isCancelled { return }
-                    switch evt.event {
-                    case "tick":
-                        continuation.yield(.tick)
-                    case "seqGap":
-                        continuation.yield(.seqGap)
-                    case "health":
-                        guard let payload = evt.payload else { break }
-                        let ok = (try? GatewayPayloadDecoding.decode(
-                            payload,
-                            as: OpenClawGatewayHealthOK.self))?.ok ?? true
-                        continuation.yield(.health(ok: ok))
-                    case "chat":
-                        guard let payload = evt.payload else { break }
-                        if let chatPayload = try? GatewayPayloadDecoding.decode(
-                            payload,
-                            as: OpenClawChatEventPayload.self)
-                        {
-                            continuation.yield(.chat(chatPayload))
-                        }
-                    case "agent":
-                        guard let payload = evt.payload else { break }
-                        if let agentPayload = try? GatewayPayloadDecoding.decode(
-                            payload,
-                            as: OpenClawAgentEventPayload.self)
-                        {
-                            continuation.yield(.agent(agentPayload))
-                        }
-                    default:
-                        break
+                    if let mapped = Self.mapEventFrame(evt) {
+                        continuation.yield(mapped)
                     }
                 }
             }
@@ -293,6 +271,50 @@ struct IOSGatewayChatTransport: OpenClawChatTransport {
             continuation.onTermination = { @Sendable _ in
                 task.cancel()
             }
+        }
+    }
+
+    static func mapEventFrame(_ evt: EventFrame) -> RemoteClawChatTransportEvent? {
+        switch evt.event {
+        case "tick":
+            return .tick
+        case "seqGap":
+            return .seqGap
+        case "health":
+            guard let payload = evt.payload else { return nil }
+            let ok = (try? GatewayPayloadDecoding.decode(
+                payload,
+                as: RemoteClawGatewayHealthOK.self))?.ok ?? true
+            return .health(ok: ok)
+        case "chat":
+            guard let payload = evt.payload else { return nil }
+            guard let chatPayload = try? GatewayPayloadDecoding.decode(
+                payload,
+                as: RemoteClawChatEventPayload.self)
+            else {
+                return nil
+            }
+            return .chat(chatPayload)
+        case "session.message":
+            guard let payload = evt.payload else { return nil }
+            guard let message = try? GatewayPayloadDecoding.decode(
+                payload,
+                as: RemoteClawSessionMessageEventPayload.self)
+            else {
+                return nil
+            }
+            return .sessionMessage(message)
+        case "agent":
+            guard let payload = evt.payload else { return nil }
+            guard let agentPayload = try? GatewayPayloadDecoding.decode(
+                payload,
+                as: RemoteClawAgentEventPayload.self)
+            else {
+                return nil
+            }
+            return .agent(agentPayload)
+        default:
+            return nil
         }
     }
 }

@@ -1,3 +1,7 @@
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+} from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { consumeRootOptionToken } from "../infra/cli-root-options.js";
 import {
@@ -7,10 +11,6 @@ import {
   type PluginManifestCommandAliasRegistry,
   type PluginManifestToolOwnerRecord,
 } from "../plugins/manifest-command-aliases.js";
-import {
-  normalizeLowercaseStringOrEmpty,
-  normalizeOptionalLowercaseString,
-} from "../shared/string-coerce.js";
 import { resolveCliArgvInvocation } from "./argv-invocation.js";
 import { hasFlag } from "./argv.js";
 import {

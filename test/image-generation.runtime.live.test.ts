@@ -26,14 +26,15 @@ import { loadBundledProviderPlugin as loadBundledProviderPluginFromTestHelper } 
 
 const LIVE = isLiveTestEnabled();
 const REQUIRE_PROFILE_KEYS =
-  isLiveProfileKeyModeEnabled() || isTruthyEnvValue(process.env.OPENCLAW_LIVE_REQUIRE_PROFILE_KEYS);
+  isLiveProfileKeyModeEnabled() ||
+  isTruthyEnvValue(process.env.REMOTECLAW_LIVE_REQUIRE_PROFILE_KEYS);
 const describeLive = LIVE ? describe : describe.skip;
-const providerFilter = parseCsvFilter(process.env.OPENCLAW_LIVE_IMAGE_GENERATION_PROVIDERS);
-const caseFilter = parseCaseFilter(process.env.OPENCLAW_LIVE_IMAGE_GENERATION_CASES);
-const envModelMap = parseProviderModelMap(process.env.OPENCLAW_LIVE_IMAGE_GENERATION_MODELS);
+const providerFilter = parseCsvFilter(process.env.REMOTECLAW_LIVE_IMAGE_GENERATION_PROVIDERS);
+const caseFilter = parseCaseFilter(process.env.REMOTECLAW_LIVE_IMAGE_GENERATION_CASES);
+const envModelMap = parseProviderModelMap(process.env.REMOTECLAW_LIVE_IMAGE_GENERATION_MODELS);
 const DEFAULT_LIVE_IMAGE_GENERATION_TIMEOUT_MS = 120_000;
 const LIVE_IMAGE_GENERATION_TIMEOUT_MS = resolvePositiveIntegerEnv(
-  process.env.OPENCLAW_LIVE_IMAGE_GENERATION_TIMEOUT_MS,
+  process.env.REMOTECLAW_LIVE_IMAGE_GENERATION_TIMEOUT_MS,
   DEFAULT_LIVE_IMAGE_GENERATION_TIMEOUT_MS,
 );
 
@@ -225,7 +226,7 @@ describeLive("image generation live (provider sweep)", () => {
           requireProfileKeys: REQUIRE_PROFILE_KEYS,
           hasLiveKeys,
         });
-        let authLabel = "unresolved";
+        let authLabel;
         try {
           const auth = await resolveApiKeyForProvider({
             provider: providerCase.providerId,

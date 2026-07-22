@@ -1,4 +1,4 @@
-import { uniqueStrings } from "../../shared/string-normalization.js";
+import { uniqueStrings } from "@remoteclaw/normalization-core/string-normalization";
 import type {
   ChannelIngressPolicyInput,
   ChannelIngressState,

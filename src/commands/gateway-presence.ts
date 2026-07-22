@@ -1,4 +1,4 @@
-import { readStringValue } from "../shared/string-coerce.js";
+import { readStringValue } from "@remoteclaw/normalization-core/string-coerce";
 
 type GatewaySelfPresence = {
   host?: string;

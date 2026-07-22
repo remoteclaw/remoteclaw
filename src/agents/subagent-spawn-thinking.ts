@@ -1,13 +1,10 @@
+import { asOptionalObjectRecord } from "@remoteclaw/normalization-core/record-coerce";
 import { normalizeThinkLevel } from "../auto-reply/thinking.shared.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 export const MODULE_ATTESTATIONS = {
   resolveSubagentThinkingOverride: "live",
 } as const;
-
-function asRecord(value: unknown): Record<string, unknown> | undefined {
-  return value && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
-}
 
 function readString(value: Record<string, unknown>, key: string): string | undefined {
   const raw = value[key];
@@ -16,16 +13,43 @@ function readString(value: Record<string, unknown>, key: string): string | undef
 
 export function resolveSubagentThinkingOverride(params: {
   cfg: RemoteClawConfig;
+  requesterAgentConfig?: unknown;
   targetAgentConfig?: unknown;
   thinkingOverrideRaw?: string;
+  callerThinkingRaw?: string;
 }) {
-  const targetSubagents = asRecord(asRecord(params.targetAgentConfig)?.subagents);
-  const defaultSubagents = asRecord(params.cfg.agents?.defaults?.subagents);
+  const requesterSubagents = asOptionalObjectRecord(
+    asOptionalObjectRecord(params.requesterAgentConfig)?.subagents,
+  );
+  const targetSubagents = asOptionalObjectRecord(
+    asOptionalObjectRecord(params.targetAgentConfig)?.subagents,
+  );
+  const defaultSubagents = asOptionalObjectRecord(params.cfg.agents?.defaults?.subagents);
   const resolvedThinkingDefaultRaw =
-    readString(targetSubagents ?? {}, "thinking") ?? readString(defaultSubagents ?? {}, "thinking");
+    readString(requesterSubagents ?? {}, "thinking") ??
+    readString(targetSubagents ?? {}, "thinking") ??
+    readString(defaultSubagents ?? {}, "thinking");
 
-  const thinkingCandidateRaw = params.thinkingOverrideRaw || resolvedThinkingDefaultRaw;
-  if (!thinkingCandidateRaw) {
+  const overrideCandidateRaw = params.thinkingOverrideRaw || resolvedThinkingDefaultRaw;
+  if (overrideCandidateRaw) {
+    const normalizedThinking = normalizeThinkLevel(overrideCandidateRaw);
+    if (!normalizedThinking) {
+      return {
+        status: "error" as const,
+        thinkingCandidateRaw: overrideCandidateRaw,
+      };
+    }
+
+    return {
+      status: "ok" as const,
+      thinkingOverride: normalizedThinking,
+      initialSessionPatch: {
+        thinkingLevel: normalizedThinking,
+      },
+    };
+  }
+
+  if (!params.callerThinkingRaw) {
     return {
       status: "ok" as const,
       thinkingOverride: undefined,
@@ -33,19 +57,20 @@ export function resolveSubagentThinkingOverride(params: {
     };
   }
 
-  const normalizedThinking = normalizeThinkLevel(thinkingCandidateRaw);
+  const normalizedThinking = normalizeThinkLevel(params.callerThinkingRaw);
   if (!normalizedThinking) {
     return {
-      status: "error" as const,
-      thinkingCandidateRaw,
+      status: "ok" as const,
+      thinkingOverride: undefined,
+      initialSessionPatch: {},
     };
   }
 
   return {
     status: "ok" as const,
-    thinkingOverride: normalizedThinking,
+    thinkingOverride: undefined,
     initialSessionPatch: {
-      thinkingLevel: normalizedThinking === "off" ? null : normalizedThinking,
+      thinkingLevel: normalizedThinking,
     },
   };
 }

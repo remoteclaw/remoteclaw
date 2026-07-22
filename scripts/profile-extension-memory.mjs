@@ -6,6 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { ensureExtensionMemoryBuild } from "./ensure-extension-memory-build.mjs";
+import { stripLeadingPackageManagerSeparator } from "./lib/arg-utils.mjs";
 import { formatErrorMessage } from "./lib/error-format.mjs";
 
 const DEFAULT_CONCURRENCY = 6;
@@ -14,7 +15,7 @@ const DEFAULT_COMBINED_TIMEOUT_MS = 180_000;
 const DEFAULT_TOP = 10;
 const OUTPUT_CAPTURE_MAX_CHARS = 128 * 1024;
 const STDERR_PREVIEW_MAX_CHARS = 8 * 1024;
-const RSS_MARKER = "__OPENCLAW_MAX_RSS_KB__=";
+const RSS_MARKER = "__REMOTECLAW_MAX_RSS_KB__=";
 
 function printHelp() {
   console.log(`Usage: node scripts/profile-extension-memory.mjs [options]
@@ -52,7 +53,8 @@ function parsePositiveInt(raw, flagName) {
   return parsed;
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
+  const args = stripLeadingPackageManagerSeparator(argv);
   const options = {
     extensions: [],
     concurrency: DEFAULT_CONCURRENCY,
@@ -63,14 +65,14 @@ function parseArgs(argv) {
     skipCombined: false,
   };
 
-  for (let index = 0; index < argv.length; index += 1) {
-    const arg = argv[index];
+  parseArgv: for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
     switch (arg) {
       case "--":
-        break;
+        break parseArgv;
       case "--extension":
       case "-e": {
-        const next = argv[index + 1];
+        const next = args[index + 1];
         if (!next) {
           throw new Error(`${arg} requires a value`);
         }
@@ -79,23 +81,23 @@ function parseArgs(argv) {
         break;
       }
       case "--concurrency":
-        options.concurrency = parsePositiveInt(argv[index + 1], arg);
+        options.concurrency = parsePositiveInt(args[index + 1], arg);
         index += 1;
         break;
       case "--timeout-ms":
-        options.timeoutMs = parsePositiveInt(argv[index + 1], arg);
+        options.timeoutMs = parsePositiveInt(args[index + 1], arg);
         index += 1;
         break;
       case "--combined-timeout-ms":
-        options.combinedTimeoutMs = parsePositiveInt(argv[index + 1], arg);
+        options.combinedTimeoutMs = parsePositiveInt(args[index + 1], arg);
         index += 1;
         break;
       case "--top":
-        options.top = parsePositiveInt(argv[index + 1], arg);
+        options.top = parsePositiveInt(args[index + 1], arg);
         index += 1;
         break;
       case "--json": {
-        const next = argv[index + 1];
+        const next = args[index + 1];
         if (!next) {
           throw new Error(`${arg} requires a value`);
         }
@@ -318,7 +320,7 @@ async function main() {
     XDG_DATA_HOME: path.join(tmpHome, ".local", "share"),
     XDG_CACHE_HOME: path.join(tmpHome, ".cache"),
     NODE_DISABLE_COMPILE_CACHE: "1",
-    OPENCLAW_NO_RESPAWN: "1",
+    REMOTECLAW_NO_RESPAWN: "1",
     TERM: process.env.TERM ?? "dumb",
     LANG: process.env.LANG ?? "C.UTF-8",
   };

@@ -1,4 +1,4 @@
-import { isRecord } from "../../shared/record-coerce.js";
+import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
 import { validateSessionId } from "./paths.js";
 import type { SessionEntry } from "./types.js";
 

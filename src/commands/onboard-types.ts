@@ -138,7 +138,7 @@ export type OnboardOptions = {
   customApiKey?: string;
   customModelId?: string;
   customProviderId?: string;
-  customCompatibility?: "openai" | "anthropic";
+  customCompatibility?: "openai" | "openai-responses" | "anthropic";
   customImageInput?: boolean;
   gatewayPort?: number;
   gatewayBind?: GatewayBind;

@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import acpCorePackageJson from "../../packages/acp-core/package.json" with { type: "json" };
 import { pluginSdkSubpaths } from "../../scripts/lib/plugin-sdk-entries.mjs";
 import privateLocalOnlyPluginSdkSubpaths from "../../scripts/lib/plugin-sdk-private-local-only-subpaths.json" with { type: "json" };
 import {
@@ -79,7 +80,30 @@ const localScheduling = resolveLocalVitestScheduling(
 );
 
 function hasWorkerOverride(env: Record<string, string | undefined>): boolean {
-  return Boolean((env.OPENCLAW_VITEST_MAX_WORKERS ?? env.OPENCLAW_TEST_WORKERS)?.trim());
+  return Boolean((env.REMOTECLAW_VITEST_MAX_WORKERS ?? env.REMOTECLAW_TEST_WORKERS)?.trim());
+}
+
+function sourcePackageAlias(packageId: string, subpath?: string) {
+  return {
+    find: `@remoteclaw/${packageId}${subpath ? `/${subpath}` : ""}`,
+    replacement: path.join(
+      repoRoot,
+      "packages",
+      packageId,
+      "src",
+      ...(subpath ? subpath.split("/") : ["index"]).map((part, index, parts) =>
+        index === parts.length - 1 ? `${part}.ts` : part,
+      ),
+    ),
+  };
+}
+
+function sourcePackageAliasesFromExports(packageId: string, exports: Record<string, unknown>) {
+  return Object.keys(exports)
+    .map((exportKey) => (exportKey === "." ? undefined : exportKey.slice(2)))
+    .filter((subpath) => subpath === undefined || (subpath && !subpath.includes("..")))
+    .toSorted((a, b) => (a ?? "").localeCompare(b ?? ""))
+    .map((subpath) => sourcePackageAlias(packageId, subpath));
 }
 
 export function resolveSharedVitestWorkerConfig(params: {
@@ -114,6 +138,10 @@ const workerConfig = resolveSharedVitestWorkerConfig({
   isWindows,
   localScheduling,
 });
+const dependencyModuleDirectories = ["/node_modules/", "/remoteclaw-pnpm-node-modules/"];
+const dependencyExternalPatterns = [
+  /\/remoteclaw-pnpm-node-modules\/(?!.*\/?vite\w*\/dist\/client\/env\.mjs$).*\.(?:cjs\.js|mjs)$/u,
+];
 const sourcePluginSdkSubpaths = [
   ...new Set([...pluginSdkSubpaths, ...privateLocalOnlyPluginSdkSubpaths]),
 ].toSorted((left, right) => left.localeCompare(right));
@@ -174,11 +202,23 @@ export const sharedVitestConfig = {
         replacement: path.join(repoRoot, "extensions", "whatsapp", "api.ts"),
       },
       {
-        find: "@openclaw/gateway-protocol/client-info",
+        find: "@remoteclaw/gateway-client/readiness",
+        replacement: path.join(repoRoot, "packages", "gateway-client", "src", "readiness.ts"),
+      },
+      {
+        find: "@remoteclaw/gateway-client/timeouts",
+        replacement: path.join(repoRoot, "packages", "gateway-client", "src", "timeouts.ts"),
+      },
+      {
+        find: "@remoteclaw/gateway-client",
+        replacement: path.join(repoRoot, "packages", "gateway-client", "src", "index.ts"),
+      },
+      {
+        find: "@remoteclaw/gateway-protocol/client-info",
         replacement: path.join(repoRoot, "packages", "gateway-protocol", "src", "client-info.ts"),
       },
       {
-        find: "@openclaw/gateway-protocol/connect-error-details",
+        find: "@remoteclaw/gateway-protocol/connect-error-details",
         replacement: path.join(
           repoRoot,
           "packages",
@@ -188,11 +228,11 @@ export const sharedVitestConfig = {
         ),
       },
       {
-        find: "@openclaw/gateway-protocol/schema",
+        find: "@remoteclaw/gateway-protocol/schema",
         replacement: path.join(repoRoot, "packages", "gateway-protocol", "src", "schema.ts"),
       },
       {
-        find: "@openclaw/gateway-protocol/startup-unavailable",
+        find: "@remoteclaw/gateway-protocol/startup-unavailable",
         replacement: path.join(
           repoRoot,
           "packages",
@@ -202,23 +242,189 @@ export const sharedVitestConfig = {
         ),
       },
       {
-        find: "@openclaw/gateway-protocol/version",
+        find: "@remoteclaw/gateway-protocol/version",
         replacement: path.join(repoRoot, "packages", "gateway-protocol", "src", "version.ts"),
       },
       {
-        find: "@openclaw/gateway-protocol",
+        find: "@remoteclaw/gateway-protocol",
         replacement: path.join(repoRoot, "packages", "gateway-protocol", "src", "index.ts"),
       },
+      {
+        find: "@remoteclaw/llm-core/diagnostics",
+        replacement: path.join(repoRoot, "packages", "llm-core", "src", "utils", "diagnostics.ts"),
+      },
+      {
+        find: "@remoteclaw/llm-core/event-stream",
+        replacement: path.join(repoRoot, "packages", "llm-core", "src", "utils", "event-stream.ts"),
+      },
+      {
+        find: "@remoteclaw/llm-core/validation",
+        replacement: path.join(repoRoot, "packages", "llm-core", "src", "validation.ts"),
+      },
+      {
+        find: "@remoteclaw/llm-core",
+        replacement: path.join(repoRoot, "packages", "llm-core", "src", "index.ts"),
+      },
+      {
+        find: "@remoteclaw/model-catalog-core/configured-model-refs",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "model-catalog-core",
+          "src",
+          "configured-model-refs.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/model-catalog-core/model-catalog-refs",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "model-catalog-core",
+          "src",
+          "model-catalog-refs.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/model-catalog-core/model-catalog-normalize",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "model-catalog-core",
+          "src",
+          "model-catalog-normalize.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/model-catalog-core/model-catalog-types",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "model-catalog-core",
+          "src",
+          "model-catalog-types.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/model-catalog-core/provider-id",
+        replacement: path.join(repoRoot, "packages", "model-catalog-core", "src", "provider-id.ts"),
+      },
+      {
+        find: "@remoteclaw/model-catalog-core/provider-model-id-normalization",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "model-catalog-core",
+          "src",
+          "provider-model-id-normalization.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/model-catalog-core/provider-model-id-normalize",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "model-catalog-core",
+          "src",
+          "provider-model-id-normalize.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/model-catalog-core",
+        replacement: path.join(repoRoot, "packages", "model-catalog-core", "src", "index.ts"),
+      },
+      {
+        find: "@remoteclaw/net-policy/ip",
+        replacement: path.join(repoRoot, "packages", "net-policy", "src", "ip.ts"),
+      },
+      {
+        find: "@remoteclaw/net-policy/ipv4",
+        replacement: path.join(repoRoot, "packages", "net-policy", "src", "ipv4.ts"),
+      },
+      {
+        find: "@remoteclaw/net-policy/redact-sensitive-url",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "net-policy",
+          "src",
+          "redact-sensitive-url.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/net-policy/url-userinfo",
+        replacement: path.join(repoRoot, "packages", "net-policy", "src", "url-userinfo.ts"),
+      },
+      {
+        find: "@remoteclaw/net-policy",
+        replacement: path.join(repoRoot, "packages", "net-policy", "src", "index.ts"),
+      },
+      {
+        find: "@remoteclaw/normalization-core/number-coercion",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "normalization-core",
+          "src",
+          "number-coercion.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/normalization-core/record-coerce",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "normalization-core",
+          "src",
+          "record-coerce.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/normalization-core/string-coerce",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "normalization-core",
+          "src",
+          "string-coerce.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/normalization-core/string-normalization",
+        replacement: path.join(
+          repoRoot,
+          "packages",
+          "normalization-core",
+          "src",
+          "string-normalization.ts",
+        ),
+      },
+      {
+        find: "@remoteclaw/normalization-core",
+        replacement: path.join(repoRoot, "packages", "normalization-core", "src", "index.ts"),
+      },
+      sourcePackageAlias("media-core", "base64"),
+      sourcePackageAlias("media-core", "constants"),
+      sourcePackageAlias("media-core", "content-length"),
+      sourcePackageAlias("media-core", "file-name"),
+      sourcePackageAlias("media-core", "inbound-path-policy"),
+      sourcePackageAlias("media-core", "inline-image-data-url"),
+      sourcePackageAlias("media-core", "media-source-url"),
+      sourcePackageAlias("media-core", "mime"),
+      sourcePackageAlias("media-core", "read-byte-stream-with-limit"),
+      sourcePackageAlias("media-core", "read-response-with-limit"),
+      sourcePackageAlias("media-core"),
+      ...sourcePackageAliasesFromExports("acp-core", acpCorePackageJson.exports),
       ...sourcePluginSdkSubpaths.map((subpath) => ({
-        find: `openclaw/plugin-sdk/${subpath}`,
+        find: `remoteclaw/plugin-sdk/${subpath}`,
         replacement: path.join(repoRoot, "src", "plugin-sdk", `${subpath}.ts`),
       })),
       ...pluginSdkSubpaths.map((subpath) => ({
-        find: `@remoteclaw/plugin-sdk/${subpath}`,
+        find: `remoteclaw/plugin-sdk/${subpath}`,
         replacement: path.join(repoRoot, "packages", "plugin-sdk", "src", `${subpath}.ts`),
       })),
       {
-        find: "openclaw/plugin-sdk",
+        find: "remoteclaw/plugin-sdk",
         replacement: path.join(repoRoot, "src", "plugin-sdk", "index.ts"),
       },
     ],
@@ -234,6 +440,14 @@ export const sharedVitestConfig = {
     runner: nonIsolatedRunnerPath,
     maxWorkers: workerConfig.maxWorkers,
     fileParallelism: workerConfig.fileParallelism,
+    deps: {
+      moduleDirectories: dependencyModuleDirectories,
+    },
+    server: {
+      deps: {
+        external: dependencyExternalPatterns,
+      },
+    },
     forceRerunTriggers: [
       "package.json",
       "pnpm-lock.yaml",
@@ -303,6 +517,7 @@ export const sharedVitestConfig = {
       "test/vitest/vitest.media-understanding.config.ts",
       "test/vitest/vitest.performance-config.ts",
       "test/vitest/vitest.unit-fast.config.ts",
+      "test/vitest/vitest.unit-fast-fake-timers.config.ts",
       "test/vitest/vitest.unit-fast-paths.mjs",
       "test/vitest/vitest.scoped-config.ts",
       "test/vitest/vitest.shared-core.config.ts",
@@ -367,7 +582,7 @@ export const sharedVitestConfig = {
       "apps/macos/.build/**",
       "**/node_modules/**",
       "**/vendor/**",
-      "dist/OpenClaw.app/**",
+      "dist/RemoteClaw.app/**",
       "**/._*",
       "**/*.live.test.ts",
       "**/*.e2e.test.ts",
@@ -439,7 +654,7 @@ export const sharedVitestConfig = {
         "src/webchat/**",
         "src/gateway/server.ts",
         "src/gateway/client.ts",
-        "src/gateway/protocol/**",
+        "packages/gateway-protocol/src/**",
         "src/infra/tailscale.ts",
       ],
     },

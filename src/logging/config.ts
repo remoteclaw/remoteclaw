@@ -1,9 +1,9 @@
 import fs from "node:fs";
+import { isRecord as isObjectRecord } from "@remoteclaw/normalization-core/record-coerce";
 import JSON5 from "json5";
 import { getCommandPathWithRootOptions } from "../cli/argv.js";
 import { resolveConfigPath } from "../config/paths.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { isRecord as isObjectRecord } from "../shared/record-coerce.js";
 
 type LoggingConfig = RemoteClawConfig["logging"];
 

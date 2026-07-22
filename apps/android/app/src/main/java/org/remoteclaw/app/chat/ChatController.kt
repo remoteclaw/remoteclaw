@@ -61,6 +61,7 @@ class ChatController(
 
   private var lastHealthPollAtMs: Long? = null
 
+  /** Clears transient chat state when the operator gateway session disconnects. */
   fun onDisconnected(message: String) {
     _healthOk.value = false
     // Not an error; keep connection status in the UI pill.
@@ -72,12 +73,14 @@ class ChatController(
     _sessionId.value = null
   }
 
+  /** Loads a chat session, normalizing "main" to the current gateway-provided main session key. */
   fun load(sessionKey: String) {
     val key = sessionKey.trim().ifEmpty { "main" }
     _sessionKey.value = key
     scope.launch { bootstrap(forceHealth = true) }
   }
 
+  /** Rebinds chat to a new canonical main session key after gateway hello/agent changes. */
   fun applyMainSessionKey(mainSessionKey: String) {
     val trimmed = mainSessionKey.trim()
     if (trimmed.isEmpty()) return
@@ -87,6 +90,7 @@ class ChatController(
     scope.launch { bootstrap(forceHealth = true) }
   }
 
+  /** Refreshes current chat history and session list without clearing optimistic messages first. */
   fun refresh() {
     scope.launch { bootstrap(forceHealth = true) }
   }
@@ -95,12 +99,14 @@ class ChatController(
     scope.launch { fetchSessions(limit = limit) }
   }
 
+  /** Persists the normalized thinking level used for subsequent chat sends. */
   fun setThinkingLevel(thinkingLevel: String) {
     val normalized = normalizeThinking(thinkingLevel)
     if (normalized == _thinkingLevel.value) return
     _thinkingLevel.value = normalized
   }
 
+  /** Switches to another gateway chat session and starts a fresh history load. */
   fun switchSession(sessionKey: String) {
     val key = sessionKey.trim()
     if (key.isEmpty()) return
@@ -109,6 +115,7 @@ class ChatController(
     scope.launch { bootstrap(forceHealth = true) }
   }
 
+  /** Queues a chat send without waiting for gateway acceptance. */
   fun sendMessage(
     message: String,
     thinkingLevel: String,
@@ -126,7 +133,7 @@ class ChatController(
     val sessionKey = _sessionKey.value
     val thinking = normalizeThinking(thinkingLevel)
 
-    // Optimistic user message.
+    // Optimistic user message keeps the composer responsive while chat.send and history refresh complete.
     val userContent =
       buildList {
         add(ChatMessageContent(type = "text", text = text))
@@ -203,6 +210,7 @@ class ChatController(
     }
   }
 
+  /** Sends best-effort abort requests for every currently pending gateway run. */
   fun abort() {
     val runIds =
       synchronized(pendingRuns) {
@@ -317,7 +325,7 @@ class ChatController(
     val state = payload["state"].asStringOrNull()
     when (state) {
       "delta" -> {
-        // Only show streaming text for runs we initiated
+        // Only show streaming text for runs we initiated in this controller.
         if (!isPending) return
         val text = parseAssistantDeltaText(payload)
         if (!text.isNullOrEmpty()) {

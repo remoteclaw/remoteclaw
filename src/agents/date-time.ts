@@ -1,8 +1,10 @@
 import { execFileSync } from "node:child_process";
+import { resolveDateTimestampMs } from "@remoteclaw/normalization-core/number-coercion";
 
 export const MODULE_ATTESTATIONS = {
   resolveUserTimezone: "live",
   resolveUserTimeFormat: "live",
+  formatDateStamp: "live",
   normalizeTimestamp: "live",
   withNormalizedTimestamp: "live",
   formatUserTime: "live",
@@ -46,6 +48,24 @@ export function resolveUserTimeFormat(preference?: TimeFormatPreference): Resolv
   }
   cachedTimeFormat = detectSystemTimeFormat() ? "24" : "12";
   return cachedTimeFormat;
+}
+
+export function formatDateStamp(nowMs: number, timeZone: string): string {
+  const timestampMs = resolveDateTimestampMs(nowMs);
+  const date = new Date(timestampMs);
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const year = parts.find((part) => part.type === "year")?.value;
+  const month = parts.find((part) => part.type === "month")?.value;
+  const day = parts.find((part) => part.type === "day")?.value;
+  if (year && month && day) {
+    return `${year}-${month}-${day}`;
+  }
+  return date.toISOString().slice(0, 10);
 }
 
 export function normalizeTimestamp(

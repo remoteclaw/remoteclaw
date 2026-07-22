@@ -62,7 +62,10 @@ export const getSlackHandlers = () =>
 
 export const getSlackClient = () => (globalThis as { __slackClient?: SlackClient }).__slackClient;
 
-export const flush = () => new Promise((resolve) => setTimeout(resolve, 0));
+export const flush = () =>
+  new Promise((resolve) => {
+    setTimeout(resolve, 0);
+  });
 
 export async function waitForSlackEvent(name: string) {
   for (let i = 0; i < 10; i += 1) {

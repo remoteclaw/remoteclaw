@@ -1,5 +1,5 @@
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 export type GatewayProbeTargetResolution = {
   gatewayMode: "local" | "remote";

@@ -17,7 +17,7 @@ export type {
   AcpRuntimeTurnResult,
   AcpRuntimeTurnResultError,
   AcpSessionUpdateTag,
-} from "../acp/runtime/types.js";
+} from "@remoteclaw/acp-core/runtime/types";
 export type {
   RemoteClawPluginApi,
   RemoteClawPluginConfigSchema,

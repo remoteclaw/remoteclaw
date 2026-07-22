@@ -1,5 +1,5 @@
+import { maxBytesForKind, type MediaKind } from "@remoteclaw/media-core/constants";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { maxBytesForKind, type MediaKind } from "./constants.js";
 
 const MB = 1024 * 1024;
 

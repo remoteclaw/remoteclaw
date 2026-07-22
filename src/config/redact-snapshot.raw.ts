@@ -1,6 +1,6 @@
 import { isDeepStrictEqual } from "node:util";
+import { uniqueStrings } from "@remoteclaw/normalization-core/string-normalization";
 import JSON5 from "json5";
-import { uniqueStrings } from "../shared/string-normalization.js";
 
 export function replaceSensitiveValuesInRaw(params: {
   raw: string;

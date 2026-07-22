@@ -1,9 +1,5 @@
-/**
- * Runtime attestation (ADR 0005 H9). Declares the implementation status
- * of each runtime export in this module. See CONTRIBUTING.md § Module
- * attestations for the category definitions and the convention for
- * updating these when sync or rebrand changes the surface.
- */
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
+
 export const MODULE_ATTESTATIONS = {
   resolveModelDisplayRef: "live",
   resolveModelDisplayName: "live",
@@ -11,16 +7,16 @@ export const MODULE_ATTESTATIONS = {
 } as const;
 
 type ModelDisplaySelectionParams = {
-  runtimeProvider?: string | null;
-  runtimeModel?: string | null;
-  overrideProvider?: string | null;
-  overrideModel?: string | null;
-  fallbackModel?: string | null;
+  runtimeProvider?: unknown;
+  runtimeModel?: unknown;
+  overrideProvider?: unknown;
+  overrideModel?: unknown;
+  fallbackModel?: unknown;
 };
 
 export function resolveModelDisplayRef(params: ModelDisplaySelectionParams): string | undefined {
-  const runtimeModel = params.runtimeModel?.trim();
-  const runtimeProvider = params.runtimeProvider?.trim();
+  const runtimeModel = normalizeOptionalString(params.runtimeModel);
+  const runtimeProvider = normalizeOptionalString(params.runtimeProvider);
   if (runtimeModel) {
     if (runtimeModel.includes("/")) {
       return runtimeModel;
@@ -34,8 +30,8 @@ export function resolveModelDisplayRef(params: ModelDisplaySelectionParams): str
     return runtimeProvider;
   }
 
-  const overrideModel = params.overrideModel?.trim();
-  const overrideProvider = params.overrideProvider?.trim();
+  const overrideModel = normalizeOptionalString(params.overrideModel);
+  const overrideProvider = normalizeOptionalString(params.overrideProvider);
   if (overrideModel) {
     if (overrideModel.includes("/")) {
       return overrideModel;
@@ -49,7 +45,7 @@ export function resolveModelDisplayRef(params: ModelDisplaySelectionParams): str
     return overrideProvider;
   }
 
-  const fallbackModel = params.fallbackModel?.trim();
+  const fallbackModel = normalizeOptionalString(params.fallbackModel);
   return fallbackModel || undefined;
 }
 
@@ -66,33 +62,39 @@ export function resolveModelDisplayName(params: ModelDisplaySelectionParams): st
 }
 
 type SessionInfoModelSelectionParams = {
-  currentProvider?: string | null;
-  currentModel?: string | null;
-  defaultProvider?: string | null;
-  defaultModel?: string | null;
-  entryProvider?: string | null;
-  entryModel?: string | null;
-  overrideProvider?: string | null;
-  overrideModel?: string | null;
+  currentProvider?: unknown;
+  currentModel?: unknown;
+  defaultProvider?: unknown;
+  defaultModel?: unknown;
+  entryProvider?: unknown;
+  entryModel?: unknown;
+  overrideProvider?: unknown;
+  overrideModel?: unknown;
 };
 
 export function resolveSessionInfoModelSelection(params: SessionInfoModelSelectionParams): {
   modelProvider?: string;
   model?: string;
 } {
-  const fallbackProvider = params.currentProvider ?? params.defaultProvider ?? undefined;
-  const fallbackModel = params.currentModel ?? params.defaultModel ?? undefined;
+  const fallbackProvider =
+    normalizeOptionalString(params.currentProvider) ??
+    normalizeOptionalString(params.defaultProvider) ??
+    undefined;
+  const fallbackModel =
+    normalizeOptionalString(params.currentModel) ??
+    normalizeOptionalString(params.defaultModel) ??
+    undefined;
 
   if (params.entryProvider !== undefined || params.entryModel !== undefined) {
     return {
-      modelProvider: params.entryProvider ?? fallbackProvider,
-      model: params.entryModel ?? fallbackModel,
+      modelProvider: normalizeOptionalString(params.entryProvider) ?? fallbackProvider,
+      model: normalizeOptionalString(params.entryModel) ?? fallbackModel,
     };
   }
 
-  const overrideModel = params.overrideModel?.trim();
+  const overrideModel = normalizeOptionalString(params.overrideModel);
   if (overrideModel) {
-    const overrideProvider = params.overrideProvider?.trim();
+    const overrideProvider = normalizeOptionalString(params.overrideProvider);
     return {
       modelProvider: overrideProvider || fallbackProvider,
       model: overrideModel,

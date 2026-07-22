@@ -1,13 +1,18 @@
+import {
+  normalizeOptionalLowercaseString,
+  readStringValue,
+} from "@remoteclaw/normalization-core/string-coerce";
+import { normalizeCsvOrLooseStringList } from "@remoteclaw/normalization-core/string-normalization";
 import JSON5 from "json5";
 import { LEGACY_MANIFEST_KEYS, MANIFEST_KEY } from "../compat/legacy-names.js";
 import { parseBooleanValue } from "../utils/boolean.js";
-import { normalizeOptionalLowercaseString, readStringValue } from "./string-coerce.js";
-import { normalizeCsvOrLooseStringList } from "./string-normalization.js";
 
+/** Normalizes comma-delimited or loose array metadata fields into string lists. */
 export function normalizeStringList(input: unknown): string[] {
   return normalizeCsvOrLooseStringList(input);
 }
 
+/** Reads a frontmatter field only when it is represented as a string value. */
 export function getFrontmatterString(
   frontmatter: Record<string, unknown>,
   key: string,
@@ -15,11 +20,13 @@ export function getFrontmatterString(
   return readStringValue(frontmatter[key]);
 }
 
+/** Parses boolean frontmatter strings while preserving the caller's default for missing values. */
 export function parseFrontmatterBool(value: string | undefined, fallback: boolean): boolean {
   const parsed = parseBooleanValue(value);
   return parsed === undefined ? fallback : parsed;
 }
 
+/** Parses the JSON5 RemoteClaw manifest block embedded inside a string frontmatter field. */
 export function resolveRemoteClawManifestBlock(params: {
   frontmatter: Record<string, unknown>;
   key?: string;
@@ -36,6 +43,7 @@ export function resolveRemoteClawManifestBlock(params: {
     }
 
     const manifestKeys = [MANIFEST_KEY, ...LEGACY_MANIFEST_KEYS];
+    // Prefer the current manifest key, but still read legacy names for existing skill/hook files.
     for (const key of manifestKeys) {
       const candidate = (parsed as Record<string, unknown>)[key];
       if (candidate && typeof candidate === "object") {
@@ -55,6 +63,7 @@ export type RemoteClawManifestRequires = {
   config: string[];
 };
 
+/** Extracts normalized runtime requirement lists from an RemoteClaw manifest block. */
 export function resolveRemoteClawManifestRequires(
   metadataObj: Record<string, unknown>,
 ): RemoteClawManifestRequires | undefined {
@@ -73,6 +82,7 @@ export function resolveRemoteClawManifestRequires(
   };
 }
 
+/** Parses manifest install entries with a caller-owned parser and drops unsupported specs. */
 export function resolveRemoteClawManifestInstall<T>(
   metadataObj: Record<string, unknown>,
   parseInstallSpec: (input: unknown) => T | undefined,
@@ -83,6 +93,7 @@ export function resolveRemoteClawManifestInstall<T>(
     .filter((entry): entry is T => Boolean(entry));
 }
 
+/** Extracts normalized OS allowlist entries from an RemoteClaw manifest block. */
 export function resolveRemoteClawManifestOs(metadataObj: Record<string, unknown>): string[] {
   return normalizeStringList(metadataObj.os);
 }
@@ -95,6 +106,7 @@ export type ParsedRemoteClawManifestInstallBase = {
   bins?: string[];
 };
 
+/** Parses kind/type plus common install fields shared by package-manager install specs. */
 export function parseRemoteClawManifestInstallBase(
   input: unknown,
   allowedKinds: readonly string[],
@@ -127,6 +139,7 @@ export function parseRemoteClawManifestInstallBase(
   return spec;
 }
 
+/** Copies optional common install fields onto a caller-specific install spec object. */
 export function applyRemoteClawManifestInstallCommonFields<
   T extends { id?: string; label?: string; bins?: string[] },
 >(spec: T, parsed: Pick<ParsedRemoteClawManifestInstallBase, "id" | "label" | "bins">): T {

@@ -1,6 +1,6 @@
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import { readSecretFromFile } from "../acp/secret-file.js";
 import { defaultRuntime } from "../runtime.js";
-import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 function resolveGatewaySecretOption(params: {
   direct?: unknown;

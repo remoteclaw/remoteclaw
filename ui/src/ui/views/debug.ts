@@ -1,5 +1,6 @@
 import { html, nothing } from "lit";
 import type { EventLogEntry } from "../app-events.ts";
+import { formatTimeMs } from "../format.ts";
 import { formatEventPayload } from "../presenter.ts";
 
 export type DebugProps = {
@@ -130,7 +131,7 @@ export function renderDebug(props: DebugProps) {
                   <div class="list-item debug-event-log__item">
                     <div class="list-main">
                       <div class="list-title">${evt.event}</div>
-                      <div class="list-sub">${new Date(evt.ts).toLocaleTimeString()}</div>
+                      <div class="list-sub">${formatTimeMs(evt.ts, undefined, "")}</div>
                     </div>
                     <div class="list-meta debug-event-log__meta">
                       <pre class="code-block debug-event-log__payload">${formatEventPayload(evt.payload)}</pre>

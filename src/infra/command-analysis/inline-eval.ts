@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "../../shared/string-coerce.js";
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import { normalizeExecutableToken } from "../exec-wrapper-resolution.js";
 
 export type InterpreterInlineEvalHit = {

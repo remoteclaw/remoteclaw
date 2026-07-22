@@ -24,7 +24,7 @@ const {
   })),
   formatDoctorNonInteractiveHintMock: vi.fn(
     () =>
-      "Recommended follow-up: run openclaw doctor --non-interactive in a terminal or approvals-capable OpenClaw surface.",
+      "Recommended follow-up: run remoteclaw doctor --non-interactive in a terminal or approvals-capable RemoteClaw surface.",
   ),
   writeRestartSentinelMock: vi.fn(async (_payload: RestartSentinelPayload) => "/tmp/restart"),
   removeRestartSentinelFileMock: vi.fn(async (_path: string | null | undefined) => undefined),
@@ -102,7 +102,7 @@ describe("gateway tool restart continuation", () => {
     });
     formatDoctorNonInteractiveHintMock.mockReset();
     formatDoctorNonInteractiveHintMock.mockReturnValue(
-      "Recommended follow-up: run openclaw doctor --non-interactive in a terminal or approvals-capable OpenClaw surface.",
+      "Recommended follow-up: run remoteclaw doctor --non-interactive in a terminal or approvals-capable RemoteClaw surface.",
     );
     writeRestartSentinelMock.mockReset();
     writeRestartSentinelMock.mockResolvedValue("/tmp/restart");
@@ -137,12 +137,15 @@ describe("gateway tool restart continuation", () => {
     expect(parameters.properties?.timeoutMs).toMatchObject({ type: "integer", minimum: 1 });
   });
 
-  it("instructs agents to use continuationMessage when a restart still needs a reply", async () => {
+  it("instructs agents to use continuationMessage for internal post-restart work", async () => {
     const tool = createGatewayTool();
 
-    expect(tool.description).toContain("still owe the user a reply");
+    expect(tool.description).toContain("post-restart work must continue internally");
+    expect(tool.description).toContain(
+      "visible follow-up from that turn must use the message tool",
+    );
     expect(tool.description).toContain("continuationMessage");
-    expect(tool.description).toContain("do not write restart sentinel files directly");
+    expect(tool.description).toContain("Do not write restart sentinel files directly");
   });
 
   it("writes an agentTurn continuation into the restart sentinel", async () => {
@@ -234,9 +237,7 @@ describe("gateway tool restart continuation", () => {
     });
   });
 
-  it("defaults session-scoped restarts to a success continuation", async () => {
-    const { DEFAULT_RESTART_SUCCESS_CONTINUATION_MESSAGE } =
-      await import("../../infra/restart-sentinel.js");
+  it("does not infer a continuation for session-scoped restarts", async () => {
     const tool = createGatewayTool({
       agentSessionKey: "agent:main:main",
       config: {},
@@ -252,10 +253,7 @@ describe("gateway tool restart continuation", () => {
 
     const payload = requireRestartSentinelPayload();
     expect(payload.sessionKey).toBe("agent:main:main");
-    expect(payload.continuation).toEqual({
-      kind: "agentTurn",
-      message: DEFAULT_RESTART_SUCCESS_CONTINUATION_MESSAGE,
-    });
+    expect(payload.continuation).toBeNull();
   });
 
   it("removes the prepared sentinel when restart emission is rejected", async () => {

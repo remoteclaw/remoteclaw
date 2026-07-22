@@ -1,0 +1,37 @@
+{
+  "name": "@remoteclaw/sms",
+  "version": "0.8.0",
+  "description": "RemoteClaw SMS channel plugin for Twilio text messages.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/remoteclaw/remoteclaw"
+  },
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "zod": "4.4.3"
+  },
+  "devDependencies": {},
+  "remoteclaw": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "channel": {
+      "id": "sms",
+      "label": "SMS",
+      "selectionLabel": "SMS (Twilio)",
+      "detailLabel": "Twilio SMS",
+      "docsPath": "/channels/sms",
+      "docsLabel": "sms",
+      "blurb": "Twilio-backed SMS with inbound webhooks and outbound replies.",
+      "order": 88,
+      "quickstartAllowFrom": true
+    },
+    "compat": {
+      "pluginApi": ">=2026.6.1"
+    },
+    "build": {
+      "remoteclawVersion": "2026.6.1"
+    }
+  }
+}

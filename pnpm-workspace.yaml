@@ -2,11 +2,12 @@ packages:
   - .
   - ui
   - extensions/*
+  - packages/*
 
 minimumReleaseAge: 2880
 
 minimumReleaseAgeExclude:
-  - "openclaw"
+  - "remoteclaw"
   - "@mariozechner/*"
   - "@typescript/native-preview*"
   - "@oxlint/*"

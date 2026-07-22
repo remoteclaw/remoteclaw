@@ -150,7 +150,7 @@ export async function installDaemonServiceAndEmit(params: {
     return;
   }
 
-  let installed = true;
+  let installed;
   try {
     installed = await params.service.isLoaded({ env: process.env });
   } catch {

@@ -35,6 +35,7 @@ remoteclaw uninstall --dry-run
 Notes:
 
 - Run `remoteclaw backup create` first if you want a restorable snapshot before removing state or workspaces.
+- `--state` preserves configured workspace directories unless `--workspace` is also selected.
 - `--all` is shorthand for removing service, state, workspace, and app together.
 - `--non-interactive` requires `--yes`.
 

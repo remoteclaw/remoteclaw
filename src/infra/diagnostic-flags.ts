@@ -1,6 +1,6 @@
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
+import { normalizeUniqueStringEntriesLower } from "@remoteclaw/normalization-core/string-normalization";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
-import { normalizeUniqueStringEntriesLower } from "../shared/string-normalization.js";
 
 const DIAGNOSTICS_ENV = "REMOTECLAW_DIAGNOSTICS";
 

@@ -51,7 +51,7 @@ export async function withExtractedArchiveRoot<TResult extends { ok: boolean }>(
       return { ok: false, error: `failed to extract archive: ${String(err)}` };
     }
 
-    let rootDir = "";
+    let rootDir;
     try {
       rootDir = await resolvePackedRootDir(extractDir, {
         rootMarkers: params.rootMarkers,

@@ -1,5 +1,5 @@
+import { normalizeUniqueTrimmedStringList } from "@remoteclaw/normalization-core/string-normalization";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { normalizeUniqueTrimmedStringList } from "../shared/string-normalization.js";
 import { isRecord } from "../utils.js";
 
 export const MODULE_ATTESTATIONS = {

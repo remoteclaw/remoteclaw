@@ -16,6 +16,7 @@ import { createGatewayVitestConfig } from "./vitest/vitest.gateway.config.ts";
 import { createPluginSdkLightVitestConfig } from "./vitest/vitest.plugin-sdk-light.config.ts";
 import { sharedVitestConfig } from "./vitest/vitest.shared.config.ts";
 import { createUiVitestConfig } from "./vitest/vitest.ui.config.ts";
+import { createUnitFastFakeTimersVitestConfig } from "./vitest/vitest.unit-fast-fake-timers.config.ts";
 import { createUnitFastVitestConfig } from "./vitest/vitest.unit-fast.config.ts";
 import unitUiConfig from "./vitest/vitest.unit-ui.config.ts";
 import { createUnitVitestConfig } from "./vitest/vitest.unit.config.ts";
@@ -80,6 +81,15 @@ describe("projects vitest config", () => {
     const config = createUnitFastVitestConfig();
     expect(config.test.isolate).toBe(false);
     expect(config.test.runner).toBeUndefined();
+  });
+
+  it("keeps fake-timer unit-fast files serial with the non-isolated runner", () => {
+    const config = createUnitFastFakeTimersVitestConfig();
+    expect(config.test.isolate).toBe(false);
+    expect(normalizeConfigPath(config.test.runner)).toBe("test/non-isolated-runner.ts");
+    expect(config.test.fileParallelism).toBe(false);
+    expect(config.test.maxWorkers).toBe(1);
+    expect(config.test.sequence).toMatchObject({ groupOrder: 1 });
   });
 
   it("keeps the bundled lane on thread workers with the non-isolated runner", () => {

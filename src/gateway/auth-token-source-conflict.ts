@@ -1,6 +1,6 @@
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { normalizeSecretInputString, resolveSecretInputRef } from "../config/types.secrets.js";
-import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 const GATEWAY_ENV_TOKEN = "REMOTECLAW_GATEWAY_TOKEN";
 const GATEWAY_SERVICE_KIND = "gateway";

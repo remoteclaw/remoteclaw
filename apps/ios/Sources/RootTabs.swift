@@ -32,6 +32,7 @@ struct RootTabs: View {
     @State private var didAutoOpenSettings: Bool = false
     @State private var didApplyInitialAppearance: Bool = false
     @State private var didApplyInitialChatSession: Bool = false
+    @State private var handledGatewaySetupRequestID: Int = 0
 
     private enum AppTab: Hashable {
         case control
@@ -43,7 +44,7 @@ struct RootTabs: View {
 
     private static var initialTab: AppTab {
         let arguments = ProcessInfo.processInfo.arguments
-        guard let flagIndex = arguments.firstIndex(of: "--openclaw-initial-tab") else {
+        guard let flagIndex = arguments.firstIndex(of: "--remoteclaw-initial-tab") else {
             return .control
         }
         let valueIndex = arguments.index(after: flagIndex)
@@ -67,7 +68,7 @@ struct RootTabs: View {
 
     private static var initialChatSessionKey: String? {
         let arguments = ProcessInfo.processInfo.arguments
-        guard let flagIndex = arguments.firstIndex(of: "--openclaw-chat-session") else {
+        guard let flagIndex = arguments.firstIndex(of: "--remoteclaw-chat-session") else {
             return nil
         }
         let valueIndex = arguments.index(after: flagIndex)
@@ -132,7 +133,7 @@ struct RootTabs: View {
             self.rootLifecycle(
                 self.rootOverlays(
                     self.tabContent
-                        .tint(OpenClawBrand.accent))))
+                        .tint(RemoteClawBrand.accent))))
     }
 
     private var tabContent: some View {
@@ -237,6 +238,7 @@ struct RootTabs: View {
             .onAppear { self.updateCanvasState() }
             .onAppear { self.evaluateOnboardingPresentation(force: false) }
             .onAppear { self.maybeAutoOpenSettings() }
+            .onAppear { self.maybeOpenSettingsForGatewaySetup() }
             .onAppear { self.maybeShowQuickSetup() }
             .onAppear { self.applyInitialAppearanceIfNeeded() }
             .onAppear { self.applyInitialChatSessionIfNeeded() }
@@ -296,6 +298,9 @@ struct RootTabs: View {
             .onChange(of: self.appModel.openChatRequestID) { _, _ in
                 self.selectedTab = .chat
             }
+            .onChange(of: self.appModel.gatewaySetupRequestID) { _, _ in
+                self.maybeOpenSettingsForGatewaySetup()
+            }
     }
 
     private func rootPresentation(_ content: some View) -> some View {
@@ -320,7 +325,7 @@ struct RootTabs: View {
                     GatewayQuickSetupSheet()
                         .environment(self.appModel)
                         .environment(self.gatewayController)
-                        .openClawSheetChrome()
+                        .remoteClawSheetChrome()
                         .preferredColorScheme(self.appearancePreference.colorScheme)
                 }
             }
@@ -400,7 +405,7 @@ struct RootTabs: View {
                 activeAgentCaption: "Routes chat and talk",
                 agentCount: agents.count,
                 agents: Array(agents.prefix(6)),
-                footer: "OpenClaw only runs phone-side capabilities while the app is connected and permitted.")
+                footer: "RemoteClaw only runs phone-side capabilities while the app is connected and permitted.")
         case .connecting:
             return RootTabsHomeCanvasPayload(
                 gatewayState: "connecting",
@@ -418,7 +423,7 @@ struct RootTabs: View {
         case .error, .disconnected:
             return RootTabsHomeCanvasPayload(
                 gatewayState: self.gatewayStatus == .error ? "error" : "offline",
-                eyebrow: self.gatewayStatus == .error ? "Gateway needs attention" : "OpenClaw iOS",
+                eyebrow: self.gatewayStatus == .error ? "Gateway needs attention" : "RemoteClaw iOS",
                 title: "Pair a gateway",
                 subtitle:
                 "Connect this phone as a local node for chat, realtime voice, share intake, and approved device tools.",
@@ -429,7 +434,7 @@ struct RootTabs: View {
                 agentCount: agents.count,
                 agents: Array(agents.prefix(4)),
                 footer:
-                "Use Settings to scan a pairing QR code or paste a setup code from your OpenClaw gateway.")
+                "Use Settings to scan a pairing QR code or paste a setup code from your RemoteClaw gateway.")
         }
     }
 
@@ -556,6 +561,16 @@ struct RootTabs: View {
             hasExistingGatewayConfig: self.hasExistingGatewayConfig(),
             shouldPresentOnLaunch: false)
         guard route == .settings else { return }
+        self.didAutoOpenSettings = true
+        self.selectedTab = .settings
+    }
+
+    private func maybeOpenSettingsForGatewaySetup() {
+        let requestID = self.appModel.gatewaySetupRequestID
+        guard requestID != 0, requestID != self.handledGatewaySetupRequestID else { return }
+        self.handledGatewaySetupRequestID = requestID
+        self.showOnboarding = false
+        self.presentedSheet = nil
         self.didAutoOpenSettings = true
         self.selectedTab = .settings
     }

@@ -18,7 +18,6 @@ export function buildPairingReply(params: {
     "```",
     "",
     "Ask the bot owner to approve with:",
-    formatCliCommand(`remoteclaw pairing approve ${channel} ${code}`),
     "```",
     approveCommand,
     "```",

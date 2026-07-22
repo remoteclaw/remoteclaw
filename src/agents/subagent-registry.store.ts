@@ -1,9 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { readStringValue } from "@remoteclaw/normalization-core/string-coerce";
 import { resolveStateDir } from "../config/paths.js";
 import { loadJsonFile, saveJsonFile } from "../infra/json-file.js";
-import { readStringValue } from "../shared/string-coerce.js";
 import { normalizeDeliveryContext } from "../utils/delivery-context.shared.js";
 import { normalizeSubagentRunState } from "./subagent-delivery-state.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
@@ -67,7 +67,7 @@ function setCachedRegistryRead(
 }
 
 function resolveSubagentStateDir(env: NodeJS.ProcessEnv = process.env): string {
-  const explicit = env.OPENCLAW_STATE_DIR?.trim();
+  const explicit = env.REMOTECLAW_STATE_DIR?.trim();
   if (explicit) {
     return resolveStateDir(env);
   }

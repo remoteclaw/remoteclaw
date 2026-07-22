@@ -1,5 +1,5 @@
-import { asOptionalRecord } from "../shared/record-coerce.js";
-import { normalizeOptionalString } from "../shared/string-coerce.js";
+import { asOptionalRecord } from "@remoteclaw/normalization-core/record-coerce";
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status

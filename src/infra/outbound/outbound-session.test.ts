@@ -328,6 +328,7 @@ describe("resolveOutboundSessionRoute", () => {
         to: "user:123",
         kind: "user" as const,
         source: "directory" as const,
+        resolutionSource: "directory" as const,
       },
       expected: {
         sessionKey: "agent:main:discord:direct:123",
@@ -344,6 +345,7 @@ describe("resolveOutboundSessionRoute", () => {
         to: "channel:456",
         kind: "channel" as const,
         source: "directory" as const,
+        resolutionSource: "directory" as const,
       },
       expected: {
         sessionKey: "agent:main:discord:channel:456",
@@ -362,6 +364,7 @@ describe("resolveOutboundSessionRoute", () => {
         to: "user:dthcxgoxhifn3pwh65cut3ud3w",
         kind: "user" as const,
         source: "directory" as const,
+        resolutionSource: "directory" as const,
       },
       expected: {
         sessionKey: "agent:main:mattermost:direct:dthcxgoxhifn3pwh65cut3ud3w",

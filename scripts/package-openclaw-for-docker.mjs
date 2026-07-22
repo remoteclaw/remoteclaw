@@ -1,11 +1,12 @@
 #!/usr/bin/env node
-// Builds the OpenClaw package artifact used by Docker E2E.
+// Builds the RemoteClaw package artifact used by Docker E2E.
 // The script owns the build/inventory/pack sequence so local scheduler, shell
 // helpers, and GitHub Actions all prepare the exact same npm tarball.
 import { spawn } from "node:child_process";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { preparePackageChangelog, restorePackageChangelog } from "./package-changelog.mjs";
 
 const ROOT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_PACKAGE_BUILD_TIMEOUT_MS = 45 * 60 * 1000;
@@ -21,6 +22,13 @@ const SIGNAL_EXIT_CODES = {
   SIGTERM: 143,
 };
 let forwardedSignalExitCode;
+
+class ForwardedSignalExitError extends Error {
+  constructor(exitCode) {
+    super(`forwarded signal requested exit ${exitCode}`);
+    this.exitCode = exitCode;
+  }
+}
 
 for (const signal of Object.keys(SIGNAL_EXIT_CODES)) {
   process.on(signal, () => {
@@ -96,7 +104,6 @@ function run(command, args, cwd, options = {}) {
     let stdout = "";
     let stdoutBytes = 0;
     let settled = false;
-    let timeout;
     let forceKillTimeout;
     const maxCapturedStdoutBytes = Math.max(
       1,
@@ -112,10 +119,14 @@ function run(command, args, cwd, options = {}) {
       }
       ACTIVE_CHILD_KILLERS.delete(killChild);
       if (forwardedSignalExitCode !== undefined && ACTIVE_CHILD_KILLERS.size === 0) {
+        if (options.deferForwardedSignalExit) {
+          reject(new ForwardedSignalExitError(forwardedSignalExitCode));
+          return;
+        }
         process.exit(forwardedSignalExitCode);
       }
       if (error) {
-        reject(error);
+        reject(toLintErrorObject(error, "Non-Error rejection"));
         return;
       }
       resolve(value);
@@ -131,16 +142,30 @@ function run(command, args, cwd, options = {}) {
       }
       child.kill(signal);
     };
+    const processGroupAlive = () => {
+      if (!useProcessGroup || !child.pid) {
+        return false;
+      }
+      try {
+        process.kill(-child.pid, 0);
+        return true;
+      } catch (error) {
+        return error?.code === "EPERM";
+      }
+    };
     const terminateChild = () => {
       killChild("SIGTERM");
-      forceKillTimeout = setTimeout(
-        () => killChild("SIGKILL"),
-        options.killAfterMs ?? DEFAULT_TIMEOUT_KILL_AFTER_MS,
-      );
+      forceKillTimeout = setTimeout(() => {
+        forceKillTimeout = undefined;
+        if (settled && !processGroupAlive()) {
+          return;
+        }
+        killChild("SIGKILL");
+      }, options.killAfterMs ?? DEFAULT_TIMEOUT_KILL_AFTER_MS);
       forceKillTimeout.unref?.();
     };
     ACTIVE_CHILD_KILLERS.add(killChild);
-    timeout =
+    const timeout =
       options.timeoutMs === undefined
         ? undefined
         : setTimeout(() => {
@@ -192,7 +217,7 @@ function run(command, args, cwd, options = {}) {
 
 const PACKAGE_ARTIFACT_BUILD_STEPS = [
   {
-    label: "Building OpenClaw package artifacts",
+    label: "Building RemoteClaw package artifacts",
     command: "node",
     args: ["scripts/build-all.mjs"],
   },
@@ -205,11 +230,11 @@ export async function buildPackageArtifacts(sourceDir, options = {}) {
     await runImpl(step.command, step.args, sourceDir, {
       env: {
         ...process.env,
-        OPENCLAW_BUILD_ALL_NO_PNPM: "1",
-        OPENCLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
+        REMOTECLAW_BUILD_ALL_NO_PNPM: "1",
+        REMOTECLAW_RUN_NODE_SKIP_DTS_BUILD: "1",
       },
       timeoutMs: resolveTimeoutMs(
-        "OPENCLAW_DOCKER_PACKAGE_BUILD_TIMEOUT_MS",
+        "REMOTECLAW_DOCKER_PACKAGE_BUILD_TIMEOUT_MS",
         DEFAULT_PACKAGE_BUILD_TIMEOUT_MS,
       ),
     });
@@ -222,7 +247,7 @@ async function runCapture(command, args, cwd, options = {}) {
   return await run(command, args, cwd, { ...options, captureStdout: true });
 }
 
-async function newestOpenClawTarball(outputDir, packOutput) {
+async function newestRemoteClawTarball(outputDir, packOutput) {
   let fromOutput = "";
   for (const line of packOutput.split(/\r?\n/u)) {
     const trimmed = line.trim();
@@ -240,9 +265,35 @@ async function newestOpenClawTarball(outputDir, packOutput) {
     .toSorted()
     .at(-1);
   if (!packed) {
-    throw new Error(`missing packed OpenClaw tarball in ${outputDir}`);
+    throw new Error(`missing packed RemoteClaw tarball in ${outputDir}`);
   }
   return path.join(outputDir, packed);
+}
+
+export async function packRemoteClawPackageForDocker(sourceDir, outputDir, options = {}) {
+  const runCaptureImpl = options.runCaptureImpl ?? runCapture;
+  const prepareChangelog = options.prepareChangelog ?? preparePackageChangelog;
+  const restoreChangelog = options.restoreChangelog ?? restorePackageChangelog;
+  console.error("==> Packing RemoteClaw package");
+  await prepareChangelog(sourceDir);
+  let packOutput;
+  try {
+    packOutput = await runCaptureImpl(
+      "npm",
+      ["pack", "--silent", "--ignore-scripts", "--pack-destination", outputDir],
+      sourceDir,
+      {
+        deferForwardedSignalExit: true,
+        timeoutMs: resolveTimeoutMs(
+          "REMOTECLAW_DOCKER_PACKAGE_PACK_TIMEOUT_MS",
+          DEFAULT_PACKAGE_PACK_TIMEOUT_MS,
+        ),
+      },
+    );
+  } finally {
+    await restoreChangelog(sourceDir);
+  }
+  return await newestRemoteClawTarball(outputDir, packOutput);
 }
 
 async function main() {
@@ -258,7 +309,7 @@ async function main() {
     await buildPackageArtifacts(sourceDir);
   }
 
-  console.error("==> Writing OpenClaw package inventory");
+  console.error("==> Writing RemoteClaw package inventory");
   await run(
     "node",
     [
@@ -271,25 +322,13 @@ async function main() {
     sourceDir,
     {
       timeoutMs: resolveTimeoutMs(
-        "OPENCLAW_DOCKER_PACKAGE_INVENTORY_TIMEOUT_MS",
+        "REMOTECLAW_DOCKER_PACKAGE_INVENTORY_TIMEOUT_MS",
         DEFAULT_PACKAGE_INVENTORY_TIMEOUT_MS,
       ),
     },
   );
 
-  console.error("==> Packing OpenClaw package");
-  const packOutput = await runCapture(
-    "npm",
-    ["pack", "--silent", "--ignore-scripts", "--pack-destination", outputDir],
-    sourceDir,
-    {
-      timeoutMs: resolveTimeoutMs(
-        "OPENCLAW_DOCKER_PACKAGE_PACK_TIMEOUT_MS",
-        DEFAULT_PACKAGE_PACK_TIMEOUT_MS,
-      ),
-    },
-  );
-  let tarball = await newestOpenClawTarball(outputDir, packOutput);
+  let tarball = await packRemoteClawPackageForDocker(sourceDir, outputDir);
 
   if (options.outputName) {
     const target = path.join(outputDir, options.outputName);
@@ -300,7 +339,7 @@ async function main() {
     }
   }
 
-  console.error("==> Checking OpenClaw package tarball");
+  console.error("==> Checking RemoteClaw package tarball");
   const checkStartedAt = Date.now();
   await run(
     "node",
@@ -308,21 +347,37 @@ async function main() {
     sourceDir,
     {
       timeoutMs: resolveTimeoutMs(
-        "OPENCLAW_DOCKER_PACKAGE_TARBALL_CHECK_TIMEOUT_MS",
+        "REMOTECLAW_DOCKER_PACKAGE_TARBALL_CHECK_TIMEOUT_MS",
         DEFAULT_PACKAGE_TARBALL_CHECK_TIMEOUT_MS,
       ),
     },
   );
   console.error(
-    `==> OpenClaw package tarball check finished in ${Math.round((Date.now() - checkStartedAt) / 1000)}s`,
+    `==> RemoteClaw package tarball check finished in ${Math.round((Date.now() - checkStartedAt) / 1000)}s`,
   );
 
   process.stdout.write(`${tarball}\n`);
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  await main().catch((error) => {
-    console.error(error instanceof Error ? error.message : String(error));
-    process.exit(1);
-  });
+  await main().catch(
+    /** @param {unknown} error */ (error) => {
+      console.error(error instanceof Error ? error.message : String(error));
+      process.exit(Number.isInteger(error?.exitCode) ? error.exitCode : 1);
+    },
+  );
+}
+
+function toLintErrorObject(value, fallbackMessage) {
+  if (value instanceof Error) {
+    return value;
+  }
+  if (typeof value === "string") {
+    return new Error(value);
+  }
+  const error = new Error(fallbackMessage, { cause: value });
+  if ((typeof value === "object" && value !== null) || typeof value === "function") {
+    Object.assign(error, value);
+  }
+  return error;
 }

@@ -1,7 +1,7 @@
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { Command } from "commander";
 import { randomIdempotencyKey } from "../../gateway/call.js";
 import { defaultRuntime } from "../../runtime.js";
-import { normalizeOptionalString } from "../../shared/string-coerce.js";
 import { getNodesTheme, runNodesCommand } from "./cli-utils.js";
 import {
   callGatewayCli,

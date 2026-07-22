@@ -1,7 +1,7 @@
 import {
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "../shared/string-coerce.js";
+} from "@remoteclaw/normalization-core/string-coerce";
 
 type ToolResultCounts = {
   total: number;

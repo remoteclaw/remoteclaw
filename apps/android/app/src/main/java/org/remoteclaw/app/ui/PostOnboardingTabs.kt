@@ -65,6 +65,7 @@ private enum class StatusVisual {
   Offline,
 }
 
+/** Legacy tab scaffold used by the mobile post-onboarding experience. */
 @Composable
 fun PostOnboardingTabs(viewModel: MainViewModel, modifier: Modifier = Modifier) {
   var activeTab by rememberSaveable { mutableStateOf(HomeTab.Connect) }
@@ -131,6 +132,7 @@ fun PostOnboardingTabs(viewModel: MainViewModel, modifier: Modifier = Modifier) 
   }
 }
 
+/** Screen tab wrapper that refreshes canvas data once per gateway connection. */
 @Composable
 private fun ScreenTabScreen(viewModel: MainViewModel) {
   val isConnected by viewModel.isConnected.collectAsState()
@@ -174,6 +176,7 @@ private fun ScreenTabScreen(viewModel: MainViewModel) {
   }
 }
 
+/** Top status chip derived from gateway connection text. */
 @Composable
 private fun TopStatusBar(
   statusText: String,
@@ -264,6 +267,7 @@ private fun TopStatusBar(
   }
 }
 
+/** Bottom navigation for the legacy tab scaffold. */
 @Composable
 private fun BottomTabBar(
   activeTab: HomeTab,

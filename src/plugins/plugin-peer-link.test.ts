@@ -104,7 +104,7 @@ describe("plugin peer links", () => {
     },
   );
 
-  it("does not delete an existing real remoteclaw package directory", async () => {
+  it("replaces an existing real remoteclaw package directory", async () => {
     const root = makeTempDir();
     const packageDir = path.join(root, "peer-plugin");
     const existingRemoteClawDir = path.join(packageDir, "node_modules", "remoteclaw");
@@ -112,6 +112,34 @@ describe("plugin peer links", () => {
     fs.writeFileSync(
       path.join(existingRemoteClawDir, "package.json"),
       '{"name":"remoteclaw"}',
+      "utf8",
+    );
+
+    const messages: string[] = [];
+    const result = await linkRemoteClawPeerDependencies({
+      installedDir: packageDir,
+      peerDependencies: {
+        remoteclaw: ">=2026.0.0",
+      },
+      logger: {
+        info: (message) => messages.push(message),
+      },
+    });
+
+    expect(result).toEqual({ repaired: 1, skipped: 0 });
+    expect(fs.lstatSync(existingRemoteClawDir).isSymbolicLink()).toBe(true);
+    expect(fs.realpathSync(existingRemoteClawDir)).toBe(fs.realpathSync(process.cwd()));
+    expect(messages.join("\n")).toContain('Linked peerDependency "remoteclaw"');
+  });
+
+  it("does not delete an unrelated existing package directory", async () => {
+    const root = makeTempDir();
+    const packageDir = path.join(root, "peer-plugin");
+    const existingRemoteClawDir = path.join(packageDir, "node_modules", "remoteclaw");
+    fs.mkdirSync(existingRemoteClawDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(existingRemoteClawDir, "package.json"),
+      '{"name":"not-remoteclaw"}',
       "utf8",
     );
 

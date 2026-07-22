@@ -7,8 +7,8 @@ export const MODULE_ATTESTATIONS = {
 } as const;
 
 export const AGENT_CLEANUP_STEP_TIMEOUT_MS = 10_000;
-export const AGENT_CLEANUP_STEP_TIMEOUT_ENV = "OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS";
-export const TRAJECTORY_FLUSH_TIMEOUT_ENV = "OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS";
+export const AGENT_CLEANUP_STEP_TIMEOUT_ENV = "REMOTECLAW_AGENT_CLEANUP_TIMEOUT_MS";
+export const TRAJECTORY_FLUSH_TIMEOUT_ENV = "REMOTECLAW_TRAJECTORY_FLUSH_TIMEOUT_MS";
 export const CLEANUP_TIMEOUT_DETAILS_MAX_CHARS = 512;
 
 const CLEANUP_TIMEOUT_DETAILS_TRUNCATED_SUFFIX = "...[truncated]";
@@ -65,7 +65,7 @@ export function resolveAgentCleanupStepTimeoutMs(params: {
   }
 
   const env = params.env ?? process.env;
-  if (params.step === "openclaw-trajectory-flush") {
+  if (params.step === "remoteclaw-trajectory-flush") {
     const trajectoryTimeoutMs = parseTimeoutEnvValue(env[TRAJECTORY_FLUSH_TIMEOUT_ENV]);
     if (trajectoryTimeoutMs !== undefined) {
       return trajectoryTimeoutMs;
@@ -93,7 +93,7 @@ export async function runAgentCleanupStep(params: {
   let timeoutHandle: ReturnType<typeof setTimeout> | undefined;
   let timedOut = false;
   const cleanupPromise = Promise.resolve().then(params.cleanup);
-  const observedCleanupPromise = cleanupPromise.catch((error) => {
+  const observedCleanupPromise = cleanupPromise.catch((error: unknown) => {
     if (!timedOut) {
       params.log.warn(
         `agent cleanup failed: runId=${params.runId} sessionId=${params.sessionId} step=${params.step} error=${formatErrorMessage(error)}`,
@@ -119,7 +119,7 @@ export async function runAgentCleanupStep(params: {
     params.log.warn(
       `agent cleanup timed out: runId=${params.runId} sessionId=${params.sessionId} step=${params.step} timeoutMs=${timeoutMs}${details}`,
     );
-    void cleanupPromise.catch((error) => {
+    void cleanupPromise.catch((error: unknown) => {
       params.log.warn(
         `agent cleanup rejected after timeout: runId=${params.runId} sessionId=${params.sessionId} step=${params.step} error=${formatErrorMessage(error)}`,
       );

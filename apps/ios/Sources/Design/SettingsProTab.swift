@@ -13,7 +13,7 @@ struct SettingsProTab: View {
     @AppStorage("node.displayName") var displayName: String = "iOS Node"
     @AppStorage("node.instanceId") var instanceId: String = UUID().uuidString
     @AppStorage("camera.enabled") var cameraEnabled: Bool = true
-    @AppStorage("location.enabledMode") var locationModeRaw: String = OpenClawLocationMode.off.rawValue
+    @AppStorage("location.enabledMode") var locationModeRaw: String = RemoteClawLocationMode.off.rawValue
     @AppStorage("screen.preventSleep") var preventSleep: Bool = true
     @AppStorage("talk.enabled") var talkEnabled: Bool = false
     @AppStorage(TalkModeProviderSelection.storageKey) var talkProviderSelectionRaw: String =
@@ -45,6 +45,7 @@ struct SettingsProTab: View {
     @State var gatewayPassword = ""
     @State var manualGatewayPortText = ""
     @State var setupStatusText: String?
+    @State var stagedGatewaySetupLink: GatewayConnectDeepLink?
     @State var pendingManualAuthOverride: GatewayConnectionController.ManualAuthOverride?
     @State var defaultShareInstruction = ""
     @State var showGatewayProblemDetails = false
@@ -53,7 +54,7 @@ struct SettingsProTab: View {
     @State var showResetOnboardingAlert = false
     @State var suppressCredentialPersist = false
     @State var locationStatusText: String?
-    @State var previousLocationModeRaw: String = OpenClawLocationMode.off.rawValue
+    @State var previousLocationModeRaw: String = RemoteClawLocationMode.off.rawValue
     @State var notificationStatusText = "Checking"
     @State var notificationActionText = "Request Access"
     @State var diagnosticsLastRunText = "Not run"
@@ -62,7 +63,7 @@ struct SettingsProTab: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OpenClawProBackground()
+                RemoteClawProBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         self.settingsHeader
@@ -72,7 +73,7 @@ struct SettingsProTab: View {
                     }
                     .padding(.vertical, 18)
                 }
-                .safeAreaPadding(.bottom, OpenClawProMetric.bottomScrollInset)
+                .safeAreaPadding(.bottom, RemoteClawProMetric.bottomScrollInset)
             }
             .navigationBarHidden(true)
             .navigationDestination(for: SettingsRoute.self) { route in
@@ -82,6 +83,7 @@ struct SettingsProTab: View {
                 self.previousLocationModeRaw = self.locationModeRaw
                 self.syncSettingsState()
                 self.refreshNotificationSettings()
+                self.applyPendingGatewaySetupLinkIfNeeded()
             }
             .onChange(of: self.scenePhase) { _, phase in
                 if phase == .active {
@@ -107,8 +109,16 @@ struct SettingsProTab: View {
             .onChange(of: self.gatewayPassword) { _, newValue in
                 self.persistGatewayPassword(newValue)
             }
+            .onChange(of: self.setupCode) { _, newValue in
+                if !newValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    self.stagedGatewaySetupLink = nil
+                }
+            }
             .onChange(of: self.defaultShareInstruction) { _, newValue in
                 ShareToAgentSettings.saveDefaultInstruction(newValue)
+            }
+            .onChange(of: self.appModel.gatewaySetupRequestID) { _, _ in
+                self.applyPendingGatewaySetupLinkIfNeeded()
             }
         }
         .sheet(isPresented: self.$showGatewayProblemDetails) {

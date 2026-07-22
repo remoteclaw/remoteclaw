@@ -646,7 +646,7 @@ export const buildTelegramMessageContext = async ({
                     chat: msg.chat,
                     chatId,
                     getChat: getChatApi ?? undefined,
-                  }).catch((err) => {
+                  }).catch((err: unknown) => {
                     logVerbose(
                       `telegram status-reaction available_reactions lookup failed for chat ${chatId}: ${String(err)}`,
                     );
@@ -692,7 +692,7 @@ export const buildTelegramMessageContext = async ({
           fn: () => reactionApi(chatId, msg.message_id, [{ type: "emoji", emoji: ackReaction }]),
         }).then(
           () => true,
-          (err) => {
+          (err: unknown) => {
             logVerbose(`telegram react failed for chat ${chatId}: ${String(err)}`);
             return false;
           },

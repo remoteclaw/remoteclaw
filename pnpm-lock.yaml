@@ -413,7 +413,7 @@ importers:
   extensions/policy:
     dependencies:
       json5:
-        specifier: ^2.2.3
+        specifier: 2.2.3
         version: 2.2.3
     devDependencies:
       remoteclaw:
@@ -433,6 +433,12 @@ importers:
   extensions/signal: {}
 
   extensions/slack: {}
+
+  extensions/sms:
+    dependencies:
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
 
   extensions/synology-chat:
     dependencies:
@@ -507,6 +513,63 @@ importers:
         specifier: ^4.3.6
         version: 4.3.6
 
+  packages/acp-core:
+    dependencies:
+      '@remoteclaw/normalization-core':
+        specifier: workspace:*
+        version: link:../normalization-core
+
+  packages/gateway-protocol:
+    dependencies:
+      typebox:
+        specifier: 1.1.28
+        version: 1.1.28
+
+  packages/llm-core:
+    dependencies:
+      typebox:
+        specifier: 1.1.28
+        version: 1.1.28
+
+  packages/markdown-core:
+    dependencies:
+      markdown-it:
+        specifier: 14.2.0
+        version: 14.2.0
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
+
+  packages/media-core:
+    dependencies:
+      '@remoteclaw/normalization-core':
+        specifier: workspace:*
+        version: link:../normalization-core
+      file-type:
+        specifier: 21.3.1
+        version: 21.3.1
+
+  packages/media-generation-core: {}
+
+  packages/model-catalog-core: {}
+
+  packages/net-policy:
+    dependencies:
+      ipaddr.js:
+        specifier: 2.4.0
+        version: 2.4.0
+
+  packages/normalization-core: {}
+
+  packages/terminal-core:
+    dependencies:
+      '@clack/prompts':
+        specifier: 1.4.0
+        version: 1.4.0
+      chalk:
+        specifier: 5.6.2
+        version: 5.6.2
+
   ui:
     dependencies:
       '@create-markdown/preview':
@@ -515,9 +578,15 @@ importers:
       '@noble/ed25519':
         specifier: 3.1.0
         version: 3.1.0
+      '@remoteclaw/media-core':
+        specifier: workspace:*
+        version: link:../packages/media-core
+      '@remoteclaw/normalization-core':
+        specifier: workspace:*
+        version: link:../packages/normalization-core
       dompurify:
-        specifier: 3.4.6
-        version: 3.4.6
+        specifier: 3.4.7
+        version: 3.4.7
       highlight.js:
         specifier: 11.11.1
         version: 11.11.1
@@ -907,8 +976,16 @@ packages:
   '@clack/core@1.1.0':
     resolution: {integrity: sha512-SVcm4Dqm2ukn64/8Gub2wnlA5nS2iWJyCkdNHcvNHPIeBTGojpdJ+9cZKwLfmqy7irD4N5qLteSilJlE0WLAtA==}
 
+  '@clack/core@1.3.1':
+    resolution: {integrity: sha512-fT1qHVGAag4IEkrupZ6lRRbNCs1vS9P01KB/sG8zKgvUztbYtFBtQpjSITNwooDZ83tpsPzP0mRNs1/KVszCRA==}
+    engines: {node: '>= 20.12.0'}
+
   '@clack/prompts@1.1.0':
     resolution: {integrity: sha512-pkqbPGtohJAvm4Dphs2M8xE29ggupihHdy1x84HNojZuMtFsHiUlRvqD24tM2+XmI+61LlfNceM3Wr7U5QES5g==}
+
+  '@clack/prompts@1.4.0':
+    resolution: {integrity: sha512-S0My7XPGIgpRWMDG8uRqalbgT+a6FmCUdOW+HaIOVVpUPHOb7RrpvjTjiODadKp06fsrVDJZlIzc6yCTp4AnxA==}
+    engines: {node: '>= 20.12.0'}
 
   '@cloudflare/workers-types@4.20260120.0':
     resolution: {integrity: sha512-B8pueG+a5S+mdK3z8oKu1ShcxloZ7qWb68IEyLLaepvdryIbNC7JVPcY0bWsjS56UQVKc5fnyRge3yZIwc9bxw==}
@@ -3825,8 +3902,8 @@ packages:
     resolution: {integrity: sha512-cgwlv/1iFQiFnU96XXgROh8xTeetsnJiDsTc7TYCLFd9+/WNkIqPTxiM/8pSd8VIrhXGTf1Ny1q1hquVqDJB5w==}
     engines: {node: '>= 4'}
 
-  dompurify@3.4.6:
-    resolution: {integrity: sha512-+7gzEI8trIIQkVCvQ3ucGtNfH3nOmDgVTzc62rAAOlMxLth78pwpPoZCPc7CyRzAQF89MqcfPdEWkDwnjgqktg==}
+  dompurify@3.4.7:
+    resolution: {integrity: sha512-2jBxDJY4RR06tQNy4w5FlFH7kfxsQZlufd0sbv+chfHCxeJwrFw2baUDsSwvBISD4K4RDbd0PTfy3uNXsR6siA==}
 
   domutils@3.2.2:
     resolution: {integrity: sha512-6kZKyUajlDuqlHKVX1w7gyslj9MPIXzIFiz/rGu35uC1wMi+kMhQwGhl4lt9unC9Vb9INnY9Z3/ZA3+FhASLaw==}
@@ -3996,8 +4073,17 @@ packages:
   fast-sha256@1.3.0:
     resolution: {integrity: sha512-n11RGP/lrWEFI/bWdygLxhI+pVeo1ZYIVwvvPkW7azl/rOy+F3HYRZ2K5zeE9mmkhQppyv9sQFx0JM9UabnpPQ==}
 
+  fast-string-truncated-width@3.0.3:
+    resolution: {integrity: sha512-0jjjIEL6+0jag3l2XWWizO64/aZVtpiGE3t0Zgqxv0DPuxiMjvB3M24fCyhZUO4KomJQPj3LTSUnDP3GpdwC0g==}
+
+  fast-string-width@3.0.2:
+    resolution: {integrity: sha512-gX8LrtNEI5hq8DVUfRQMbr5lpaS4nMIWV+7XEbXk2b8kiQIizgnlr12B4dA3ZEx3308ze0O4Q1R+cHts8kyUJg==}
+
   fast-uri@3.1.0:
     resolution: {integrity: sha512-iPeeDKJSWf4IEOasVVrknXpaBV0IApz/gp7S2bb7Z4Lljbl2MGJRqInZiUrQwV16cpzw/D3S5j5Julj/gT52AA==}
+
+  fast-wrap-ansi@0.2.2:
+    resolution: {integrity: sha512-7F2Fl+TjRSenLqlU3UjSH0iyqopqoZIu7eZVpEirP2g1GtWa2G/ecEmBdgz31+Mxr+ELclgg6sokpSFIQiZ02Q==}
 
   fast-xml-parser@5.3.8:
     resolution: {integrity: sha512-53jIF4N6u/pxvaL1eb/hEZts/cFLWZ92eCfLrNyCI0k38lettCG/Bs40W9pPwoPXyHQlKu2OUbQtiEIZK/J6Vw==}
@@ -4317,6 +4403,10 @@ packages:
 
   ipaddr.js@2.3.0:
     resolution: {integrity: sha512-Zv/pA+ciVFbCSBBjGfaKUya/CcGmUHzTydLMaTwrUUEM2DIEO3iZvueGxmacvmN50fGpGVKeTXpb2LcYQxeVdg==}
+    engines: {node: '>= 10'}
+
+  ipaddr.js@2.4.0:
+    resolution: {integrity: sha512-9VGk3HGanVE6JoZXHiCpnGy5X0jYDnN4EA4lntFPj+1vIWlFhIylq2CrrCOJH9EAhc5CYhq18F2Av2tgoAPsYQ==}
     engines: {node: '>= 10'}
 
   ircv3@0.33.0:
@@ -6762,9 +6852,21 @@ snapshots:
     dependencies:
       sisteransi: 1.0.5
 
+  '@clack/core@1.3.1':
+    dependencies:
+      fast-wrap-ansi: 0.2.2
+      sisteransi: 1.0.5
+
   '@clack/prompts@1.1.0':
     dependencies:
       '@clack/core': 1.1.0
+      sisteransi: 1.0.5
+
+  '@clack/prompts@1.4.0':
+    dependencies:
+      '@clack/core': 1.3.1
+      fast-string-width: 3.0.2
+      fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
   '@cloudflare/workers-types@4.20260120.0':
@@ -9750,7 +9852,7 @@ snapshots:
     dependencies:
       domelementtype: 2.3.0
 
-  dompurify@3.4.6:
+  dompurify@3.4.7:
     optionalDependencies:
       '@types/trusted-types': 2.0.7
 
@@ -10011,7 +10113,17 @@ snapshots:
 
   fast-sha256@1.3.0: {}
 
+  fast-string-truncated-width@3.0.3: {}
+
+  fast-string-width@3.0.2:
+    dependencies:
+      fast-string-truncated-width: 3.0.3
+
   fast-uri@3.1.0: {}
+
+  fast-wrap-ansi@0.2.2:
+    dependencies:
+      fast-string-width: 3.0.2
 
   fast-xml-parser@5.3.8:
     dependencies:
@@ -10378,6 +10490,8 @@ snapshots:
   ipaddr.js@1.9.1: {}
 
   ipaddr.js@2.3.0: {}
+
+  ipaddr.js@2.4.0: {}
 
   ircv3@0.33.0:
     dependencies:
@@ -11734,7 +11848,7 @@ snapshots:
 
   skillflag@0.1.4:
     dependencies:
-      '@clack/prompts': 1.1.0
+      '@clack/prompts': 1.4.0
       tar-stream: 3.2.0
     transitivePeerDependencies:
       - bare-abort-controller

@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 
 export function hasExpectedToolNonce(text: string, nonceA: string, nonceB: string): boolean {
   return text.includes(nonceA) && text.includes(nonceB);
@@ -29,9 +29,9 @@ const NONCE_REFUSAL_MARKERS = [
   "no read tool available",
   "won't output",
   "won’t output",
-  "isn't a real openclaw probe",
-  "is not a real openclaw probe",
-  "not a real openclaw probe",
+  "isn't a real remoteclaw probe",
+  "is not a real remoteclaw probe",
+  "not a real remoteclaw probe",
   "no part of the system asks me",
 ];
 

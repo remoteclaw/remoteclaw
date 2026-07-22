@@ -26,7 +26,7 @@ extension SettingsProTab {
                 ProValuePill(value: value, color: color)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     var diagnosticChecksCard: some View {
@@ -44,45 +44,45 @@ extension SettingsProTab {
                     title: "Gateway Link",
                     detail: self.appModel.gatewayDisplayStatusText,
                     value: self.gatewayConnected ? "online" : "offline",
-                    color: self.gatewayConnected ? OpenClawBrand.ok : .secondary)
+                    color: self.gatewayConnected ? RemoteClawBrand.ok : .secondary)
                 Divider().padding(.leading, 60)
                 self.diagnosticCheckRow(
                     icon: "dot.radiowaves.left.and.right",
                     title: "Discovery",
                     detail: self.gatewayController.discoveryStatusText,
                     value: "\(self.gatewayController.gateways.count)",
-                    color: self.gatewayController.gateways.isEmpty ? .secondary : OpenClawBrand.accent)
+                    color: self.gatewayController.gateways.isEmpty ? .secondary : RemoteClawBrand.accent)
                 Divider().padding(.leading, 60)
                 self.diagnosticCheckRow(
                     icon: "waveform",
                     title: "Talk Config",
                     detail: self.appModel.talkMode.gatewayTalkTransportLabel,
                     value: self.appModel.talkMode.gatewayTalkConfigLoaded ? "loaded" : "missing",
-                    color: self.appModel.talkMode.gatewayTalkConfigLoaded ? OpenClawBrand.ok : .secondary)
+                    color: self.appModel.talkMode.gatewayTalkConfigLoaded ? RemoteClawBrand.ok : .secondary)
                 Divider().padding(.leading, 60)
                 self.diagnosticCheckRow(
                     icon: "bell",
                     title: "Notifications",
                     detail: "Approval and event alert channel",
                     value: self.notificationStatusText,
-                    color: self.notificationStatusText == "Allowed" ? OpenClawBrand.ok : .secondary)
+                    color: self.notificationStatusText == "Allowed" ? RemoteClawBrand.ok : .secondary)
                 Divider().padding(.leading, 60)
                 self.diagnosticCheckRow(
                     icon: "rectangle.on.rectangle",
                     title: "Screen Capture",
                     detail: "Live foreground capture state",
                     value: self.appModel.screenRecordActive ? "live" : "idle",
-                    color: self.appModel.screenRecordActive ? OpenClawBrand.ok : .secondary)
+                    color: self.appModel.screenRecordActive ? RemoteClawBrand.ok : .secondary)
                 Divider().padding(.leading, 60)
                 self.diagnosticCheckRow(
                     icon: "mic",
                     title: "Voice Wake",
                     detail: self.appModel.voiceWake.statusText,
                     value: self.voiceWakeEnabled ? "on" : "off",
-                    color: self.voiceWakeEnabled ? OpenClawBrand.ok : .secondary)
+                    color: self.voiceWakeEnabled ? RemoteClawBrand.ok : .secondary)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     func diagnosticCheckRow(
@@ -113,7 +113,7 @@ extension SettingsProTab {
         ProCard(padding: 0, radius: SettingsLayout.cardRadius) {
             VStack(spacing: 0, content: content)
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     func detailRow(_ label: String, value: String) -> some View {
@@ -202,17 +202,29 @@ extension SettingsProTab {
         await self.connectManual()
     }
 
+    func applyPendingGatewaySetupLinkIfNeeded() {
+        guard let link = self.appModel.consumePendingGatewaySetupLink() else { return }
+        self.setupCode = ""
+        self.setupStatusText = nil
+        self.stagedGatewaySetupLink = link
+        let security = link.tls ? "TLS" : "plain"
+        self.setupStatusText = "Setup link loaded for \(link.host):\(link.port) (\(security)). Tap Connect to apply."
+    }
+
     @discardableResult
     func applySetupCode() -> Bool {
         let raw = self.setupCode.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !raw.isEmpty else {
+        let stagedLink = self.stagedGatewaySetupLink
+        guard !raw.isEmpty || stagedLink != nil else {
             self.setupStatusText = "Paste a setup code to continue."
             return false
         }
-        guard let link = GatewayConnectDeepLink.fromSetupInput(raw) else {
+
+        guard let link = raw.isEmpty ? stagedLink : GatewayConnectDeepLink.fromSetupInput(raw) else {
             self.setupStatusText = "Setup code not recognized or uses an insecure ws:// gateway URL."
             return false
         }
+        self.stagedGatewaySetupLink = nil
         self.applyGatewayLink(link)
         return true
     }
@@ -299,7 +311,7 @@ extension SettingsProTab {
         let trimmed = host.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return false }
         if Self.isTailnetHostOrIP(trimmed), !Self.hasTailnetIPv4() {
-            self.setupStatusText = "Tailscale is off on this iPhone. Turn it on, then try again."
+            self.setupStatusText = "Tailscale is off on this device. Turn it on, then try again."
             return false
         }
         self.setupStatusText = "Checking gateway reachability..."
@@ -355,7 +367,7 @@ extension SettingsProTab {
     func handleLocationModeChange(_ newValue: String) {
         guard !self.isChangingLocationMode else { return }
         guard newValue != self.previousLocationModeRaw else { return }
-        guard let mode = OpenClawLocationMode(rawValue: newValue) else { return }
+        guard let mode = RemoteClawLocationMode(rawValue: newValue) else { return }
         let previous = self.previousLocationModeRaw
         Task {
             await self.applyLocationMode(mode, rawValue: newValue, previous: previous)
@@ -364,7 +376,7 @@ extension SettingsProTab {
 
     @MainActor
     func applyLocationMode(
-        _ mode: OpenClawLocationMode,
+        _ mode: RemoteClawLocationMode,
         rawValue: String,
         previous: String) async
     {
@@ -510,16 +522,21 @@ extension SettingsProTab {
         return gatewayStatus
     }
 
+    var canApplyGatewaySetup: Bool {
+        !self.setupCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || self.stagedGatewaySetupLink != nil
+    }
+
     var tailnetWarningText: String? {
         let host = self.manualGatewayHost.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !host.isEmpty, Self.isTailnetHostOrIP(host), !Self.hasTailnetIPv4() else { return nil }
-        return "This gateway is on your tailnet. Turn on Tailscale on this iPhone, then tap Connect."
+        return "This gateway is on your tailnet. Turn on Tailscale on this device, then tap Connect."
     }
 
     func friendlyGatewayMessage(from raw: String) -> String? {
         let lower = raw.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         if lower.contains("pairing required") {
-            return "Pairing required. Run /pair approve in your OpenClaw chat, then connect again."
+            return "Pairing required. Run /pair approve in your RemoteClaw chat, then connect again."
         }
         if lower.contains("device nonce required") || lower.contains("device nonce mismatch") {
             return "Secure handshake failed. Check Tailscale, then connect again."
@@ -593,13 +610,13 @@ extension SettingsProTab {
     }
 
     var gatewayServer: String {
-        self.appModel.gatewayServerName ?? "OpenClaw Gateway"
+        self.appModel.gatewayServerName ?? "RemoteClaw Gateway"
     }
 
     var permissionsDetail: String {
         var enabled = 0
         if self.cameraEnabled { enabled += 1 }
-        if self.locationModeRaw != OpenClawLocationMode.off.rawValue { enabled += 1 }
+        if self.locationModeRaw != RemoteClawLocationMode.off.rawValue { enabled += 1 }
         if self.preventSleep { enabled += 1 }
         return "\(enabled) enabled"
     }
@@ -628,16 +645,16 @@ extension SettingsProTab {
 
     var diagnosticsRunColor: Color {
         guard let diagnosticsIssueCount else { return .secondary }
-        return diagnosticsIssueCount == 0 ? OpenClawBrand.ok : OpenClawBrand.warn
+        return diagnosticsIssueCount == 0 ? RemoteClawBrand.ok : RemoteClawBrand.warn
     }
 
     var privacyDetail: String {
-        let location = OpenClawLocationMode(rawValue: self.locationModeRaw) ?? .off
+        let location = RemoteClawLocationMode(rawValue: self.locationModeRaw) ?? .off
         return location == .off ? "Location off" : "Location \(self.locationLabel)"
     }
 
     var locationLabel: String {
-        switch OpenClawLocationMode(rawValue: self.locationModeRaw) ?? .off {
+        switch RemoteClawLocationMode(rawValue: self.locationModeRaw) ?? .off {
         case .off: "Off"
         case .whileUsing: "While Using"
         case .always: "Always"

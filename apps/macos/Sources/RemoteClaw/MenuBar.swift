@@ -8,11 +8,11 @@ import Security
 import SwiftUI
 
 @main
-struct OpenClawApp: App {
+struct RemoteClawApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
     @Environment(\.openWindow) private var openWindow
     @State private var state: AppState
-    private static let logger = Logger(subsystem: "ai.openclaw", category: "app")
+    private static let logger = Logger(subsystem: "org.remoteclaw", category: "app")
     private let gatewayManager = GatewayProcessManager.shared
     private let controlChannel = ControlChannel.shared
     private let activityStore = WorkActivityStore.shared
@@ -33,7 +33,7 @@ struct OpenClawApp: App {
     }
 
     init() {
-        OpenClawLogging.bootstrapIfNeeded()
+        RemoteClawLogging.bootstrapIfNeeded()
 
         Self.applyAttachOnlyOverrideIfNeeded()
         _state = State(initialValue: AppStateStore.shared)
@@ -55,6 +55,13 @@ struct OpenClawApp: App {
                 .background(SettingsWindowOpenRegistrar())
         }
         .menuBarExtraAccess(isPresented: self.$isMenuPresented) { item in
+            // SwiftUI can vend a replacement status item during connection churn.
+            // Keep ownership to one item so stale menu bar icons are removed.
+            if let currentStatusItem = self.statusItem {
+                guard currentStatusItem !== item else { return }
+                Self.logger.warning("Replacing stale menu bar status item")
+                NSStatusBar.system.removeStatusItem(currentStatusItem)
+            }
             self.statusItem = item
             MenuSessionsInjector.shared.install(into: item)
             self.applyStatusItemAppearance(paused: self.state.isPaused, sleeping: self.isGatewaySleeping)
@@ -84,7 +91,7 @@ struct OpenClawApp: App {
             CLIInstallPrompter.shared.checkAndPromptIfNeeded(reason: "connection-mode")
         }
 
-        Window("OpenClaw Settings", id: SettingsWindowOpener.windowID) {
+        Window("RemoteClaw Settings", id: SettingsWindowOpener.windowID) {
             SettingsRootView(state: self.state, updater: self.delegate.updaterController)
                 .frame(width: SettingsTab.windowWidth, height: SettingsTab.windowHeight, alignment: .topLeading)
                 .environment(self.tailscaleService)
@@ -112,8 +119,8 @@ struct OpenClawApp: App {
         // leak into menu item validation and grey out app-level commands like Settings.
         self.statusItem?.button?.appearsDisabled = false
         self.statusItem?.button?.toolTip = self.state.voiceWakeMeterActive
-            ? "OpenClaw - Voice Wake live meter active"
-            : "OpenClaw"
+            ? "RemoteClaw - Voice Wake live meter active"
+            : "RemoteClaw"
     }
 
     private static func applyAttachOnlyOverrideIfNeeded() {
@@ -268,7 +275,7 @@ private struct SettingsWindowOpenRegistrar: View {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var state: AppState?
-    private let webChatAutoLogger = Logger(subsystem: "ai.openclaw", category: "Chat")
+    private let webChatAutoLogger = Logger(subsystem: "org.remoteclaw", category: "Chat")
     let updaterController: UpdaterProviding = makeUpdaterController()
 
     func applicationDockMenu(_: NSApplication) -> NSMenu? {

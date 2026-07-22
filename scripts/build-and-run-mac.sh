@@ -5,6 +5,7 @@ cd "$(dirname "$0")/../apps/macos"
 BUILD_PATH=".build-local"
 PRODUCT="RemoteClaw"
 BIN="$BUILD_PATH/debug/$PRODUCT"
+LOG_PATH="${REMOTECLAW_MAC_RUN_LOG:-$(mktemp "${TMPDIR:-/tmp}/remoteclaw-${PRODUCT}.XXXXXX.log")}"
 
 printf "\n▶️  Building $PRODUCT (debug, build path: $BUILD_PATH)\n"
 swift build -c debug --product "$PRODUCT" --build-path "$BUILD_PATH"
@@ -13,6 +14,6 @@ printf "\n⏹  Stopping existing $PRODUCT...\n"
 killall -q "$PRODUCT" 2>/dev/null || true
 
 printf "\n🚀 Launching $BIN ...\n"
-nohup "$BIN" >/tmp/remoteclaw.log 2>&1 &
+nohup "$BIN" >"$LOG_PATH" 2>&1 &
 PID=$!
-printf "Started $PRODUCT (PID $PID). Logs: /tmp/remoteclaw.log\n"
+printf "Started $PRODUCT (PID $PID). Logs: $LOG_PATH\n"

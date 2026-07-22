@@ -7,7 +7,7 @@ read_when:
 title: "Session management deep dive"
 ---
 
-OpenClaw manages sessions end-to-end across these areas:
+RemoteClaw manages sessions end-to-end across these areas:
 
 - **Session routing** (how inbound messages map to a `sessionKey`)
 - **Session store** (`sessions.json`) and what it tracks
@@ -30,7 +30,7 @@ If you want a higher-level overview first, start with:
 
 ## Source of truth: the Gateway
 
-OpenClaw is designed around a single **Gateway process** that owns session state.
+RemoteClaw is designed around a single **Gateway process** that owns session state.
 
 - UIs (macOS app, web Control UI, TUI) should query the Gateway for session lists and token counts.
 - In remote mode, session files are on the remote host; "checking your local Mac files" won't reflect what the Gateway is using.
@@ -39,7 +39,7 @@ OpenClaw is designed around a single **Gateway process** that owns session state
 
 ## Two persistence layers
 
-OpenClaw persists sessions in two layers:
+RemoteClaw persists sessions in two layers:
 
 1. **Session store (`sessions.json`)**
    - Key/value map: `sessionKey -> SessionEntry`
@@ -66,11 +66,11 @@ cached by file path plus `mtimeMs`/`size` and shared across concurrent readers.
 
 Per agent, on the Gateway host:
 
-- Store: `~/.openclaw/agents/<agentId>/sessions/sessions.json`
-- Transcripts: `~/.openclaw/agents/<agentId>/sessions/<sessionId>.jsonl`
+- Store: `~/.remoteclaw/agents/<agentId>/sessions/sessions.json`
+- Transcripts: `~/.remoteclaw/agents/<agentId>/sessions/<sessionId>.jsonl`
   - Telegram topic sessions: `.../<sessionId>-topic-<threadId>.jsonl`
 
-OpenClaw resolves these via `src/config/sessions.ts`.
+RemoteClaw resolves these via `src/config/sessions.ts`.
 
 ---
 
@@ -85,14 +85,14 @@ Session persistence has automatic maintenance controls (`session.maintenance`) f
 - `maxDiskBytes`: optional sessions-directory budget
 - `highWaterBytes`: optional target after cleanup (default `80%` of `maxDiskBytes`)
 
-Normal Gateway writes flow through a per-store session writer that serializes in-process mutations without taking a runtime file lock. Hot-path patch helpers borrow the validated mutable cache while they hold that writer slot, so large `sessions.json` files are not cloned or reread for every metadata update. Runtime code should prefer `updateSessionStore(...)` or `updateSessionStoreEntry(...)`; direct whole-store saves are compatibility and offline-maintenance tools. When a Gateway is reachable, non-dry-run `openclaw sessions cleanup` and `openclaw agents delete` delegate store mutations to the Gateway so cleanup joins the same writer queue; `--store <path>` is the explicit offline repair path for direct file maintenance. `maxEntries` cleanup is still batched for production-sized caps, so a store may briefly exceed the configured cap before the next high-water cleanup rewrites it back down. Session store reads do not prune or cap entries during Gateway startup; use writes or `openclaw sessions cleanup --enforce` for cleanup. `openclaw sessions cleanup --enforce` still applies the configured cap immediately and prunes old unreferenced transcript, checkpoint, and trajectory artifacts even when no disk budget is configured.
+Normal Gateway writes flow through a per-store session writer that serializes in-process mutations without taking a runtime file lock. Hot-path patch helpers borrow the validated mutable cache while they hold that writer slot, so large `sessions.json` files are not cloned or reread for every metadata update. Runtime code should prefer `updateSessionStore(...)` or `updateSessionStoreEntry(...)`; direct whole-store saves are compatibility and offline-maintenance tools. When a Gateway is reachable, non-dry-run `remoteclaw sessions cleanup` and `remoteclaw agents delete` delegate store mutations to the Gateway so cleanup joins the same writer queue; `--store <path>` is the explicit offline repair path for direct file maintenance. `maxEntries` cleanup is still batched for production-sized caps, so a store may briefly exceed the configured cap before the next high-water cleanup rewrites it back down. Session store reads do not prune or cap entries during Gateway startup; use writes or `remoteclaw sessions cleanup --enforce` for cleanup. `remoteclaw sessions cleanup --enforce` still applies the configured cap immediately and prunes old unreferenced transcript, checkpoint, and trajectory artifacts even when no disk budget is configured.
 
 Maintenance keeps durable external conversation pointers such as group sessions
 and thread-scoped chat sessions, but synthetic runtime entries for cron, hooks,
 heartbeat, ACP, and sub-agents can still be removed when they exceed the
 configured age, count, or disk budget.
 
-OpenClaw no longer creates automatic `sessions.json.bak.*` rotation backups during Gateway writes. The legacy `session.maintenance.rotateBytes` key is ignored and `openclaw doctor --fix` removes it from older configs.
+RemoteClaw no longer creates automatic `sessions.json.bak.*` rotation backups during Gateway writes. The legacy `session.maintenance.rotateBytes` key is ignored and `remoteclaw doctor --fix` removes it from older configs.
 
 Transcript mutations use a session write lock on the transcript file. Lock acquisition waits up to
 `session.writeLock.acquireTimeoutMs` before surfacing a busy-session error; the default is `60000`
@@ -100,8 +100,8 @@ ms. Raise this only when legitimate prep, cleanup, compaction, or transcript mir
 longer on slow machines. `session.writeLock.staleMs` controls when an existing lock can be
 reclaimed as stale; the default is `1800000` ms. `session.writeLock.maxHoldMs` controls the
 in-process watchdog release threshold; the default is `300000` ms. Emergency env overrides are
-`OPENCLAW_SESSION_WRITE_LOCK_ACQUIRE_TIMEOUT_MS`, `OPENCLAW_SESSION_WRITE_LOCK_STALE_MS`, and
-`OPENCLAW_SESSION_WRITE_LOCK_MAX_HOLD_MS`.
+`REMOTECLAW_SESSION_WRITE_LOCK_ACQUIRE_TIMEOUT_MS`, `REMOTECLAW_SESSION_WRITE_LOCK_STALE_MS`, and
+`REMOTECLAW_SESSION_WRITE_LOCK_MAX_HOLD_MS`.
 
 Enforcement order for disk budget cleanup (`mode: "enforce"`):
 
@@ -109,13 +109,13 @@ Enforcement order for disk budget cleanup (`mode: "enforce"`):
 2. If still above the target, evict oldest session entries and their transcript/trajectory files.
 3. Keep going until usage is at or below `highWaterBytes`.
 
-In `mode: "warn"`, OpenClaw reports potential evictions but does not mutate the store/files.
+In `mode: "warn"`, RemoteClaw reports potential evictions but does not mutate the store/files.
 
 Run maintenance on demand:
 
 ```bash
-openclaw sessions cleanup --dry-run
-openclaw sessions cleanup --enforce
+remoteclaw sessions cleanup --dry-run
+remoteclaw sessions cleanup --enforce
 ```
 
 ---
@@ -125,7 +125,7 @@ openclaw sessions cleanup --enforce
 Isolated cron runs also create session entries/transcripts, and they have dedicated retention controls:
 
 - `cron.sessionRetention` (default `24h`) prunes old isolated cron run sessions from the session store (`false` disables).
-- `cron.runLog.maxBytes` + `cron.runLog.keepLines` prune `~/.openclaw/cron/runs/<jobId>.jsonl` files (defaults: `2_000_000` bytes and `2000` lines).
+- `cron.runLog.keepLines` prunes retained SQLite run-history rows per cron job (default: `2000`). `cron.runLog.maxBytes` remains accepted for older file-backed run logs.
 
 When cron force-creates a new isolated run session, it sanitizes the previous
 `cron:<jobId>` session entry before writing the new row. It carries safe
@@ -163,7 +163,7 @@ Rules of thumb:
 - **Daily reset** (default 4:00 AM local time on the gateway host) creates a new `sessionId` on the next message after the reset boundary.
 - **Idle expiry** (`session.reset.idleMinutes` or legacy `session.idleMinutes`) creates a new `sessionId` when a message arrives after the idle window. When daily + idle are both configured, whichever expires first wins.
 - **System events** (heartbeat, cron wakeups, exec notifications, gateway bookkeeping) may mutate the session row but do not extend daily/idle reset freshness. Reset rollover discards queued system-event notices for the previous session before the fresh prompt is built.
-- **Parent fork policy** uses OpenClaw's active branch when creating a thread or subagent fork. If that branch is too large, OpenClaw starts the child with isolated context instead of failing or inheriting unusable history. The sizing policy is automatic; legacy `session.parentForkMaxTokens` config is removed by `openclaw doctor --fix`.
+- **Parent fork policy** uses RemoteClaw's active branch when creating a thread or subagent fork. If that branch is too large, RemoteClaw starts the child with isolated context instead of failing or inheriting unusable history. The sizing policy is automatic; legacy `session.parentForkMaxTokens` config is removed by `remoteclaw doctor --fix`.
 
 Implementation detail: the decision happens in `initSessionState()` in `src/auto-reply/reply/session.ts`.
 
@@ -204,7 +204,7 @@ The store is safe to edit, but the Gateway is the authority: it may rewrite or r
 
 ## Transcript structure (`*.jsonl`)
 
-Transcripts are managed by `openclaw/plugin-sdk/agent-sessions`'s `SessionManager`.
+Transcripts are managed by `remoteclaw/plugin-sdk/agent-sessions`'s `SessionManager`.
 
 The file is JSONL:
 
@@ -219,7 +219,7 @@ Notable entry types:
 - `compaction`: persisted compaction summary with `firstKeptEntryId` and `tokensBefore`
 - `branch_summary`: persisted summary when navigating a tree branch
 
-OpenClaw intentionally does **not** "fix up" transcripts; the Gateway uses `SessionManager` to read/write them.
+RemoteClaw intentionally does **not** "fix up" transcripts; the Gateway uses `SessionManager` to read/write them.
 
 ---
 
@@ -250,39 +250,39 @@ After compaction, future turns see:
 
 AGENTS.md section reinjection after compaction is opt-in via
 `agents.defaults.compaction.postCompactionSections`; when unset or `[]`,
-OpenClaw does not append AGENTS.md excerpts on top of the compaction summary.
+RemoteClaw does not append AGENTS.md excerpts on top of the compaction summary.
 
 Compaction is **persistent** (unlike session pruning). See [/concepts/session-pruning](/concepts/session-pruning).
 
 ## Compaction chunk boundaries and tool pairing
 
-When OpenClaw splits a long transcript into compaction chunks, it keeps
+When RemoteClaw splits a long transcript into compaction chunks, it keeps
 assistant tool calls paired with their matching `toolResult` entries.
 
-- If the token-share split lands between a tool call and its result, OpenClaw
+- If the token-share split lands between a tool call and its result, RemoteClaw
   shifts the boundary to the assistant tool-call message instead of separating
   the pair.
 - If a trailing tool-result block would otherwise push the chunk over target,
-  OpenClaw preserves that pending tool block and keeps the unsummarized tail
+  RemoteClaw preserves that pending tool block and keeps the unsummarized tail
   intact.
 - Aborted/error tool-call blocks do not hold a pending split open.
 
 ---
 
-## When auto-compaction happens (OpenClaw runtime)
+## When auto-compaction happens (RemoteClaw runtime)
 
-In the embedded OpenClaw agent, auto-compaction triggers in two cases:
+In the embedded RemoteClaw agent, auto-compaction triggers in two cases:
 
 1. **Overflow recovery**: the model returns a context overflow error
    (`request_too_large`, `context length exceeded`, `input exceeds the maximum
 number of tokens`, `input token count exceeds the maximum number of input
 tokens`, `input is too long for the model`, `ollama error: context length
 exceeded`, and similar provider-shaped variants) → compact → retry.
-   When the provider reports the attempted token count, OpenClaw forwards that
+   When the provider reports the attempted token count, RemoteClaw forwards that
    observed count into overflow recovery compaction. If the provider confirms
-   overflow but does not expose a parseable count, OpenClaw passes a minimally
+   overflow but does not expose a parseable count, RemoteClaw passes a minimally
    over-budget synthetic count to compaction engines and diagnostics.
-   If overflow recovery still fails, OpenClaw surfaces explicit guidance to the
+   If overflow recovery still fails, RemoteClaw surfaces explicit guidance to the
    user and preserves the current session mapping instead of silently rotating
    the session key to a fresh session id. The next step is operator-controlled:
    retry the message, run `/compact`, or run `/new` when a fresh session is
@@ -296,34 +296,34 @@ Where:
 - `contextWindow` is the model's context window
 - `reserveTokens` is headroom reserved for prompts + the next model output
 
-These are OpenClaw runtime semantics.
+These are RemoteClaw runtime semantics.
 
-OpenClaw can also trigger a preflight local compaction before opening the next
+RemoteClaw can also trigger a preflight local compaction before opening the next
 run when `agents.defaults.compaction.maxActiveTranscriptBytes` is set and the
 active transcript file reaches that size. This is a file-size guard for local
-reopen cost, not raw archival: OpenClaw still runs normal semantic compaction,
+reopen cost, not raw archival: RemoteClaw still runs normal semantic compaction,
 and it requires `truncateAfterCompaction` so the compacted summary can become a
 new successor transcript.
 
-For embedded OpenClaw runs, `agents.defaults.compaction.midTurnPrecheck.enabled: true`
+For embedded RemoteClaw runs, `agents.defaults.compaction.midTurnPrecheck.enabled: true`
 adds an opt-in tool-loop guard. After a tool result is appended and before the
-next model call, OpenClaw estimates the prompt pressure using the same preflight
+next model call, RemoteClaw estimates the prompt pressure using the same preflight
 budget logic used at turn start. If the context no longer fits, the guard does
-not compact inside OpenClaw runtime's `transformContext` hook. It raises a structured
+not compact inside RemoteClaw runtime's `transformContext` hook. It raises a structured
 mid-turn precheck signal, stops the current prompt submission, and lets the
 outer run loop use the existing recovery path: truncate oversized tool results
 when that is enough, or trigger the configured compaction mode and retry. The
 option is disabled by default and works with both `default` and `safeguard`
 compaction modes, including provider-backed safeguard compaction.
 This is independent of `maxActiveTranscriptBytes`: the byte-size guard runs
-before a turn opens, while mid-turn precheck runs later in the embedded OpenClaw tool
+before a turn opens, while mid-turn precheck runs later in the embedded RemoteClaw tool
 loop after new tool results have been appended.
 
 ---
 
 ## Compaction settings (`reserveTokens`, `keepRecentTokens`)
 
-OpenClaw runtime's compaction settings live in agent settings:
+RemoteClaw runtime's compaction settings live in agent settings:
 
 ```json5
 {
@@ -335,14 +335,14 @@ OpenClaw runtime's compaction settings live in agent settings:
 }
 ```
 
-OpenClaw also enforces a safety floor for embedded runs:
+RemoteClaw also enforces a safety floor for embedded runs:
 
-- If `compaction.reserveTokens < reserveTokensFloor`, OpenClaw bumps it.
+- If `compaction.reserveTokens < reserveTokensFloor`, RemoteClaw bumps it.
 - Default floor is `20000` tokens.
 - Set `agents.defaults.compaction.reserveTokensFloor: 0` to disable the floor.
-- If it's already higher, OpenClaw leaves it alone.
+- If it's already higher, RemoteClaw leaves it alone.
 - Manual `/compact` honors an explicit `agents.defaults.compaction.keepRecentTokens`
-  and keeps OpenClaw runtime's recent-tail cut point. Without an explicit keep budget,
+  and keeps RemoteClaw runtime's recent-tail cut point. Without an explicit keep budget,
   manual compaction remains a hard checkpoint and rebuilt context starts from
   the new summary.
 - Set `agents.defaults.compaction.midTurnPrecheck.enabled: true` to run the
@@ -356,7 +356,7 @@ OpenClaw also enforces a safety floor for embedded runs:
   `truncateAfterCompaction` is also enabled. Leave it unset or set `0` to
   disable.
 - When `agents.defaults.compaction.truncateAfterCompaction` is enabled,
-  OpenClaw rotates the active transcript to a compacted successor JSONL after
+  RemoteClaw rotates the active transcript to a compacted successor JSONL after
   compaction. Branch/restore checkpoint actions use that compacted successor;
   legacy pre-compaction checkpoint files remain readable while referenced.
 
@@ -379,7 +379,7 @@ Plugins can register a compaction provider via `registerCompactionProvider()` on
   instead of preserving the full previous summary verbatim.
 - Safeguard mode enables summary quality audits by default; set
   `qualityGuard.enabled: false` to skip retry-on-malformed-output behavior.
-- If the provider fails or returns an empty result, OpenClaw falls back to built-in LLM summarization automatically.
+- If the provider fails or returns an empty result, RemoteClaw falls back to built-in LLM summarization automatically.
 - Abort/timeout signals are re-thrown (not swallowed) to respect caller cancellation.
 
 Source: `src/plugins/compaction-provider.ts`, `src/agents/agent-hooks/compaction-safeguard.ts`.
@@ -391,28 +391,28 @@ Source: `src/plugins/compaction-provider.ts`, `src/agents/agent-hooks/compaction
 You can observe compaction and session state via:
 
 - `/status` (in any chat session)
-- `openclaw status` (CLI)
-- `openclaw sessions` / `sessions --json`
-- Gateway logs (`pnpm gateway:watch` or `openclaw logs --follow`): `embedded run auto-compaction start` + `complete`
+- `remoteclaw status` (CLI)
+- `remoteclaw sessions` / `sessions --json`
+- Gateway logs (`pnpm gateway:watch` or `remoteclaw logs --follow`): `embedded run auto-compaction start` + `complete`
 - Verbose mode: `🧹 Auto-compaction complete` + compaction count
 
 ---
 
 ## Silent housekeeping (`NO_REPLY`)
 
-OpenClaw supports "silent" turns for background tasks where the user should not see intermediate output.
+RemoteClaw supports "silent" turns for background tasks where the user should not see intermediate output.
 
 Convention:
 
 - The assistant starts its output with the exact silent token `NO_REPLY` /
   `no_reply` to indicate "do not deliver a reply to the user".
-- OpenClaw strips/suppresses this in the delivery layer.
+- RemoteClaw strips/suppresses this in the delivery layer.
 - Exact silent-token suppression is case-insensitive, so `NO_REPLY` and
   `no_reply` both count when the whole payload is just the silent token.
 - This is for true background/no-delivery turns only; it is not a shortcut for
   ordinary actionable user requests.
 
-As of `2026.1.10`, OpenClaw also suppresses **draft/typing streaming** when a
+As of `2026.1.10`, RemoteClaw also suppresses **draft/typing streaming** when a
 partial chunk begins with `NO_REPLY`, so silent operations don't leak partial
 output mid-turn.
 
@@ -424,10 +424,10 @@ Goal: before auto-compaction happens, run a silent agentic turn that writes dura
 state to disk (e.g. `memory/YYYY-MM-DD.md` in the agent workspace) so compaction can't
 erase critical context.
 
-OpenClaw uses the **pre-threshold flush** approach:
+RemoteClaw uses the **pre-threshold flush** approach:
 
 1. Monitor session context usage.
-2. When it crosses a "soft threshold" (below OpenClaw runtime's compaction threshold), run a silent
+2. When it crosses a "soft threshold" (below RemoteClaw runtime's compaction threshold), run a silent
    "write memory now" directive to the agent.
 3. Use the exact silent token `NO_REPLY` / `no_reply` so the user sees
    nothing.
@@ -448,11 +448,11 @@ Notes:
   active session fallback chain, so local-only housekeeping does not silently
   fall back to a paid conversation model.
 - The flush runs once per compaction cycle (tracked in `sessions.json`).
-- The flush runs only for embedded OpenClaw sessions (CLI backends skip it).
+- The flush runs only for embedded RemoteClaw sessions (CLI backends skip it).
 - The flush is skipped when the session workspace is read-only (`workspaceAccess: "ro"` or `"none"`).
 - See [Memory](/concepts/memory) for the workspace file layout and write patterns.
 
-OpenClaw also exposes a `session_before_compact` hook in the extension API, but OpenClaw's
+RemoteClaw also exposes a `session_before_compact` hook in the extension API, but RemoteClaw's
 flush logic lives on the Gateway side today.
 
 ---
@@ -460,7 +460,7 @@ flush logic lives on the Gateway side today.
 ## Troubleshooting checklist
 
 - Session key wrong? Start with [/concepts/session](/concepts/session) and confirm the `sessionKey` in `/status`.
-- Store vs transcript mismatch? Confirm the Gateway host and the store path from `openclaw status`.
+- Store vs transcript mismatch? Confirm the Gateway host and the store path from `remoteclaw status`.
 - Compaction spam? Check:
   - model context window (too small)
   - compaction settings (`reserveTokens` too high for the model window can cause earlier compaction)

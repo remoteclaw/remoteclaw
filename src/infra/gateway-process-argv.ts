@@ -1,5 +1,5 @@
-import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
-import { normalizeStringEntries } from "../shared/string-normalization.js";
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";
 
 function normalizeProcArg(arg: string): string {
   return normalizeLowercaseStringOrEmpty(arg.replaceAll("\\", "/"));

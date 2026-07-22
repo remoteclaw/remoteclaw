@@ -1,7 +1,18 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { playwright } from "@vitest/browser-playwright";
 import { defineConfig } from "vitest/config";
+import { corePackageAliases } from "../scripts/lib/core-package-aliases.mjs";
+
+const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
 export default defineConfig({
+  resolve: {
+    // The adopted `@remoteclaw/*` workspace packages export built `dist/*.mjs`
+    // that the test lanes never build, so alias every declared export back to
+    // its `packages/<pkg>/src/**.ts` source — same as the root vitest config.
+    alias: corePackageAliases(repoRoot),
+  },
   // Pre-bundle the UI's own runtime deps up front. Vite's dep scanner crawls the
   // whole pnpm workspace — including extensions/* whose `remoteclaw/plugin-sdk/*`
   // imports don't resolve from the ui/ context — so the scan throws, auto

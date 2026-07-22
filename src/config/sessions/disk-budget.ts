@@ -3,7 +3,7 @@ import path from "node:path";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "../../shared/string-coerce.js";
+} from "@remoteclaw/normalization-core/string-coerce";
 import {
   isCompactionCheckpointTranscriptFileName,
   isPrimarySessionTranscriptFileName,

@@ -34,7 +34,7 @@ export function requiresLiveProfileCredential(
   provider: string,
   requireProfileKeys: boolean,
 ): boolean {
-  return requireProfileKeys || provider === "openai-codex";
+  return requireProfileKeys || provider === "openai";
 }
 
 export function resolveLiveCredentialPrecedence(

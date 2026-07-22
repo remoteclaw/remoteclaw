@@ -9,14 +9,14 @@ Status: text + DM attachments are supported; channel/group file sending requires
 
 ## Bundled plugin
 
-Microsoft Teams ships as a bundled plugin in current OpenClaw releases, so no
+Microsoft Teams ships as a bundled plugin in current RemoteClaw releases, so no
 separate install is required in the normal packaged build.
 
 If you are on an older build or a custom install that excludes bundled Teams,
 install the npm package directly:
 
 ```bash
-openclaw plugins install @remoteclaw/msteams
+remoteclaw plugins install @remoteclaw/msteams
 ```
 
 Use the bare package to follow the current official release tag. Pin an exact
@@ -25,7 +25,7 @@ version only when you need a reproducible install.
 Local checkout (when running from a git repo):
 
 ```bash
-openclaw plugins install ./path/to/local/msteams-plugin
+remoteclaw plugins install ./path/to/local/msteams-plugin
 ```
 
 Details: [Plugins](/tools/plugin)
@@ -52,11 +52,11 @@ Install and authenticate the devtunnel CLI if you haven't already ([getting star
 
 ```bash
 # One-time setup (persistent URL across sessions):
-devtunnel create my-openclaw-bot --allow-anonymous
-devtunnel port create my-openclaw-bot -p 3978 --protocol auto
+devtunnel create my-remoteclaw-bot --allow-anonymous
+devtunnel port create my-remoteclaw-bot -p 3978 --protocol auto
 
 # Each dev session:
-devtunnel host my-openclaw-bot
+devtunnel host my-remoteclaw-bot
 # Your endpoint: https://<tunnel-id>.devtunnels.ms/api/messages
 ```
 
@@ -70,7 +70,7 @@ Alternatives: `ngrok http 3978` or `tailscale funnel 3978` (but these may change
 
 ```bash
 teams app create \
-  --name "OpenClaw" \
+  --name "RemoteClaw" \
   --endpoint "https://<your-tunnel-url>/api/messages"
 ```
 
@@ -83,7 +83,7 @@ This single command:
 
 The output will show `CLIENT_ID`, `CLIENT_SECRET`, `TENANT_ID`, and a **Teams App ID** - note these for the next steps. It also offers to install the app in Teams directly.
 
-**4. Configure OpenClaw** using the credentials from the output:
+**4. Configure RemoteClaw** using the credentials from the output:
 
 ```json5
 {
@@ -125,7 +125,7 @@ Group chats are blocked by default (`channels.msteams.groupPolicy: "allowlist"`)
 
 ## Goals
 
-- Talk to OpenClaw via Teams DMs, group chats, or channels.
+- Talk to RemoteClaw via Teams DMs, group chats, or channels.
 - Keep routing deterministic: replies always go back to the channel they arrived on.
 - Default to safe channel behavior (mentions required unless configured otherwise).
 
@@ -147,7 +147,7 @@ Disable with:
 
 - Default: `channels.msteams.dmPolicy = "pairing"`. Unknown senders are ignored until approved.
 - `channels.msteams.allowFrom` should use stable AAD object IDs or static sender access groups such as `accessGroup:core-team`.
-- Do not rely on UPN/display-name matching for allowlists - they can change. OpenClaw disables direct name matching by default; opt in explicitly with `channels.msteams.dangerouslyAllowNameMatching: true`.
+- Do not rely on UPN/display-name matching for allowlists - they can change. RemoteClaw disables direct name matching by default; opt in explicitly with `channels.msteams.dangerouslyAllowNameMatching: true`.
 - The wizard can resolve names to IDs via Microsoft Graph when credentials allow.
 
 **Group access**
@@ -176,7 +176,7 @@ Example:
 - Keys should use stable Teams conversation IDs from Teams links, not mutable display names.
 - When `groupPolicy="allowlist"` and a teams allowlist is present, only listed teams/channels are accepted (mention-gated).
 - The configure wizard accepts `Team/Channel` entries and stores them for you.
-- On startup, OpenClaw resolves team/channel and user allowlist names to IDs (when Graph permissions allow)
+- On startup, RemoteClaw resolves team/channel and user allowlist names to IDs (when Graph permissions allow)
   and logs the mapping; unresolved team/channel names are kept as typed but ignored for routing by default unless `channels.msteams.dangerouslyAllowNameMatching: true` is enabled.
 
 Example:
@@ -217,14 +217,14 @@ If you can't use the Teams CLI, you can set up the bot manually through the Azur
 1. Go to [Create Azure Bot](https://portal.azure.com/#create/Microsoft.AzureBot)
 2. Fill in the **Basics** tab:
 
-   | Field              | Value                                                    |
-   | ------------------ | -------------------------------------------------------- |
-   | **Bot handle**     | Your bot name, e.g., `openclaw-msteams` (must be unique) |
-   | **Subscription**   | Select your Azure subscription                           |
-   | **Resource group** | Create new or use existing                               |
-   | **Pricing tier**   | **Free** for dev/testing                                 |
-   | **Type of App**    | **Single Tenant** (recommended - see note below)         |
-   | **Creation type**  | **Create new Microsoft App ID**                          |
+   | Field              | Value                                                      |
+   | ------------------ | ---------------------------------------------------------- |
+   | **Bot handle**     | Your bot name, e.g., `remoteclaw-msteams` (must be unique) |
+   | **Subscription**   | Select your Azure subscription                             |
+   | **Resource group** | Create new or use existing                                 |
+   | **Pricing tier**   | **Free** for dev/testing                                   |
+   | **Type of App**    | **Single Tenant** (recommended - see note below)           |
+   | **Creation type**  | **Create new Microsoft App ID**                            |
 
 <Warning>
 Creation of new multi-tenant bots was deprecated after 2025-07-31. Use **Single Tenant** for new bots.
@@ -262,7 +262,7 @@ Creation of new multi-tenant bots was deprecated after 2025-07-31. Use **Single 
 - Create icons: `outline.png` (32x32) and `color.png` (192x192).
 - Zip all three files together: `manifest.json`, `outline.png`, `color.png`.
 
-### Step 6: Configure OpenClaw
+### Step 6: Configure RemoteClaw
 
 ```json5
 {
@@ -290,7 +290,7 @@ The Teams channel starts automatically when the plugin is available and `msteams
 
 > Added in 2026.4.11
 
-For production deployments, OpenClaw supports **federated authentication** as a more secure alternative to client secrets. Two methods are available:
+For production deployments, RemoteClaw supports **federated authentication** as a more secure alternative to client secrets. Two methods are available:
 
 ### Option A: Certificate-based authentication
 
@@ -331,7 +331,7 @@ Use Azure Managed Identity for passwordless authentication. This is ideal for de
 
 1. The bot pod/VM has a managed identity (system-assigned or user-assigned).
 2. A **federated identity credential** links the managed identity to the Entra ID app registration.
-3. At runtime, OpenClaw uses `@azure/identity` to acquire tokens from the Azure IMDS endpoint (`169.254.169.254`).
+3. At runtime, RemoteClaw uses `@azure/identity` to acquire tokens from the Azure IMDS endpoint (`169.254.169.254`).
 4. The token is passed to the Teams SDK for bot authentication.
 
 **Prerequisites:**
@@ -426,7 +426,7 @@ For AKS deployments using workload identity:
 | **Certificate**      | `authType: "federated"` + `certificatePath`    | No shared secret over network      | Certificate management overhead       |
 | **Managed Identity** | `authType: "federated"` + `useManagedIdentity` | Passwordless, no secrets to manage | Azure infrastructure required         |
 
-**Default behavior:** When `authType` is not set, OpenClaw defaults to client secret authentication. Existing configurations continue to work without changes.
+**Default behavior:** When `authType` is not set, RemoteClaw defaults to client secret authentication. Existing configurations continue to work without changes.
 
 ## Local development (tunneling)
 
@@ -434,11 +434,11 @@ Teams can't reach `localhost`. Use a persistent dev tunnel so your URL stays the
 
 ```bash
 # One-time setup:
-devtunnel create my-openclaw-bot --allow-anonymous
-devtunnel port create my-openclaw-bot -p 3978 --protocol auto
+devtunnel create my-remoteclaw-bot --allow-anonymous
+devtunnel port create my-remoteclaw-bot -p 3978 --protocol auto
 
 # Each dev session:
-devtunnel host my-openclaw-bot
+devtunnel host my-remoteclaw-bot
 ```
 
 Alternatives: `ngrok http 3978` or `tailscale funnel 3978` (URLs may change each session).
@@ -480,7 +480,7 @@ All config keys can be set via environment variables instead:
 
 ## Member info action
 
-OpenClaw exposes a Graph-backed `member-info` action for Microsoft Teams so agents and automations can resolve channel member details (display name, email, role) directly from Microsoft Graph.
+RemoteClaw exposes a Graph-backed `member-info` action for Microsoft Teams so agents and automations can resolve channel member details (display name, email, role) directly from Microsoft Graph.
 
 Requirements:
 
@@ -532,14 +532,14 @@ Minimal, valid example with the required fields. Replace IDs and URLs.
   manifestVersion: "1.23",
   version: "1.0.0",
   id: "00000000-0000-0000-0000-000000000000",
-  name: { short: "OpenClaw" },
+  name: { short: "RemoteClaw" },
   developer: {
     name: "Your Org",
     websiteUrl: "https://example.com",
     privacyUrl: "https://example.com/privacy",
     termsOfUseUrl: "https://example.com/terms",
   },
-  description: { short: "OpenClaw in Teams", full: "OpenClaw in Teams" },
+  description: { short: "RemoteClaw in Teams", full: "RemoteClaw in Teams" },
   icons: { outline: "outline.png", color: "color.png" },
   accentColor: "#5B6DEF",
   bots: [
@@ -664,7 +664,7 @@ Teams delivers messages via HTTP webhook. If processing takes too long (e.g., sl
 - Teams retrying the message (causing duplicates)
 - Dropped replies
 
-OpenClaw handles this by returning quickly and sending replies proactively, but very slow responses may still cause issues.
+RemoteClaw handles this by returning quickly and sending replies proactively, but very slow responses may still cause issues.
 
 ### Teams cloud and service URL support
 
@@ -677,11 +677,11 @@ Public cloud is the default. You do not need to set `channels.msteams.cloud` or 
 For non-public Teams clouds, set `cloud` and the matching proactive boundary when Microsoft publishes one:
 
 - `channels.msteams.cloud` selects the Teams SDK cloud preset for authentication, JWT validation, token services, and Graph scope.
-- `channels.msteams.serviceUrl` selects the Bot Connector endpoint boundary used to validate stored conversation references before proactive sends, edits, deletes, cards, polls, file-consent messages, and queued long-running replies. It is required for USGov and DoD SDK clouds. For China/21Vianet, OpenClaw uses the SDK `China` preset and accepts stored/configured service URLs only on Azure China Bot Framework channel hosts.
+- `channels.msteams.serviceUrl` selects the Bot Connector endpoint boundary used to validate stored conversation references before proactive sends, edits, deletes, cards, polls, file-consent messages, and queued long-running replies. It is required for USGov and DoD SDK clouds. For China/21Vianet, RemoteClaw uses the SDK `China` preset and accepts stored/configured service URLs only on Azure China Bot Framework channel hosts.
 
 Microsoft publishes the global proactive Bot Connector endpoints in the [Create the conversation](https://learn.microsoft.com/en-us/microsoftteams/platform/bots/how-to/conversations/send-proactive-messages?tabs=dotnet#create-the-conversation) section of the Teams proactive messaging docs. Use the incoming activity's `serviceUrl` when available; if you need a global proactive endpoint, use Microsoft's table.
 
-| Teams environment | OpenClaw config                                             | Proactive `serviceUrl`                             |
+| Teams environment | RemoteClaw config                                           | Proactive `serviceUrl`                             |
 | ----------------- | ----------------------------------------------------------- | -------------------------------------------------- |
 | Public            | no cloud/serviceUrl config needed                           | `https://smba.trafficmanager.net/teams`            |
 | GCC               | set `serviceUrl`; no separate Teams SDK cloud preset exists | `https://smba.infra.gcc.teams.microsoft.com/teams` |
@@ -714,9 +714,9 @@ Example for GCC High:
 }
 ```
 
-`channels.msteams.serviceUrl` is restricted to supported Microsoft Teams Bot Connector hosts. When a service URL is configured, OpenClaw checks that the stored conversation `serviceUrl` uses the same host before proactive sends, edits, deletes, cards, polls, or queued long-running replies run. With the default public-cloud config, OpenClaw fails closed if a stored conversation points outside the public Teams Connector host. Receive a fresh message from the conversation after changing cloud/service URL settings so the stored conversation reference is current.
+`channels.msteams.serviceUrl` is restricted to supported Microsoft Teams Bot Connector hosts. When a service URL is configured, RemoteClaw checks that the stored conversation `serviceUrl` uses the same host before proactive sends, edits, deletes, cards, polls, or queued long-running replies run. With the default public-cloud config, RemoteClaw fails closed if a stored conversation points outside the public Teams Connector host. Receive a fresh message from the conversation after changing cloud/service URL settings so the stored conversation reference is current.
 
-China/21Vianet does not have a separate global proactive `smba` URL in Microsoft's Teams proactive endpoint table. Configure `cloud: "China"` so the Teams SDK uses Azure China auth, token, and JWT endpoints. Proactive sends then require a stored conversation reference from an incoming China Teams activity, or an explicitly configured service URL, on the Azure China Bot Framework channel boundary (`*.botframework.azure.cn`). Graph-backed Teams helpers are currently disabled for `cloud: "China"` until OpenClaw routes Graph requests through the Azure China Graph endpoint.
+China/21Vianet does not have a separate global proactive `smba` URL in Microsoft's Teams proactive endpoint table. Configure `cloud: "China"` so the Teams SDK uses Azure China auth, token, and JWT endpoints. Proactive sends then require a stored conversation reference from an incoming China Teams activity, or an explicitly configured service URL, on the Azure China Bot Framework channel boundary (`*.botframework.azure.cn`). Graph-backed Teams helpers are currently disabled for `cloud: "China"` until RemoteClaw routes Graph requests through the Azure China Graph endpoint.
 
 ### Formatting
 
@@ -821,7 +821,7 @@ If you set `requireMention: false` globally without an explicit `replyStyle`, me
 
 ### Thread context preservation
 
-When `replyStyle: "thread"` is in effect and the bot was @mentioned from inside a channel thread, OpenClaw re-attaches the original thread root to the outbound conversation reference (`19:…@thread.tacv2;messageid=<root>`) so the reply lands inside the same thread. This holds for both live (in-turn) sends and proactive sends made after the Bot Framework turn context has expired (e.g., long-running agents, queued tool-call replies via `mcp__openclaw__message`).
+When `replyStyle: "thread"` is in effect and the bot was @mentioned from inside a channel thread, RemoteClaw re-attaches the original thread root to the outbound conversation reference (`19:…@thread.tacv2;messageid=<root>`) so the reply lands inside the same thread. This holds for both live (in-turn) sends and proactive sends made after the Bot Framework turn context has expired (e.g., long-running agents, queued tool-call replies via `mcp__remoteclaw__message`).
 
 The thread root is taken from the stored `threadId` on the conversation reference. Older stored references that predate `threadId` fall back to `activityId` (whatever inbound activity last seeded the conversation), so existing deployments keep working without a re-seed.
 
@@ -836,7 +836,7 @@ When `replyStyle: "top-level"` is in effect, channel-thread inbounds are intenti
 - For explicit file-first sends, use `action=upload-file` with `media` / `filePath` / `path`; optional `message` becomes the accompanying text/comment, and `filename` overrides the uploaded name.
 
 Without Graph permissions, channel messages with images will be received as text-only (the image content is not accessible to the bot).
-By default, OpenClaw only downloads media from Microsoft/Teams hostnames. Override with `channels.msteams.mediaAllowHosts` (use `["*"]` to allow any host).
+By default, RemoteClaw only downloads media from Microsoft/Teams hostnames. Override with `channels.msteams.mediaAllowHosts` (use `["*"]` to allow any host).
 Authorization headers are only attached for hosts in `channels.msteams.mediaAuthAllowHosts` (defaults to Graph + Bot Framework hosts). Keep this list strict (avoid multi-tenant suffixes).
 
 ## Sending files in group chats
@@ -875,7 +875,7 @@ Bots don't have a personal OneDrive drive (the `/me/drive` Graph API endpoint do
    # Response includes: "id": "contoso.sharepoint.com,guid1,guid2"
    ```
 
-4. **Configure OpenClaw:**
+4. **Configure RemoteClaw:**
 
    ```json5
    {
@@ -912,18 +912,19 @@ Uploaded files are stored in a `/RemoteClawShared/` folder in the configured Sha
 
 ## Polls (Adaptive Cards)
 
-OpenClaw sends Teams polls as Adaptive Cards (there is no native Teams poll API).
+RemoteClaw sends Teams polls as Adaptive Cards (there is no native Teams poll API).
 
-- CLI: `openclaw message poll --channel msteams --target conversation:<id> ...`
-- Votes are recorded by the gateway in `~/.openclaw/msteams-polls.json`.
+- CLI: `remoteclaw message poll --channel msteams --target conversation:<id> ...`
+- Votes are recorded by the gateway in RemoteClaw plugin-state SQLite under `state/remoteclaw.sqlite`.
+- Existing `msteams-polls.json` files are imported once when the MSTeams plugin starts.
 - The gateway must stay online to record votes.
-- Polls do not auto-post result summaries yet (inspect the store file if needed).
+- Polls do not auto-post result summaries yet, and there is no supported poll-results CLI yet.
 
 ## Presentation cards
 
-Send semantic presentation payloads to Teams users or conversations using the `message` tool, CLI, or normal reply delivery. OpenClaw renders them as Teams Adaptive Cards from the generic presentation contract.
+Send semantic presentation payloads to Teams users or conversations using the `message` tool, CLI, or normal reply delivery. RemoteClaw renders them as Teams Adaptive Cards from the generic presentation contract.
 
-The `presentation` parameter accepts semantic blocks. When `presentation` is provided, the message text is optional. Buttons render as Adaptive Card submit or URL actions. Select menus are not native in the Teams renderer yet, so OpenClaw downgrades them to readable text before delivery.
+The `presentation` parameter accepts semantic blocks. When `presentation` is provided, the message text is optional. Buttons render as Adaptive Card submit or URL actions. Select menus are not native in the Teams renderer yet, so RemoteClaw downgrades them to readable text before delivery.
 
 **Agent tool:**
 
@@ -942,7 +943,7 @@ The `presentation` parameter accepts semantic blocks. When `presentation` is pro
 **CLI:**
 
 ```bash
-openclaw message send --channel msteams \
+remoteclaw message send --channel msteams \
   --target "conversation:19:abc...@thread.tacv2" \
   --presentation '{"title":"Hello","blocks":[{"type":"text","text":"Hello!"}]}'
 ```
@@ -964,16 +965,16 @@ MSTeams targets use prefixes to distinguish between users and conversations:
 
 ```bash
 # Send to a user by ID
-openclaw message send --channel msteams --target "user:40a1a0ed-..." --message "Hello"
+remoteclaw message send --channel msteams --target "user:40a1a0ed-..." --message "Hello"
 
 # Send to a user by display name (triggers Graph API lookup)
-openclaw message send --channel msteams --target "user:John Smith" --message "Hello"
+remoteclaw message send --channel msteams --target "user:John Smith" --message "Hello"
 
 # Send to a group chat or channel
-openclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" --message "Hello"
+remoteclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" --message "Hello"
 
 # Send a presentation card to a conversation
-openclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" \
+remoteclaw message send --channel msteams --target "conversation:19:abc...@thread.tacv2" \
   --presentation '{"title":"Hello","blocks":[{"type":"text","text":"Hello"}]}'
 ```
 
@@ -1033,7 +1034,7 @@ https://teams.microsoft.com/l/channel/19%3A15bc...%40thread.tacv2/ChannelName?gr
 
 - Team key = path segment after `/team/` (URL-decoded, e.g., `19:Bk4j...@thread.tacv2`; older tenants may show `@thread.skype`, which is also valid)
 - Channel key = path segment after `/channel/` (URL-decoded)
-- **Ignore** the `groupId` query parameter for OpenClaw routing. It is the Microsoft Entra group ID, not the Bot Framework conversation ID used in incoming Teams activities.
+- **Ignore** the `groupId` query parameter for RemoteClaw routing. It is the Microsoft Entra group ID, not the Bot Framework conversation ID used in incoming Teams activities.
 
 ## Private channels
 

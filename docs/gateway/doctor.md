@@ -7,12 +7,12 @@ title: "Doctor"
 sidebarTitle: "Doctor"
 ---
 
-`openclaw doctor` is the repair + migration tool for OpenClaw. It fixes stale config/state, checks health, and provides actionable repair steps.
+`remoteclaw doctor` is the repair + migration tool for RemoteClaw. It fixes stale config/state, checks health, and provides actionable repair steps.
 
 ## Quick start
 
 ```bash
-openclaw doctor
+remoteclaw doctor
 ```
 
 ### Headless and automation modes
@@ -20,7 +20,7 @@ openclaw doctor
 <Tabs>
   <Tab title="--yes">
     ```bash
-    openclaw doctor --yes
+    remoteclaw doctor --yes
     ```
 
     Accept defaults without prompting (including restart/service/sandbox repair steps when applicable).
@@ -28,7 +28,7 @@ openclaw doctor
   </Tab>
   <Tab title="--fix">
     ```bash
-    openclaw doctor --fix
+    remoteclaw doctor --fix
     ```
 
     Apply recommended repairs without prompting (repairs + restarts where safe).
@@ -36,8 +36,8 @@ openclaw doctor
   </Tab>
   <Tab title="--lint">
     ```bash
-    openclaw doctor --lint
-    openclaw doctor --lint --json
+    remoteclaw doctor --lint
+    remoteclaw doctor --lint --json
     ```
 
     Run structured health checks for CI or preflight automation. This mode is
@@ -47,7 +47,7 @@ openclaw doctor
   </Tab>
   <Tab title="--fix --force">
     ```bash
-    openclaw doctor --fix --force
+    remoteclaw doctor --fix --force
     ```
 
     Apply aggressive repairs too (overwrites custom supervisor configs).
@@ -55,7 +55,7 @@ openclaw doctor
   </Tab>
   <Tab title="--non-interactive">
     ```bash
-    openclaw doctor --non-interactive
+    remoteclaw doctor --non-interactive
     ```
 
     Run without prompts and only apply safe migrations (config normalization + on-disk state moves). Skips restart/service/sandbox actions that require human confirmation. Legacy state migrations run automatically when detected.
@@ -63,7 +63,7 @@ openclaw doctor
   </Tab>
   <Tab title="--deep">
     ```bash
-    openclaw doctor --deep
+    remoteclaw doctor --deep
     ```
 
     Scan system services for extra gateway installs (launchd/systemd/schtasks).
@@ -79,15 +79,15 @@ cat ~/.remoteclaw/remoteclaw.json
 
 ## Read-only lint mode
 
-`openclaw doctor --lint` is the automation-friendly sibling of
-`openclaw doctor --fix`. Both use doctor health checks, but their posture is
+`remoteclaw doctor --lint` is the automation-friendly sibling of
+`remoteclaw doctor --fix`. Both use doctor health checks, but their posture is
 different:
 
-| Mode                     | Prompts   | Writes config/state     | Output                 | Use it for                      |
-| ------------------------ | --------- | ----------------------- | ---------------------- | ------------------------------- |
-| `openclaw doctor`        | yes       | no                      | friendly health report | a human checking status         |
-| `openclaw doctor --fix`  | sometimes | yes, with repair policy | friendly repair log    | applying approved repairs       |
-| `openclaw doctor --lint` | no        | no                      | structured findings    | CI, preflight, and review gates |
+| Mode                       | Prompts   | Writes config/state     | Output                 | Use it for                      |
+| -------------------------- | --------- | ----------------------- | ---------------------- | ------------------------------- |
+| `remoteclaw doctor`        | yes       | no                      | friendly health report | a human checking status         |
+| `remoteclaw doctor --fix`  | sometimes | yes, with repair policy | friendly repair log    | applying approved repairs       |
+| `remoteclaw doctor --lint` | no        | no                      | structured findings    | CI, preflight, and review gates |
 
 Modernized health checks may provide an optional `repair()` implementation.
 `doctor --fix` applies those repairs when they exist and continues to use the
@@ -101,10 +101,10 @@ plan mutations.
 Examples:
 
 ```bash
-openclaw doctor --lint
-openclaw doctor --lint --severity-min warning
-openclaw doctor --lint --json
-openclaw doctor --lint --only core/doctor/gateway-config --json
+remoteclaw doctor --lint
+remoteclaw doctor --lint --severity-min warning
+remoteclaw doctor --lint --json
+remoteclaw doctor --lint --only core/doctor/gateway-config --json
 ```
 
 JSON output includes:
@@ -143,12 +143,12 @@ must be paired with `--lint`; regular doctor and repair runs reject them.
     - Talk config migration from legacy flat `talk.*` fields into `talk.provider` + `talk.providers.<provider>`.
     - Browser migration checks for legacy Chrome extension configs and Chrome MCP readiness.
     - OpenCode provider override warnings (`models.providers.opencode` / `models.providers.opencode-go`).
-    - Codex OAuth shadowing warnings (`models.providers.openai-codex`).
+    - Legacy OpenAI Codex provider/profile migration (`openai-codex` → `openai`) and shadowing warnings for stale `models.providers.openai-codex`.
     - OAuth TLS prerequisites check for OpenAI Codex OAuth profiles.
     - Plugin/tool allowlist warnings when `plugins.allow` is restrictive but tool policy still asks for wildcard or plugin-owned tools.
     - Legacy on-disk state migration (sessions/agent dir/WhatsApp auth).
     - Legacy plugin manifest contract key migration (`speechProviders`, `realtimeTranscriptionProviders`, `realtimeVoiceProviders`, `mediaUnderstandingProviders`, `imageGenerationProviders`, `videoGenerationProviders`, `webFetchProviders`, `webSearchProviders` → `contracts`).
-    - Legacy cron store migration (`jobId`, `schedule.cron`, top-level delivery/payload fields, payload `provider`, simple `notify: true` webhook fallback jobs).
+    - Legacy cron store migration (`jobId`, `schedule.cron`, top-level delivery/payload fields, payload `provider`, `notify: true` webhook fallback jobs).
     - Legacy whole-agent runtime-policy cleanup; provider/model runtime policy is the active route selector.
     - Stale plugin config cleanup when plugins are enabled; when `plugins.enabled=false`, stale plugin references are treated as inert containment config and are preserved.
 
@@ -160,7 +160,7 @@ must be paired with `--lint`; regular doctor and repair runs reject them.
     - State integrity and permissions checks (sessions, transcripts, state dir).
     - Config file permission checks (chmod 600) when running locally.
     - Model auth health: checks OAuth expiry, can refresh expiring tokens, and reports auth-profile cooldown/disabled states.
-    - Extra workspace dir detection (`~/openclaw`).
+    - Extra workspace dir detection (`~/remoteclaw`).
 
   </Accordion>
   <Accordion title="Gateway, services, and supervisors">
@@ -169,9 +169,9 @@ must be paired with `--lint`; regular doctor and repair runs reject them.
     - Matrix channel legacy state migration (in `--fix` / `--repair` mode).
     - Gateway runtime checks (service installed but not running; cached launchd label).
     - Channel status warnings (probed from the running gateway).
-    - Channel-specific permission checks live under `openclaw channels capabilities`; for example, Discord voice channel permissions are audited with `openclaw channels capabilities --channel discord --target channel:<channel-id>`.
+    - Channel-specific permission checks live under `remoteclaw channels capabilities`; for example, Discord voice channel permissions are audited with `remoteclaw channels capabilities --channel discord --target channel:<channel-id>`.
     - WhatsApp responsiveness checks for degraded Gateway event-loop health with local TUI clients still running; `--fix` stops only verified local TUI clients.
-    - Codex route repair for legacy `openai-codex/*` model refs in primary models, fallbacks, heartbeat/subagent/compaction overrides, hooks, channel model overrides, and session route pins; `--fix` rewrites them to `openai/*`, removes stale session/whole-agent runtime pins, and leaves canonical OpenAI agent refs on the default Codex harness.
+    - Codex route repair for legacy `openai-codex/*` model refs in primary models, fallbacks, image/video generation models, heartbeat/subagent/compaction overrides, hooks, channel model overrides, and session route pins; `--fix` rewrites them to `openai/*`, migrates `openai-codex:*` auth profiles/order to `openai:*`, removes stale session/whole-agent runtime pins, and leaves canonical OpenAI agent refs on the default Codex harness.
     - Supervisor config audit (launchd/systemd/schtasks) with optional repair.
     - Embedded proxy environment cleanup for gateway services that captured shell `HTTP_PROXY` / `HTTPS_PROXY` / `NO_PROXY` values during install or update.
     - Gateway runtime best-practice checks (Node vs Bun, version-manager paths).
@@ -198,7 +198,7 @@ must be paired with `--lint`; regular doctor and repair runs reject them.
 
 ## Dreams UI backfill and reset
 
-The Control UI Dreams scene includes **Backfill**, **Reset**, and **Clear Grounded** actions for the grounded dreaming workflow. These actions use gateway doctor-style RPC methods, but they are **not** part of `openclaw doctor` CLI repair/migration.
+The Control UI Dreams scene includes **Backfill**, **Reset**, and **Clear Grounded** actions for the grounded dreaming workflow. These actions use gateway doctor-style RPC methods, but they are **not** part of `remoteclaw doctor` CLI repair/migration.
 
 What they do:
 
@@ -215,7 +215,7 @@ What they do **not** do by themselves:
 If you want grounded historical replay to influence the normal deep promotion lane, use the CLI flow instead:
 
 ```bash
-openclaw memory rem-backfill --path ./memory --stage-short-term
+remoteclaw memory rem-backfill --path ./memory --stage-short-term
 ```
 
 That stages grounded durable candidates into the short-term dreaming store while keeping `DREAMS.md` as the review surface.
@@ -238,7 +238,7 @@ That stages grounded durable candidates into the short-term dreaming store while
 
   </Accordion>
   <Accordion title="2. Legacy config key migrations">
-    When the config contains deprecated keys, other commands refuse to run and ask you to run `openclaw doctor`.
+    When the config contains deprecated keys, other commands refuse to run and ask you to run `remoteclaw doctor`.
 
     Doctor will:
 
@@ -246,7 +246,7 @@ That stages grounded durable candidates into the short-term dreaming store while
     - Show the migration it applied.
     - Rewrite `~/.remoteclaw/remoteclaw.json` with the updated schema.
 
-    Gateway startup refuses legacy config formats and asks you to run `openclaw doctor --fix`; it does not rewrite `openclaw.json` on startup. Cron job store migrations are also handled by `openclaw doctor --fix`.
+    Gateway startup refuses legacy config formats and asks you to run `remoteclaw doctor --fix`; it does not rewrite `remoteclaw.json` on startup. Cron job store migrations are also handled by `remoteclaw doctor --fix`.
 
     Current migrations:
 
@@ -255,6 +255,7 @@ That stages grounded durable candidates into the short-term dreaming store while
     - `routing.groupChat.historyLimit` → `messages.groupChat.historyLimit`
     - `routing.groupChat.mentionPatterns` → `messages.groupChat.mentionPatterns`
     - `channels.telegram.requireMention` → `channels.telegram.groups."*".requireMention`
+    - remove retired `channels.webchat` and `gateway.webchat`
     - `routing.queue` → `messages.queue`
     - `routing.bindings` → top-level `bindings`
     - `routing.agents`/`routing.defaultAgentId` → `agents.list` + `agents.list[].default`
@@ -292,7 +293,7 @@ That stages grounded durable candidates into the short-term dreaming store while
 
   </Accordion>
   <Accordion title="2b. OpenCode provider overrides">
-    If you've added `models.providers.opencode`, `opencode-zen`, or `opencode-go` manually, it overrides the built-in OpenCode catalog from `openclaw/plugin-sdk/llm`. That can force models onto the wrong API or zero out costs. Doctor warns so you can remove the override and restore per-model API routing + costs.
+    If you've added `models.providers.opencode`, `opencode-zen`, or `opencode-go` manually, it overrides the built-in OpenCode catalog from `remoteclaw/plugin-sdk/llm`. That can force models onto the wrong API or zero out costs. Doctor warns so you can remove the override and restore per-model API routing + costs.
   </Accordion>
   <Accordion title="2c. Browser migration and Chrome MCP readiness">
     If your browser config still points at the removed Chrome extension path, doctor normalizes it to the current host-local Chrome MCP attach model:
@@ -325,12 +326,12 @@ That stages grounded durable candidates into the short-term dreaming store while
     If you previously added legacy OpenAI transport settings under `models.providers.openai-codex`, they can shadow the built-in Codex OAuth provider path that newer releases use automatically. Doctor warns when it sees those old transport settings alongside Codex OAuth so you can remove or rewrite the stale transport override and get the built-in routing/fallback behavior back. Custom proxies and header-only overrides are still supported and do not trigger this warning.
   </Accordion>
   <Accordion title="2f. Codex route repair">
-    Doctor checks for legacy `openai-codex/*` model refs. Native Codex harness routing uses canonical `openai/*` model refs; OpenAI agent turns go through the Codex app-server harness instead of the OpenClaw OpenAI provider path.
+    Doctor checks for legacy `openai-codex/*` model refs. Native Codex harness routing uses canonical `openai/*` model refs; OpenAI agent turns go through the Codex app-server harness instead of the RemoteClaw OpenAI provider path.
 
-    In `--fix` / `--repair` mode, doctor rewrites affected default-agent and per-agent refs, including primary models, fallbacks, heartbeat/subagent/compaction overrides, hooks, channel model overrides, and stale persisted session route state:
+    In `--fix` / `--repair` mode, doctor rewrites affected default-agent and per-agent refs, including primary models, fallbacks, image/video generation models, heartbeat/subagent/compaction overrides, hooks, channel model overrides, and stale persisted session route state:
 
     - `openai-codex/gpt-*` becomes `openai/gpt-*`.
-    - Codex intent moves to provider/model-scoped `agentRuntime.id: "codex"` entries for repaired agent model refs so `openai-codex:...` auth profiles can still be selected after the model ref becomes `openai/*`.
+    - Codex intent moves to provider/model-scoped `agentRuntime.id: "codex"` entries for repaired agent model refs.
     - Stale whole-agent runtime config and persisted session runtime pins are removed because runtime selection is provider/model-scoped.
     - Existing provider/model runtime policy is preserved unless the repaired legacy model ref needs Codex routing to keep the old auth path.
     - Existing model fallback lists are preserved with their legacy entries rewritten; copied per-model settings move from the legacy key to the canonical `openai/*` key.
@@ -342,28 +343,28 @@ That stages grounded durable candidates into the short-term dreaming store while
   <Accordion title="2g. Session route cleanup">
     Doctor also scans discovered agent session stores for stale auto-created route state after you move configured models or runtime away from a plugin-owned route such as Codex.
 
-    `openclaw doctor --fix` can clear auto-created stale state such as `modelOverrideSource: "auto"` model pins, runtime model metadata, pinned harness ids, CLI session bindings, and auto auth-profile overrides when their owning route is no longer configured. Explicit user or legacy session model choices are reported for manual review and left untouched; switch them with `/model ...`, `/new`, or reset the session when that route is no longer intended.
+    `remoteclaw doctor --fix` can clear auto-created stale state such as `modelOverrideSource: "auto"` model pins, runtime model metadata, pinned harness ids, CLI session bindings, and auto auth-profile overrides when their owning route is no longer configured. Explicit user or legacy session model choices are reported for manual review and left untouched; switch them with `/model ...`, `/new`, or reset the session when that route is no longer intended.
 
   </Accordion>
   <Accordion title="3. Legacy state migrations (disk layout)">
     Doctor can migrate older on-disk layouts into the current structure:
 
     - Sessions store + transcripts:
-      - from `~/.openclaw/sessions/` to `~/.openclaw/agents/<agentId>/sessions/`
+      - from `~/.remoteclaw/sessions/` to `~/.remoteclaw/agents/<agentId>/sessions/`
     - Agent dir:
-      - from `~/.openclaw/agent/` to `~/.openclaw/agents/<agentId>/agent/`
+      - from `~/.remoteclaw/agent/` to `~/.remoteclaw/agents/<agentId>/agent/`
     - WhatsApp auth state (Baileys):
-      - from legacy `~/.openclaw/credentials/*.json` (except `oauth.json`)
-      - to `~/.openclaw/credentials/whatsapp/<accountId>/...` (default account id: `default`)
+      - from legacy `~/.remoteclaw/credentials/*.json` (except `oauth.json`)
+      - to `~/.remoteclaw/credentials/whatsapp/<accountId>/...` (default account id: `default`)
 
-    These migrations are best-effort and idempotent; doctor will emit warnings when it leaves any legacy folders behind as backups. The Gateway/CLI also auto-migrates the legacy sessions + agent dir on startup so history/auth/models land in the per-agent path without a manual doctor run. WhatsApp auth is intentionally only migrated via `openclaw doctor`. Talk provider/provider-map normalization now compares by structural equality, so key-order-only diffs no longer trigger repeat no-op `doctor --fix` changes.
+    These migrations are best-effort and idempotent; doctor will emit warnings when it leaves any legacy folders behind as backups. The Gateway/CLI also auto-migrates the legacy sessions + agent dir on startup so history/auth/models land in the per-agent path without a manual doctor run. WhatsApp auth is intentionally only migrated via `remoteclaw doctor`. Talk provider/provider-map normalization now compares by structural equality, so key-order-only diffs no longer trigger repeat no-op `doctor --fix` changes.
 
   </Accordion>
   <Accordion title="3a. Legacy plugin manifest migrations">
     Doctor scans all installed plugin manifests for deprecated top-level capability keys (`speechProviders`, `realtimeTranscriptionProviders`, `realtimeVoiceProviders`, `mediaUnderstandingProviders`, `imageGenerationProviders`, `videoGenerationProviders`, `webFetchProviders`, `webSearchProviders`). When found, it offers to move them into the `contracts` object and rewrite the manifest file in-place. This migration is idempotent; if the `contracts` key already has the same values, the legacy key is removed without duplicating the data.
   </Accordion>
   <Accordion title="3b. Legacy cron store migrations">
-    Doctor also checks the cron job store (`~/.openclaw/cron/jobs.json` by default, or `cron.store` when overridden) for old job shapes that the scheduler still accepts for compatibility.
+    Doctor also checks the cron job store (`~/.remoteclaw/cron/jobs.json` by default, or `cron.store` when overridden) for old job shapes that the scheduler still accepts for compatibility.
 
     Current cron cleanups include:
 
@@ -372,20 +373,20 @@ That stages grounded durable candidates into the short-term dreaming store while
     - top-level payload fields (`message`, `model`, `thinking`, ...) → `payload`
     - top-level delivery fields (`deliver`, `channel`, `to`, `provider`, ...) → `delivery`
     - payload `provider` delivery aliases → explicit `delivery.channel`
-    - simple legacy `notify: true` webhook fallback jobs → explicit `delivery.mode="webhook"` with `delivery.to=cron.webhook`
+    - legacy `notify: true` webhook fallback jobs → explicit webhook delivery from `cron.webhook`; announce jobs keep their chat delivery and get `delivery.completionDestination`
 
     The Gateway also sanitizes malformed cron rows at load time so valid jobs keep running. Raw malformed rows are copied to `jobs-quarantine.json` next to the active store before they are removed from `jobs.json`; doctor reports quarantined rows so you can review or repair them manually.
 
-    Doctor only auto-migrates `notify: true` jobs when it can do so without changing behavior. If a job combines legacy notify fallback with an existing non-webhook delivery mode, doctor warns and leaves that job for manual review.
+    Doctor and Gateway startup use the same `notify: true` migration before the scheduler runs. If `cron.webhook` is missing, doctor warns and leaves the legacy notify marker for manual repair.
 
-    On Linux, doctor also warns when the user's crontab still invokes legacy `~/.remoteclaw/bin/ensure-whatsapp.sh`. That host-local script is not maintained by current OpenClaw and can write false `Gateway inactive` messages to `~/.openclaw/logs/whatsapp-health.log` when cron cannot reach the systemd user bus. Remove the stale crontab entry with `crontab -e`; use `openclaw channels status --probe`, `openclaw doctor`, and `openclaw gateway status` for current health checks.
+    On Linux, doctor also warns when the user's crontab still invokes legacy `~/.remoteclaw/bin/ensure-whatsapp.sh`. That host-local script is not maintained by current RemoteClaw and can write false `Gateway inactive` messages to `~/.remoteclaw/logs/whatsapp-health.log` when cron cannot reach the systemd user bus. Remove the stale crontab entry with `crontab -e`; use `remoteclaw channels status --probe`, `remoteclaw doctor`, and `remoteclaw gateway status` for current health checks.
 
   </Accordion>
   <Accordion title="3c. Session lock cleanup">
-    Doctor scans every agent session directory for stale write-lock files — files left behind when a session exited abnormally. For each lock file found it reports: the path, PID, whether the PID is still alive, lock age, and whether it is considered stale (dead PID, malformed owner metadata, older than 30 minutes, or a live PID that can be proven to belong to a non-OpenClaw process). In `--fix` / `--repair` mode it removes locks with dead, orphaned, recycled, malformed-old, or non-OpenClaw owners automatically. Old locks that are still owned by a live OpenClaw process are reported but left in place so doctor does not cut off an active transcript writer.
+    Doctor scans every agent session directory for stale write-lock files — files left behind when a session exited abnormally. For each lock file found it reports: the path, PID, whether the PID is still alive, lock age, and whether it is considered stale (dead PID, malformed owner metadata, older than 30 minutes, or a live PID that can be proven to belong to a non-RemoteClaw process). In `--fix` / `--repair` mode it removes locks with dead, orphaned, recycled, malformed-old, or non-RemoteClaw owners automatically. Old locks that are still owned by a live RemoteClaw process are reported but left in place so doctor does not cut off an active transcript writer.
   </Accordion>
   <Accordion title="3d. Session transcript branch repair">
-    Doctor scans agent session JSONL files for the duplicated branch shape created by the 2026.4.24 prompt transcript rewrite bug: an abandoned user turn with OpenClaw internal runtime context plus an active sibling containing the same visible user prompt. In `--fix` / `--repair` mode, doctor backs up each affected file next to the original and rewrites the transcript to the active branch so gateway history and memory readers no longer see duplicate turns.
+    Doctor scans agent session JSONL files for the duplicated branch shape created by the 2026.4.24 prompt transcript rewrite bug: an abandoned user turn with RemoteClaw internal runtime context plus an active sibling containing the same visible user prompt. In `--fix` / `--repair` mode, doctor backs up each affected file next to the original and rewrites the transcript to the active branch so gateway history and memory readers no longer see duplicate turns.
   </Accordion>
   <Accordion title="4. State integrity checks (session persistence, routing, and safety)">
     The state directory is the operational brainstem. If it vanishes, you lose sessions, credentials, logs, and config (unless you have backups elsewhere).
@@ -399,7 +400,7 @@ That stages grounded durable candidates into the short-term dreaming store while
     - **Session dirs missing**: `sessions/` and the session store directory are required to persist history and avoid `ENOENT` crashes.
     - **Transcript mismatch**: warns when recent session entries have missing transcript files.
     - **Main session "1-line JSONL"**: flags when the main transcript has only one line (history is not accumulating).
-    - **Multiple state dirs**: warns when multiple `~/.remoteclaw` folders exist across home directories or when `OPENCLAW_STATE_DIR` points elsewhere (history can split between installs).
+    - **Multiple state dirs**: warns when multiple `~/.remoteclaw` folders exist across home directories or when `REMOTECLAW_STATE_DIR` points elsewhere (history can split between installs).
     - **Remote mode reminder**: if `gateway.mode=remote`, doctor reminds you to run it on the remote host (the state lives there).
     - **Config file permissions**: warns if `~/.remoteclaw/remoteclaw.json` is group/world readable and offers to tighten to `600`.
 
@@ -407,14 +408,14 @@ That stages grounded durable candidates into the short-term dreaming store while
   <Accordion title="5. Model auth health (OAuth expiry)">
     Doctor inspects OAuth profiles in the auth store, warns when tokens are expiring/expired, and can refresh them when safe. If the Anthropic OAuth/token profile is stale, it suggests an Anthropic API key or the Anthropic setup-token path. Refresh prompts only appear when running interactively (TTY); `--non-interactive` skips refresh attempts.
 
-    When an OAuth refresh fails permanently (for example `refresh_token_reused`, `invalid_grant`, or a provider telling you to sign in again), doctor reports that re-auth is required and prints the exact `openclaw models auth login --provider ...` command to run.
+    When an OAuth refresh fails permanently (for example `refresh_token_reused`, `invalid_grant`, or a provider telling you to sign in again), doctor reports that re-auth is required and prints the exact `remoteclaw models auth login --provider ...` command to run.
 
     Doctor also reports auth profiles that are temporarily unusable due to:
 
     - short cooldowns (rate limits/timeouts/auth failures)
     - longer disables (billing/credit failures)
 
-    Legacy Codex OAuth profiles whose tokens live in macOS Keychain (older onboarding before the file-based sidecar layout) are not picked up by the embedded runtime path — that path runs with `allowKeychainPrompt: false` and cannot trigger a Keychain prompt. Affected users will see a one-shot `log.warn` from the legacy sidecar loader naming `openclaw doctor --fix` and macOS Keychain (instead of the credential silently falling through to a downstream `No API key found for provider "openai-codex"`). Run `openclaw doctor --fix` once from an interactive terminal to migrate Keychain-backed legacy tokens inline into `auth-profiles.json`; after that, embedded turns (Telegram, cron, sub-agent dispatch) resolve them like any other inline OAuth profile.
+    Legacy Codex OAuth profiles whose tokens live in macOS Keychain (older onboarding before the file-based sidecar layout) are repaired only by doctor. Run `remoteclaw doctor --fix` once from an interactive terminal to migrate Keychain-backed legacy tokens inline into `auth-profiles.json`; after that, embedded turns (Telegram, cron, sub-agent dispatch) resolve them as canonical OpenAI OAuth profiles.
 
   </Accordion>
   <Accordion title="6. Hooks model validation">
@@ -424,19 +425,19 @@ That stages grounded durable candidates into the short-term dreaming store while
     When sandboxing is enabled, doctor checks Docker images and offers to build or switch to legacy names if the current image is missing.
   </Accordion>
   <Accordion title="7b. Plugin install cleanup">
-    Doctor removes legacy OpenClaw-generated plugin dependency staging state in `openclaw doctor --fix` / `openclaw doctor --repair` mode. This covers stale generated dependency roots, old install-stage directories, package-local debris from earlier bundled-plugin dependency repair code, and orphaned or recovered managed npm copies of bundled `@openclaw/*` plugins that can shadow the current bundled manifest. Doctor also relinks the host `openclaw` package into managed npm plugins that declare `peerDependencies.openclaw`, so package-local runtime imports such as `openclaw/plugin-sdk/*` keep resolving after updates or npm repairs.
+    Doctor removes legacy RemoteClaw-generated plugin dependency staging state in `remoteclaw doctor --fix` / `remoteclaw doctor --repair` mode. This covers stale generated dependency roots, old install-stage directories, package-local debris from earlier bundled-plugin dependency repair code, and orphaned or recovered managed npm copies of bundled `@remoteclaw/*` plugins that can shadow the current bundled manifest. Doctor also relinks the host `remoteclaw` package into managed npm plugins that declare `peerDependencies.remoteclaw`, so package-local runtime imports such as `remoteclaw/plugin-sdk/*` keep resolving after updates or npm repairs.
 
-    Doctor can also reinstall missing downloadable plugins when config references them but the local plugin registry cannot find them. Examples include material `plugins.entries`, configured channel/provider/search settings, and configured agent runtimes. During package updates, doctor avoids running package-manager plugin repair while the core package is being swapped; run `openclaw doctor --fix` again after the update if a configured plugin still needs recovery. Gateway startup and config reload do not run package managers; plugin installs remain explicit doctor/install/update work.
+    Doctor can also reinstall missing downloadable plugins when config references them but the local plugin registry cannot find them. Examples include material `plugins.entries`, configured channel/provider/search settings, and configured agent runtimes. During package updates, doctor avoids running package-manager plugin repair while the core package is being swapped; run `remoteclaw doctor --fix` again after the update if a configured plugin still needs recovery. Gateway startup and config reload do not run package managers; plugin installs remain explicit doctor/install/update work.
 
   </Accordion>
   <Accordion title="8. Gateway service migrations and cleanup hints">
-    Doctor detects legacy gateway services (launchd/systemd/schtasks) and offers to remove them and install the OpenClaw service using the current gateway port. It can also scan for extra gateway-like services and print cleanup hints. Profile-named OpenClaw gateway services are considered first-class and are not flagged as "extra."
+    Doctor detects legacy gateway services (launchd/systemd/schtasks) and offers to remove them and install the RemoteClaw service using the current gateway port. It can also scan for extra gateway-like services and print cleanup hints. Profile-named RemoteClaw gateway services are considered first-class and are not flagged as "extra."
 
-    On Linux, if the user-level gateway service is missing but a system-level OpenClaw gateway service exists, doctor does not install a second user-level service automatically. Inspect with `openclaw gateway status --deep` or `openclaw doctor --deep`, then remove the duplicate or set `OPENCLAW_SERVICE_REPAIR_POLICY=external` when a system supervisor owns the gateway lifecycle.
+    On Linux, if the user-level gateway service is missing but a system-level RemoteClaw gateway service exists, doctor does not install a second user-level service automatically. Inspect with `remoteclaw gateway status --deep` or `remoteclaw doctor --deep`, then remove the duplicate or set `REMOTECLAW_SERVICE_REPAIR_POLICY=external` when a system supervisor owns the gateway lifecycle.
 
   </Accordion>
   <Accordion title="8b. Startup Matrix migration">
-    When a Matrix channel account has a pending or actionable legacy state migration, doctor (in `--fix` / `--repair` mode) creates a pre-migration snapshot and then runs the best-effort migration steps: legacy Matrix state migration and legacy encrypted-state preparation. Both steps are non-fatal; errors are logged and startup continues. In read-only mode (`openclaw doctor` without `--fix`) this check is skipped entirely.
+    When a Matrix channel account has a pending or actionable legacy state migration, doctor (in `--fix` / `--repair` mode) creates a pre-migration snapshot and then runs the best-effort migration steps: legacy Matrix state migration and legacy encrypted-state preparation. Both steps are non-fatal; errors are logged and startup continues. In read-only mode (`remoteclaw doctor` without `--fix`) this check is skipped entirely.
   </Accordion>
   <Accordion title="8c. Device pairing and auth drift">
     Doctor now inspects device-pairing state as part of the normal health pass.
@@ -453,10 +454,10 @@ That stages grounded durable candidates into the short-term dreaming store while
 
     Doctor does not auto-approve pair requests or auto-rotate device tokens. It prints the exact next steps instead:
 
-    - inspect pending requests with `openclaw devices list`
-    - approve the exact request with `openclaw devices approve <requestId>`
-    - rotate a fresh token with `openclaw devices rotate --device <deviceId> --role <role>`
-    - remove and re-approve a stale record with `openclaw devices remove <deviceId>`
+    - inspect pending requests with `remoteclaw devices list`
+    - approve the exact request with `remoteclaw devices approve <requestId>`
+    - rotate a fresh token with `remoteclaw devices rotate --device <deviceId> --role <role>`
+    - remove and re-approve a stale record with `remoteclaw devices remove <deviceId>`
 
     This closes the common "already paired but still getting pairing required" hole: doctor now distinguishes first-time pairing from pending role/scope upgrades and from stale token/device-identity drift.
 
@@ -471,7 +472,7 @@ That stages grounded durable candidates into the short-term dreaming store while
     Doctor prints a summary of the workspace state for the default agent:
 
     - **Skills status**: counts eligible, missing-requirements, and allowlist-blocked skills.
-    - **Legacy workspace dirs**: warns when `~/openclaw` or other legacy workspace directories exist alongside the current workspace.
+    - **Legacy workspace dirs**: warns when `~/remoteclaw` or other legacy workspace directories exist alongside the current workspace.
     - **Plugin status**: counts enabled/disabled/errored plugins; lists plugin IDs for any errors; reports bundle plugin capabilities.
     - **Plugin compatibility warnings**: flags plugins that have compatibility issues with the current runtime.
     - **Plugin diagnostics**: surfaces any load-time warnings or errors emitted by the plugin registry.
@@ -481,16 +482,16 @@ That stages grounded durable candidates into the short-term dreaming store while
     Doctor checks whether workspace bootstrap files (for example `AGENTS.md`, `CLAUDE.md`, or other injected context files) are near or over the configured character budget. It reports per-file raw vs. injected character counts, truncation percentage, truncation cause (`max/file` or `max/total`), and total injected characters as a fraction of the total budget. When files are truncated or near the limit, doctor prints tips for tuning `agents.defaults.bootstrapMaxChars` and `agents.defaults.bootstrapTotalMaxChars`.
   </Accordion>
   <Accordion title="11d. Stale channel plugin cleanup">
-    When `openclaw doctor --fix` removes a missing channel plugin, it also removes the dangling channel-scoped config that referenced that plugin: `channels.<id>` entries, heartbeat targets that named the channel, and `agents.*.models["<channel>/*"]` overrides. This prevents Gateway boot loops where the channel runtime is gone but config still asks the gateway to bind to it.
+    When `remoteclaw doctor --fix` removes a missing channel plugin, it also removes the dangling channel-scoped config that referenced that plugin: `channels.<id>` entries, heartbeat targets that named the channel, and `agents.*.models["<channel>/*"]` overrides. This prevents Gateway boot loops where the channel runtime is gone but config still asks the gateway to bind to it.
   </Accordion>
   <Accordion title="11c. Shell completion">
     Doctor checks whether tab completion is installed for the current shell (zsh, bash, fish, or PowerShell):
 
-    - If the shell profile uses a slow dynamic completion pattern (`source <(openclaw completion ...)`), doctor upgrades it to the faster cached file variant.
+    - If the shell profile uses a slow dynamic completion pattern (`source <(remoteclaw completion ...)`), doctor upgrades it to the faster cached file variant.
     - If completion is configured in the profile but the cache file is missing, doctor regenerates the cache automatically.
     - If no completion is configured at all, doctor prompts to install it (interactive mode only; skipped with `--non-interactive`).
 
-    Run `openclaw completion --write-state` to regenerate the cache manually.
+    Run `remoteclaw completion --write-state` to regenerate the cache manually.
 
   </Accordion>
   <Accordion title="12. Gateway auth checks (local token)">
@@ -498,13 +499,13 @@ That stages grounded durable candidates into the short-term dreaming store while
 
     - If token mode needs a token and no token source exists, doctor offers to generate one.
     - If `gateway.auth.token` is SecretRef-managed but unavailable, doctor warns and does not overwrite it with plaintext.
-    - `openclaw doctor --generate-gateway-token` forces generation only when no token SecretRef is configured.
+    - `remoteclaw doctor --generate-gateway-token` forces generation only when no token SecretRef is configured.
 
   </Accordion>
   <Accordion title="12b. Read-only SecretRef-aware repairs">
     Some repair flows need to inspect configured credentials without weakening runtime fail-fast behavior.
 
-    - `openclaw doctor --fix` now uses the same read-only SecretRef summary model as status-family commands for targeted config repairs.
+    - `remoteclaw doctor --fix` now uses the same read-only SecretRef summary model as status-family commands for targeted config repairs.
     - Example: Telegram `allowFrom` / `groupAllowFrom` `@username` repair tries to use configured bot credentials when available.
     - If the Telegram bot token is configured via SecretRef but unavailable in the current command path, doctor reports that the credential is configured-but-unavailable and skips auto-resolution instead of crashing or misreporting the token as missing.
 
@@ -522,7 +523,7 @@ That stages grounded durable candidates into the short-term dreaming store while
 
     When a cached gateway probe result is available (gateway was healthy at the time of the check), doctor cross-references its result with the CLI-visible config and notes any discrepancy. Doctor does not start a fresh embedding ping on the default path; use the deep memory status command when you want a live provider check.
 
-    Use `openclaw memory status --deep` to verify embedding readiness at runtime.
+    Use `remoteclaw memory status --deep` to verify embedding readiness at runtime.
 
   </Accordion>
   <Accordion title="14. Channel status warnings">
@@ -533,11 +534,11 @@ That stages grounded durable candidates into the short-term dreaming store while
 
     Notes:
 
-    - `openclaw doctor` prompts before rewriting supervisor config.
-    - `openclaw doctor --yes` accepts the default repair prompts.
-    - `openclaw doctor --fix` applies recommended fixes without prompts (`--repair` is an alias).
-    - `openclaw doctor --fix --force` overwrites custom supervisor configs.
-    - `OPENCLAW_SERVICE_REPAIR_POLICY=external` keeps doctor read-only for gateway service lifecycle. It still reports service health and runs non-service repairs, but skips service install/start/restart/bootstrap, supervisor config rewrites, and legacy service cleanup because an external supervisor owns that lifecycle.
+    - `remoteclaw doctor` prompts before rewriting supervisor config.
+    - `remoteclaw doctor --yes` accepts the default repair prompts.
+    - `remoteclaw doctor --fix` applies recommended fixes without prompts (`--repair` is an alias).
+    - `remoteclaw doctor --fix --force` overwrites custom supervisor configs.
+    - `REMOTECLAW_SERVICE_REPAIR_POLICY=external` keeps doctor read-only for gateway service lifecycle. It still reports service health and runs non-service repairs, but skips service install/start/restart/bootstrap, supervisor config rewrites, and legacy service cleanup because an external supervisor owns that lifecycle.
     - On Linux, doctor does not rewrite command/entrypoint metadata while the matching systemd gateway unit is active. It also ignores inactive non-legacy extra gateway-like units during the duplicate-service scan so companion service files do not create cleanup noise.
     - If token auth requires a token and `gateway.auth.token` is SecretRef-managed, doctor service install/repair validates the SecretRef but does not persist resolved plaintext token values into supervisor service environment metadata.
     - Doctor detects managed `.env`/SecretRef-backed service environment values that older LaunchAgent, systemd, or Windows Scheduled Task installs embedded inline and rewrites the service metadata so those values load from the runtime source instead of the supervisor definition.
@@ -545,8 +546,8 @@ That stages grounded durable candidates into the short-term dreaming store while
     - If token auth requires a token and the configured token SecretRef is unresolved, doctor blocks the install/repair path with actionable guidance.
     - If both `gateway.auth.token` and `gateway.auth.password` are configured and `gateway.auth.mode` is unset, doctor blocks install/repair until mode is set explicitly.
     - For Linux user-systemd units, doctor token drift checks now include both `Environment=` and `EnvironmentFile=` sources when comparing service auth metadata.
-    - Doctor service repairs refuse to rewrite, stop, or restart a gateway service from an older OpenClaw binary when the config was last written by a newer version. See [Gateway troubleshooting](/gateway/troubleshooting#split-brain-installs-and-newer-config-guard).
-    - You can always force a full rewrite via `openclaw gateway install --force`.
+    - Doctor service repairs refuse to rewrite, stop, or restart a gateway service from an older RemoteClaw binary when the config was last written by a newer version. See [Gateway troubleshooting](/gateway/troubleshooting#split-brain-installs-and-newer-config-guard).
+    - You can always force a full rewrite via `remoteclaw gateway install --force`.
 
   </Accordion>
   <Accordion title="16. Gateway runtime + port diagnostics">

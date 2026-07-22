@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
+import { corePackageAliases } from "./scripts/lib/core-package-aliases.mjs";
 import { pluginSdkSubpaths } from "./scripts/lib/plugin-sdk-entries.mjs";
 import privateLocalOnlyPluginSdkSubpaths from "./scripts/lib/plugin-sdk-private-local-only-subpaths.json" with { type: "json" };
 
@@ -38,6 +39,9 @@ export default defineConfig({
   resolve: {
     // Keep this ordered: the base `remoteclaw/plugin-sdk` alias is a prefix match.
     alias: [
+      // Resolve adopted `@remoteclaw/*-core` packages to source (ADR-0020); their
+      // `exports` point at unbuilt `dist/*.mjs`, so test lanes need source aliases.
+      ...corePackageAliases(repoRoot),
       ...pluginSdkAliasSubpaths.map((subpath) => ({
         find: `remoteclaw/plugin-sdk/${subpath}`,
         replacement: path.join(repoRoot, "src", "plugin-sdk", `${subpath}.ts`),

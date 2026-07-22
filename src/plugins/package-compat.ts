@@ -1,4 +1,4 @@
-import { isRecord } from "../shared/record-coerce.js";
+import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
 
 export type PackagePluginApiRangeResult =
   | { ok: true; range?: string }
@@ -21,7 +21,7 @@ export function resolvePackagePluginApiRange(
     return { ok: true };
   }
   if (!isRecord(compat)) {
-    return { ok: false, error: "package.json openclaw.compat must be an object" };
+    return { ok: false, error: "package.json remoteclaw.compat must be an object" };
   }
   if (!("pluginApi" in compat)) {
     return { ok: true };

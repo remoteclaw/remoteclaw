@@ -1,10 +1,10 @@
 import { spawn } from "node:child_process";
 // Live prompt probe for Anthropic setup-token and Claude CLI prompt-path debugging.
 // Usage:
-// OPENCLAW_PROMPT_TRANSPORT=direct|gateway
-// OPENCLAW_PROMPT_MODE=extra
-// OPENCLAW_PROMPT_TEXT='...'
-// OPENCLAW_PROMPT_CAPTURE=1
+// REMOTECLAW_PROMPT_TRANSPORT=direct|gateway
+// REMOTECLAW_PROMPT_MODE=extra
+// REMOTECLAW_PROMPT_TEXT='...'
+// REMOTECLAW_PROMPT_CAPTURE=1
 // pnpm probe:anthropic:prompt
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
@@ -26,38 +26,44 @@ import {
   redactForDevToolLog,
 } from "./lib/dev-tooling-safety.ts";
 
-const TRANSPORT = process.env.OPENCLAW_PROMPT_TRANSPORT?.trim() === "direct" ? "direct" : "gateway";
+const TRANSPORT =
+  process.env.REMOTECLAW_PROMPT_TRANSPORT?.trim() === "direct" ? "direct" : "gateway";
 const GATEWAY_PROMPT_MODE = "extra";
-const PROMPT_TEXT = process.env.OPENCLAW_PROMPT_TEXT?.trim() ?? "";
-const PROMPT_LIST_JSON = process.env.OPENCLAW_PROMPT_LIST_JSON?.trim() ?? "";
-const USER_PROMPT = process.env.OPENCLAW_USER_PROMPT?.trim() || "is clawd here?";
+const PROMPT_TEXT = process.env.REMOTECLAW_PROMPT_TEXT?.trim() ?? "";
+const PROMPT_LIST_JSON = process.env.REMOTECLAW_PROMPT_LIST_JSON?.trim() ?? "";
+const USER_PROMPT = process.env.REMOTECLAW_USER_PROMPT?.trim() || "is clawd here?";
 const ENABLE_CAPTURE = parseBooleanEnv({
   fallback: false,
-  name: "OPENCLAW_PROMPT_CAPTURE",
-  raw: process.env.OPENCLAW_PROMPT_CAPTURE,
+  name: "REMOTECLAW_PROMPT_CAPTURE",
+  raw: process.env.REMOTECLAW_PROMPT_CAPTURE,
 });
 const INCLUDE_RAW = parseBooleanEnv({
   fallback: false,
-  name: "OPENCLAW_PROMPT_INCLUDE_RAW",
-  raw: process.env.OPENCLAW_PROMPT_INCLUDE_RAW,
+  name: "REMOTECLAW_PROMPT_INCLUDE_RAW",
+  raw: process.env.REMOTECLAW_PROMPT_INCLUDE_RAW,
+});
+const KEEP_TMP = parseBooleanEnv({
+  fallback: false,
+  name: "REMOTECLAW_PROMPT_KEEP_TMP",
+  raw: process.env.REMOTECLAW_PROMPT_KEEP_TMP,
 });
 const CLAUDE_BIN = process.env.CLAUDE_BIN?.trim() || "claude";
-const NODE_BIN = process.env.OPENCLAW_NODE_BIN?.trim() || process.execPath;
+const NODE_BIN = process.env.REMOTECLAW_NODE_BIN?.trim() || process.execPath;
 const TIMEOUT_MS = parseStrictIntegerOption({
   fallback: 45_000,
-  label: "OPENCLAW_PROMPT_TIMEOUT_MS",
+  label: "REMOTECLAW_PROMPT_TIMEOUT_MS",
   min: 1,
-  raw: process.env.OPENCLAW_PROMPT_TIMEOUT_MS,
+  raw: process.env.REMOTECLAW_PROMPT_TIMEOUT_MS,
 });
 const GATEWAY_TIMEOUT_MS = parseStrictIntegerOption({
   fallback: 120_000,
-  label: "OPENCLAW_PROMPT_GATEWAY_TIMEOUT_MS",
+  label: "REMOTECLAW_PROMPT_GATEWAY_TIMEOUT_MS",
   min: 1,
-  raw: process.env.OPENCLAW_PROMPT_GATEWAY_TIMEOUT_MS,
+  raw: process.env.REMOTECLAW_PROMPT_GATEWAY_TIMEOUT_MS,
 });
-const SETUP_TOKEN_RAW = process.env.OPENCLAW_LIVE_SETUP_TOKEN?.trim() ?? "";
-const SETUP_TOKEN_VALUE = process.env.OPENCLAW_LIVE_SETUP_TOKEN_VALUE?.trim() ?? "";
-const SETUP_TOKEN_PROFILE = process.env.OPENCLAW_LIVE_SETUP_TOKEN_PROFILE?.trim() ?? "";
+const SETUP_TOKEN_RAW = process.env.REMOTECLAW_LIVE_SETUP_TOKEN?.trim() ?? "";
+const SETUP_TOKEN_VALUE = process.env.REMOTECLAW_LIVE_SETUP_TOKEN_VALUE?.trim() ?? "";
+const SETUP_TOKEN_PROFILE = process.env.REMOTECLAW_LIVE_SETUP_TOKEN_PROFILE?.trim() ?? "";
 const DIRECT_CLAUDE_ARGS = ["-p", "--append-system-prompt"];
 
 type CaptureSummary = {
@@ -88,7 +94,7 @@ type PromptResult = {
   error?: string;
   matchedExtraUsage400: boolean;
   capture?: CaptureSummary;
-  tmpDir: string;
+  tmpDir?: string;
 };
 
 type ProxyCapture = {
@@ -104,6 +110,17 @@ type ProxyCapture = {
 type TokenSource = {
   profileId: string;
   token: string;
+};
+
+type StoppableGatewayChild = {
+  exitCode: number | null;
+  signalCode: NodeJS.Signals | null;
+  kill(signal: NodeJS.Signals): boolean;
+  once(event: "exit", listener: () => void): unknown;
+};
+
+type ClosableLogFile = {
+  close(): Promise<void>;
 };
 
 function toHeaderValue(value: string | string[] | undefined): string | undefined {
@@ -166,6 +183,17 @@ function matchesExtraUsage400(...parts: Array<string | undefined>): boolean {
     .join(" ")
     .toLowerCase()
     .includes("third-party apps now draw from your extra usage");
+}
+
+function promptProbeTmpResult(tmpDir: string, keepTmp = KEEP_TMP): Pick<PromptResult, "tmpDir"> {
+  return keepTmp ? { tmpDir } : {};
+}
+
+async function cleanupPromptProbeTmpDir(tmpDir: string, keepTmp = KEEP_TMP): Promise<void> {
+  if (keepTmp) {
+    return;
+  }
+  await fs.rm(tmpDir, { force: true, recursive: true });
 }
 
 function isSetupToken(value: string): boolean {
@@ -235,14 +263,16 @@ function resolveSetupTokenSource(): TokenSource {
   const match = pickSetupTokenProfile(candidates);
   if (!match) {
     throw new Error(
-      "no Anthropics setup-token profile found; set OPENCLAW_LIVE_SETUP_TOKEN_VALUE or OPENCLAW_LIVE_SETUP_TOKEN_PROFILE",
+      "no Anthropics setup-token profile found; set REMOTECLAW_LIVE_SETUP_TOKEN_VALUE or REMOTECLAW_LIVE_SETUP_TOKEN_PROFILE",
     );
   }
   return { profileId: match.id, token: validateSetupToken(match.token) };
 }
 
 async function sleep(ms: number): Promise<void> {
-  return await new Promise((resolve) => setTimeout(resolve, ms));
+  return await new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 async function withTimeout<T>(
@@ -265,7 +295,7 @@ function extractProxyCapture(rawBody: string, req: http.IncomingMessage): ProxyC
   let parsed: {
     system?: Array<{ text?: string }>;
     messages?: Array<{ role?: string; content?: unknown }>;
-  } | null = null;
+  } | null;
   try {
     parsed = JSON.parse(rawBody) as typeof parsed;
   } catch {
@@ -311,59 +341,61 @@ function extractProxyCapture(rawBody: string, req: http.IncomingMessage): ProxyC
 async function startAnthropicProxy(params: { port: number; upstreamBaseUrl: string }) {
   let lastCapture: ProxyCapture | undefined;
   const sockets = new Set<import("node:net").Socket>();
-  const server = http.createServer(async (req, res) => {
-    try {
-      const method = req.method ?? "GET";
-      const requestBody = await readRequestBody(req);
-      const rawBody = requestBody.toString("utf8");
-      lastCapture = extractProxyCapture(rawBody, req);
+  const server = http.createServer((req, res) => {
+    void (async () => {
+      try {
+        const method = req.method ?? "GET";
+        const requestBody = await readRequestBody(req);
+        const rawBody = requestBody.toString("utf8");
+        lastCapture = extractProxyCapture(rawBody, req);
 
-      const upstreamUrl = resolveAnthropicUpstreamUrl(req.url, params.upstreamBaseUrl);
-      const headers = new Headers();
-      for (const [key, value] of Object.entries(req.headers)) {
-        if (value === undefined) {
-          continue;
+        const upstreamUrl = resolveAnthropicUpstreamUrl(req.url, params.upstreamBaseUrl);
+        const headers = new Headers();
+        for (const [key, value] of Object.entries(req.headers)) {
+          if (value === undefined) {
+            continue;
+          }
+          const lower = key.toLowerCase();
+          if (lower === "host" || lower === "content-length") {
+            continue;
+          }
+          headers.set(key, Array.isArray(value) ? value.join(", ") : value);
         }
-        const lower = key.toLowerCase();
-        if (lower === "host" || lower === "content-length") {
-          continue;
+        const upstreamRes = await fetch(upstreamUrl, {
+          method,
+          headers,
+          body:
+            method === "GET" || method === "HEAD" || requestBody.byteLength === 0
+              ? undefined
+              : requestBody,
+          duplex: "half",
+        });
+        const responseHeaders: Record<string, string> = {};
+        for (const [key, value] of upstreamRes.headers.entries()) {
+          const lower = key.toLowerCase();
+          if (
+            lower === "content-length" ||
+            lower === "content-encoding" ||
+            lower === "transfer-encoding" ||
+            lower === "connection" ||
+            lower === "keep-alive"
+          ) {
+            continue;
+          }
+          responseHeaders[key] = value;
         }
-        headers.set(key, Array.isArray(value) ? value.join(", ") : value);
+        res.writeHead(upstreamRes.status, responseHeaders);
+        if (upstreamRes.body) {
+          for await (const chunk of upstreamRes.body) {
+            res.write(Buffer.from(chunk));
+          }
+        }
+        res.end();
+      } catch (error) {
+        res.writeHead(502, { "content-type": "text/plain; charset=utf-8" });
+        res.end(redactForDevToolLog(`proxy error: ${String(error)}`));
       }
-      const upstreamRes = await fetch(upstreamUrl, {
-        method,
-        headers,
-        body:
-          method === "GET" || method === "HEAD" || requestBody.byteLength === 0
-            ? undefined
-            : requestBody,
-        duplex: "half",
-      });
-      const responseHeaders: Record<string, string> = {};
-      for (const [key, value] of upstreamRes.headers.entries()) {
-        const lower = key.toLowerCase();
-        if (
-          lower === "content-length" ||
-          lower === "content-encoding" ||
-          lower === "transfer-encoding" ||
-          lower === "connection" ||
-          lower === "keep-alive"
-        ) {
-          continue;
-        }
-        responseHeaders[key] = value;
-      }
-      res.writeHead(upstreamRes.status, responseHeaders);
-      if (upstreamRes.body) {
-        for await (const chunk of upstreamRes.body) {
-          res.write(Buffer.from(chunk));
-        }
-      }
-      res.end();
-    } catch (error) {
-      res.writeHead(502, { "content-type": "text/plain; charset=utf-8" });
-      res.end(redactForDevToolLog(`proxy error: ${String(error)}`));
-    }
+    })();
   });
   server.on("connection", (socket) => {
     sockets.add(socket);
@@ -407,45 +439,50 @@ async function runDirectPrompt(prompt: string): Promise<PromptResult> {
       ? await startAnthropicProxy({ port: proxyPort, upstreamBaseUrl: "https://api.anthropic.com" })
       : undefined;
 
-  const stdout: string[] = [];
-  const stderr: string[] = [];
-  const child = spawn(CLAUDE_BIN, [...DIRECT_CLAUDE_ARGS, prompt, USER_PROMPT], {
-    cwd: process.cwd(),
-    env: {
-      ...process.env,
-      ...(proxyPort ? { ANTHROPIC_BASE_URL: `http://127.0.0.1:${proxyPort}` } : {}),
-      ANTHROPIC_API_KEY: "",
-      ANTHROPIC_API_KEY_OLD: "",
-    },
-    stdio: ["ignore", "pipe", "pipe"],
-  });
-  child.stdout.on("data", (chunk) => stdout.push(String(chunk)));
-  child.stderr.on("data", (chunk) => stderr.push(String(chunk)));
-  const exit = await withTimeout(
-    new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
-      child.once("exit", (code, signal) => resolve({ code, signal }));
-    }),
-    TIMEOUT_MS,
-    () => {
-      child.kill("SIGKILL");
-      return { code: null, signal: "SIGKILL" as NodeJS.Signals };
-    },
-  );
-  await proxy?.stop().catch(() => {});
-  const joinedStdout = stdout.join("");
-  const joinedStderr = stderr.join("");
-  return {
-    prompt,
-    ok: exit.code === 0 && !matchesExtraUsage400(joinedStdout, joinedStderr),
-    transport: "direct",
-    exitCode: exit.code,
-    signal: exit.signal,
-    stdout: redactForDevToolLog(joinedStdout.trim()) || undefined,
-    stderr: redactForDevToolLog(joinedStderr.trim()) || undefined,
-    matchedExtraUsage400: matchesExtraUsage400(joinedStdout, joinedStderr),
-    capture: summarizeCapture(proxy?.getLastCapture(), prompt),
-    tmpDir,
-  };
+  try {
+    const stdout: string[] = [];
+    const stderr: string[] = [];
+    const child = spawn(CLAUDE_BIN, [...DIRECT_CLAUDE_ARGS, prompt, USER_PROMPT], {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        ...(proxyPort ? { ANTHROPIC_BASE_URL: `http://127.0.0.1:${proxyPort}` } : {}),
+        ANTHROPIC_API_KEY: "",
+        ANTHROPIC_API_KEY_OLD: "",
+      },
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    child.stdout.on("data", (chunk) => stdout.push(String(chunk)));
+    child.stderr.on("data", (chunk) => stderr.push(String(chunk)));
+    const exit = await withTimeout(
+      new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
+        child.once("error", reject);
+        child.once("exit", (code, signal) => resolve({ code, signal }));
+      }),
+      TIMEOUT_MS,
+      () => {
+        child.kill("SIGKILL");
+        return { code: null, signal: "SIGKILL" as NodeJS.Signals };
+      },
+    );
+    const joinedStdout = stdout.join("");
+    const joinedStderr = stderr.join("");
+    return {
+      prompt,
+      ok: exit.code === 0 && !matchesExtraUsage400(joinedStdout, joinedStderr),
+      transport: "direct",
+      exitCode: exit.code,
+      signal: exit.signal,
+      stdout: redactForDevToolLog(joinedStdout.trim()) || undefined,
+      stderr: redactForDevToolLog(joinedStderr.trim()) || undefined,
+      matchedExtraUsage400: matchesExtraUsage400(joinedStdout, joinedStderr),
+      capture: summarizeCapture(proxy?.getLastCapture(), prompt),
+      ...promptProbeTmpResult(tmpDir),
+    };
+  } finally {
+    await proxy?.stop().catch(() => {});
+    await cleanupPromptProbeTmpDir(tmpDir).catch(() => {});
+  }
 }
 
 async function startGatewayProcess(params: {
@@ -460,23 +497,23 @@ async function startGatewayProcess(params: {
   const logFile = await fs.open(params.logPath, "a");
   const child = spawn(
     NODE_BIN,
-    ["openclaw.mjs", "gateway", "--port", String(params.port), "--bind", "loopback", "--force"],
+    ["remoteclaw.mjs", "gateway", "--port", String(params.port), "--bind", "loopback", "--force"],
     {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        OPENCLAW_CONFIG_PATH: params.configPath,
-        OPENCLAW_STATE_DIR: params.stateDir,
-        OPENCLAW_AGENT_DIR: params.agentDir,
-        OPENCLAW_GATEWAY_TOKEN: params.gatewayToken,
-        OPENCLAW_SKIP_CHANNELS: "1",
-        OPENCLAW_SKIP_GMAIL_WATCHER: "1",
-        OPENCLAW_SKIP_CANVAS_HOST: "1",
-        OPENCLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
-        OPENCLAW_DISABLE_BONJOUR: "1",
-        OPENCLAW_SKIP_CRON: "1",
-        OPENCLAW_TEST_MINIMAL_GATEWAY: "1",
-        OPENCLAW_BUNDLED_PLUGINS_DIR: params.bundledPluginsDir,
+        REMOTECLAW_CONFIG_PATH: params.configPath,
+        REMOTECLAW_STATE_DIR: params.stateDir,
+        REMOTECLAW_AGENT_DIR: params.agentDir,
+        REMOTECLAW_GATEWAY_TOKEN: params.gatewayToken,
+        REMOTECLAW_SKIP_CHANNELS: "1",
+        REMOTECLAW_SKIP_GMAIL_WATCHER: "1",
+        REMOTECLAW_SKIP_CANVAS_HOST: "1",
+        REMOTECLAW_SKIP_BROWSER_CONTROL_SERVER: "1",
+        REMOTECLAW_DISABLE_BONJOUR: "1",
+        REMOTECLAW_SKIP_CRON: "1",
+        REMOTECLAW_TEST_MINIMAL_GATEWAY: "1",
+        REMOTECLAW_BUNDLED_PLUGINS_DIR: params.bundledPluginsDir,
         ANTHROPIC_API_KEY: "",
         ANTHROPIC_API_KEY_OLD: "",
       },
@@ -486,21 +523,45 @@ async function startGatewayProcess(params: {
   child.stdout.on("data", (chunk) => void logFile.appendFile(chunk));
   child.stderr.on("data", (chunk) => void logFile.appendFile(chunk));
   return {
-    async stop() {
-      if (!child.killed) {
-        child.kill("SIGINT");
-      }
-      const exited = await withTimeout(
-        new Promise<boolean>((resolve) => child.once("exit", () => resolve(true))),
-        1_500,
-        () => false,
-      );
-      if (!exited && !child.killed) {
-        child.kill("SIGKILL");
-      }
-      await logFile.close();
+    async stop(): Promise<boolean> {
+      return await stopGatewayPromptChild(child, logFile);
     },
   };
+}
+
+async function stopGatewayPromptChild(
+  child: StoppableGatewayChild,
+  logFile: ClosableLogFile,
+  sigintTimeoutMs = 1_500,
+  sigkillTimeoutMs = 1_500,
+): Promise<boolean> {
+  let exited = child.exitCode !== null || child.signalCode !== null;
+  const exitPromise = exited
+    ? Promise.resolve()
+    : new Promise<void>((resolve) => {
+        child.once("exit", () => {
+          exited = true;
+          resolve();
+        });
+      });
+  if (!exited) {
+    child.kill("SIGINT");
+  }
+  const exitedAfterSigint = await withTimeout(
+    exitPromise.then(() => true),
+    sigintTimeoutMs,
+    () => false,
+  );
+  if (!exitedAfterSigint && !exited) {
+    child.kill("SIGKILL");
+    await withTimeout(
+      exitPromise.then(() => true),
+      sigkillTimeoutMs,
+      () => false,
+    );
+  }
+  await logFile.close();
+  return exited;
 }
 
 async function waitForGatewayReady(url: string, token: string): Promise<void> {
@@ -529,7 +590,7 @@ async function runGatewayPrompt(prompt: string): Promise<PromptResult> {
   const stateDir = path.join(tmpDir, "state");
   const agentDir = path.join(stateDir, "agents", "main", "agent");
   const bundledPluginsDir = path.join(tmpDir, "bundled-plugins-empty");
-  const configPath = path.join(tmpDir, "openclaw.json");
+  const configPath = path.join(tmpDir, "remoteclaw.json");
   const logPath = path.join(tmpDir, "gateway.log");
   const gatewayToken = `gw-${randomUUID()}`;
   const port = await getFreePort();
@@ -538,80 +599,81 @@ async function runGatewayPrompt(prompt: string): Promise<PromptResult> {
     ENABLE_CAPTURE && proxyPort
       ? await startAnthropicProxy({ port: proxyPort, upstreamBaseUrl: "https://api.anthropic.com" })
       : undefined;
+  let gateway: Awaited<ReturnType<typeof startGatewayProcess>> | undefined;
 
-  await fs.mkdir(agentDir, { recursive: true });
-  await fs.mkdir(bundledPluginsDir, { recursive: true });
-  await fs.writeFile(
-    configPath,
-    `${JSON.stringify(
-      {
-        gateway: {
-          mode: "local",
-          controlUi: { enabled: false },
-          tailscale: { mode: "off" },
-        },
-        discovery: {
-          mdns: { mode: "off" },
-          wideArea: { enabled: false },
-        },
-        ...(proxyPort
-          ? {
-              models: {
-                providers: {
-                  anthropic: {
-                    baseUrl: `http://127.0.0.1:${proxyPort}`,
-                    api: "anthropic-messages",
-                    models: [],
+  try {
+    await fs.mkdir(agentDir, { recursive: true });
+    await fs.mkdir(bundledPluginsDir, { recursive: true });
+    await fs.writeFile(
+      configPath,
+      `${JSON.stringify(
+        {
+          gateway: {
+            mode: "local",
+            controlUi: { enabled: false },
+            tailscale: { mode: "off" },
+          },
+          discovery: {
+            mdns: { mode: "off" },
+            wideArea: { enabled: false },
+          },
+          ...(proxyPort
+            ? {
+                models: {
+                  providers: {
+                    anthropic: {
+                      baseUrl: `http://127.0.0.1:${proxyPort}`,
+                      api: "anthropic-messages",
+                      models: [],
+                    },
                   },
                 },
+              }
+            : {}),
+          auth: {
+            profiles: { [tokenSource.profileId]: { provider: "anthropic", mode: "token" } },
+            order: { anthropic: [tokenSource.profileId] },
+          },
+          agents: {
+            defaults: {
+              model: "anthropic/claude-sonnet-4-6",
+              heartbeat: {
+                includeSystemPromptSection: false,
               },
-            }
-          : {}),
-        auth: {
-          profiles: { [tokenSource.profileId]: { provider: "anthropic", mode: "token" } },
-          order: { anthropic: [tokenSource.profileId] },
-        },
-        agents: {
-          defaults: {
-            model: "anthropic/claude-sonnet-4-6",
-            heartbeat: {
-              includeSystemPromptSection: false,
             },
           },
         },
-      },
-      null,
-      2,
-    )}\n`,
-  );
-  await fs.writeFile(
-    path.join(agentDir, "auth-profiles.json"),
-    `${JSON.stringify(
-      {
-        version: 1,
-        profiles: {
-          [tokenSource.profileId]: {
-            type: "token",
-            provider: "anthropic",
-            token: tokenSource.token,
+        null,
+        2,
+      )}\n`,
+    );
+    await fs.writeFile(
+      path.join(agentDir, "auth-profiles.json"),
+      `${JSON.stringify(
+        {
+          version: 1,
+          profiles: {
+            [tokenSource.profileId]: {
+              type: "token",
+              provider: "anthropic",
+              token: tokenSource.token,
+            },
           },
         },
-      },
-      null,
-      2,
-    )}\n`,
-  );
+        null,
+        2,
+      )}\n`,
+    );
 
-  const gateway = await startGatewayProcess({
-    port,
-    gatewayToken,
-    configPath,
-    stateDir,
-    agentDir,
-    bundledPluginsDir,
-    logPath,
-  });
-  try {
+    gateway = await startGatewayProcess({
+      port,
+      gatewayToken,
+      configPath,
+      stateDir,
+      agentDir,
+      bundledPluginsDir,
+      logPath,
+    });
     const url = `ws://127.0.0.1:${port}`;
     await waitForGatewayReady(url, gatewayToken);
     const agentRes = await callGateway({
@@ -638,7 +700,7 @@ async function runGatewayPrompt(prompt: string): Promise<PromptResult> {
         error: redactForDevToolLog(`missing runId: ${JSON.stringify(agentRes)}`),
         matchedExtraUsage400: false,
         capture: summarizeCapture(proxy?.getLastCapture(), prompt),
-        tmpDir,
+        ...promptProbeTmpResult(tmpDir),
       };
     }
     const waitRes = await callGateway({
@@ -666,17 +728,20 @@ async function runGatewayPrompt(prompt: string): Promise<PromptResult> {
           : redactForDevToolLog(waitRes.error || logTail || "agent.wait failed"),
       matchedExtraUsage400: matched400,
       capture: summarizeCapture(proxy?.getLastCapture(), prompt),
-      tmpDir,
+      ...promptProbeTmpResult(tmpDir),
     };
   } finally {
-    await gateway.stop().catch(() => {});
+    const gatewayStopped = (await gateway?.stop().catch(() => false)) ?? true;
     await proxy?.stop().catch(() => {});
+    if (gatewayStopped) {
+      await cleanupPromptProbeTmpDir(tmpDir).catch(() => {});
+    }
   }
 }
 
 async function main() {
   if (!PROMPT_TEXT && !PROMPT_LIST_JSON) {
-    throw new Error("missing OPENCLAW_PROMPT_TEXT or OPENCLAW_PROMPT_LIST_JSON");
+    throw new Error("missing REMOTECLAW_PROMPT_TEXT or REMOTECLAW_PROMPT_LIST_JSON");
   }
   const prompts = PROMPT_LIST_JSON ? (JSON.parse(PROMPT_LIST_JSON) as string[]) : [PROMPT_TEXT];
   const results: PromptResult[] = [];
@@ -700,14 +765,17 @@ async function main() {
 }
 
 export const testing = {
+  cleanupPromptProbeTmpDir,
   matchesExtraUsage400,
+  promptProbeTmpResult,
   resolveAnthropicUpstreamUrl,
+  stopGatewayPromptChild,
   summarizeCapture,
   summarizeText,
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  await main().catch((error) => {
+  await main().catch((error: unknown) => {
     console.error(redactForDevToolLog(error instanceof Error ? error.message : String(error)));
     process.exitCode = 1;
   });

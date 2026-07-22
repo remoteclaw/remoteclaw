@@ -1,9 +1,9 @@
-import type { RemoteClawConfig } from "../config/types.js";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
   normalizeOptionalString,
-} from "../shared/string-coerce.js";
+} from "@remoteclaw/normalization-core/string-coerce";
+import type { RemoteClawConfig } from "../config/types.js";
 import { escapeRegExp } from "../utils.js";
 import { getChatCommands } from "./commands-registry.data.js";
 import type {

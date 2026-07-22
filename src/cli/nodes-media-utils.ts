@@ -1,22 +1,12 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import { resolvePreferredRemoteClawTmpDir } from "../infra/tmp-remoteclaw-dir.js";
+export { asFiniteNumber as asNumber } from "../../packages/normalization-core/src/number-coercion.js";
+import { readStringValue } from "../../packages/normalization-core/src/string-coerce.js";
+export { asRecord } from "../../packages/normalization-core/src/record-coerce.js";
+export { asBoolean } from "../utils/boolean.js";
 
-export function asRecord(value: unknown): Record<string, unknown> {
-  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : {};
-}
-
-export function asString(value: unknown): string | undefined {
-  return typeof value === "string" ? value : undefined;
-}
-
-export function asNumber(value: unknown): number | undefined {
-  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
-}
-
-export function asBoolean(value: unknown): boolean | undefined {
-  return typeof value === "boolean" ? value : undefined;
-}
+export const asString = readStringValue;
 
 export function resolveTempPathParts(opts: { ext: string; tmpDir?: string; id?: string }): {
   ext: string;

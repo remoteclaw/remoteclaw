@@ -6,5 +6,5 @@ export {
   getFileExtension,
   mimeTypeFromFilePath,
   normalizeMimeType,
-} from "../media/mime.js";
-export { mediaKindFromMime, type MediaKind } from "../media/constants.js";
+} from "@remoteclaw/media-core/mime";
+export { mediaKindFromMime, type MediaKind } from "@remoteclaw/media-core/constants";

@@ -1,5 +1,5 @@
+import { normalizeOptionalLowercaseString } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 
 type PluginEntriesConfig = NonNullable<NonNullable<RemoteClawConfig["plugins"]>["entries"]>;

@@ -1,4 +1,4 @@
-import { normalizeOptionalString } from "../../shared/string-coerce.js";
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { SessionEntry } from "./types.js";
 
 export function hasSessionAutoModelFallbackProvenance(

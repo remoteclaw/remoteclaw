@@ -8,7 +8,7 @@ title: "Gateway protocol"
 ---
 
 The Gateway WS protocol is the **single control plane + node transport** for
-OpenClaw. All clients (CLI, web UI, macOS app, iOS/Android nodes, headless
+RemoteClaw. All clients (CLI, web UI, macOS app, iOS/Android nodes, headless
 nodes) connect over WebSocket and declare their **role** + **scope** at
 handshake time.
 
@@ -59,7 +59,7 @@ Client → Gateway:
     "permissions": {},
     "auth": { "token": "…" },
     "locale": "en-US",
-    "userAgent": "openclaw-cli/1.2.3",
+    "userAgent": "remoteclaw-cli/1.2.3",
     "device": {
       "id": "device_fingerprint",
       "publicKey": "…",
@@ -200,7 +200,7 @@ loopback/local pairing.
     "permissions": { "camera.capture": true, "screen.record": false },
     "auth": { "token": "…" },
     "locale": "en-US",
-    "userAgent": "openclaw-ios/1.2.3",
+    "userAgent": "remoteclaw-ios/1.2.3",
     "device": {
       "id": "device_fingerprint",
       "publicKey": "…",
@@ -348,7 +348,8 @@ enumeration of `src/gateway/server-methods/*.ts`.
     - `usage.status` returns provider usage windows/remaining quota summaries.
     - `usage.cost` returns aggregated cost usage summaries for a date range.
       Pass `agentId` for one agent, or `agentScope: "all"` to aggregate configured agents.
-    - `doctor.memory.status` returns vector-memory / cached embedding readiness for the active default agent workspace. Pass `{ "probe": true }` or `{ "deep": true }` only when the caller explicitly wants a live embedding provider ping.
+    - `doctor.memory.status` returns vector-memory / cached embedding readiness for the active default agent workspace. Pass `{ "probe": true }` or `{ "deep": true }` only when the caller explicitly wants a live embedding provider ping. Dreaming-aware clients may also pass `{ "agentId": "agent-id" }` to scope Dreaming store stats to a selected agent workspace; omitting `agentId` keeps the default-agent fallback and aggregates configured Dreaming workspaces.
+    - `doctor.memory.dreamDiary`, `doctor.memory.backfillDreamDiary`, `doctor.memory.resetDreamDiary`, `doctor.memory.resetGroundedShortTerm`, `doctor.memory.repairDreamingArtifacts`, and `doctor.memory.dedupeDreamDiary` accept optional `{ "agentId": "agent-id" }` params for selected-agent Dreaming views/actions. When `agentId` is omitted, they operate on the configured default agent workspace.
     - `doctor.memory.remHarness` returns a bounded, read-only REM harness preview for remote control-plane clients. It can include workspace paths, memory snippets, rendered grounded markdown, and deep promotion candidates, so callers need `operator.read`.
     - `sessions.usage` returns per-session usage summaries. Pass `agentId` for one
       agent, or `agentScope: "all"` to list configured agents together.
@@ -387,7 +388,7 @@ enumeration of `src/gateway/server-methods/*.ts`.
     - `talk.session.close` closes a Gateway-owned relay, transcription, or managed-room session and emits terminal Talk events.
     - `talk.mode` sets/broadcasts the current Talk mode state for WebChat/Control UI clients.
     - `talk.client.create` creates a client-owned realtime provider session using `webrtc` or `provider-websocket` while the Gateway owns config, credentials, instructions, and tool policy.
-    - `talk.client.toolCall` lets client-owned realtime transports forward provider tool calls to Gateway policy. The first supported tool is `openclaw_agent_consult`; clients receive a run id and wait for normal chat lifecycle events before submitting the provider-specific tool result.
+    - `talk.client.toolCall` lets client-owned realtime transports forward provider tool calls to Gateway policy. The first supported tool is `remoteclaw_agent_consult`; clients receive a run id and wait for normal chat lifecycle events before submitting the provider-specific tool result.
     - `talk.client.steer` sends active-run voice control for client-owned realtime transports. The Gateway resolves the active embedded run from `sessionKey` and returns a structured accepted/rejected result instead of silently dropping steering.
     - `talk.event` is the single Talk event channel for realtime, transcription, STT/TTS, managed-room, telephony, and meeting adapters.
     - `talk.speak` synthesizes speech through the active Talk speech provider.
@@ -441,6 +442,7 @@ enumeration of `src/gateway/server-methods/*.ts`.
     - `sessions.reset`, `sessions.delete`, and `sessions.compact` perform session maintenance.
     - `sessions.get` returns the full stored session row.
     - Chat execution still uses `chat.history`, `chat.send`, `chat.abort`, and `chat.inject`. `chat.history` is display-normalized for UI clients: inline directive tags are stripped from visible text, plain-text tool-call XML payloads (including `<tool_call>...</tool_call>`, `<function_call>...</function_call>`, `<tool_calls>...</tool_calls>`, `<function_calls>...</function_calls>`, and truncated tool-call blocks) and leaked ASCII/full-width model control tokens are stripped, pure silent-token assistant rows such as exact `NO_REPLY` / `no_reply` are omitted, and oversized rows can be replaced with placeholders.
+    - `chat.message.get` is the additive bounded full-message reader for a single visible transcript entry. Clients pass `sessionKey`, optional `agentId` when the session selection is agent-scoped, plus a transcript `messageId` previously surfaced through `chat.history`, and the Gateway returns the same display-normalized projection without the lightweight history truncation cap when the stored entry is still available and not oversized.
 
   </Accordion>
 
@@ -611,7 +613,7 @@ terminal summary, and sanitized error text.
     `skills.install.allowUploadedArchives` is enabled. The setting does not
     affect ClawHub installs.
   - Gateway installer mode: `{ name, installId, dangerouslyForceUnsafeInstall?, timeoutMs? }`
-    runs a declared `metadata.openclaw.install` action on the gateway host.
+    runs a declared `metadata.remoteclaw.install` action on the gateway host.
 - Operators may call `skills.update` (`operator.admin`) in two modes:
   - ClawHub mode updates one tracked slug or all tracked ClawHub installs in
     the default agent workspace.
@@ -644,7 +646,7 @@ terminal summary, and sanitized error text.
 - `bestEffortDeliver=true` allows fallback to session-only execution when no external deliverable route can be resolved (for example internal/webchat sessions or ambiguous multi-channel configs).
 - Final `agent` results may include `result.deliveryStatus` when delivery was
   requested, using the same `sent`, `suppressed`, `partial_failed`, and `failed`
-  statuses documented for [`openclaw agent --json --deliver`](/cli/agent#json-delivery-status).
+  statuses documented for [`remoteclaw agent --json --deliver`](/cli/agent#json-delivery-status).
 
 ## Versioning
 
@@ -761,7 +763,7 @@ rather than the pre-handshake defaults.
 - Pairing approvals are required for new device IDs unless local auto-approval
   is enabled.
 - Pairing auto-approval is centered on direct local loopback connects.
-- OpenClaw also has a narrow backend/container-local self-connect path for
+- RemoteClaw also has a narrow backend/container-local self-connect path for
   trusted shared-secret helper flows.
 - Same-host tailnet or LAN connects are still treated as remote for pairing and
   require approval.

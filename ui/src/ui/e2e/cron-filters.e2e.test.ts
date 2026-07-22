@@ -3,15 +3,16 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   canRunPlaywrightChromium,
   installMockGateway,
+  resolvePlaywrightChromiumExecutablePath,
   startControlUiE2eServer,
   type ControlUiE2eServer,
   type MockGatewayControls,
   type MockGatewayRequest,
 } from "../../test-helpers/control-ui-e2e.ts";
 
-const chromiumExecutablePath = chromium.executablePath();
+const chromiumExecutablePath = resolvePlaywrightChromiumExecutablePath(chromium.executablePath());
 const chromiumAvailable = canRunPlaywrightChromium(chromiumExecutablePath);
-const allowMissingChromium = process.env.OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
+const allowMissingChromium = process.env.REMOTECLAW_UI_E2E_ALLOW_MISSING_CHROMIUM === "1";
 const describeControlUiE2e = chromiumAvailable || !allowMissingChromium ? describe : describe.skip;
 
 let browser: Browser;
@@ -66,7 +67,9 @@ async function waitForCronListRequest(
     if (match) {
       return match;
     }
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise((resolve) => {
+      setTimeout(resolve, 50);
+    });
   }
   throw new Error(`No matching cron.list request found: ${JSON.stringify(requests)}`);
 }
@@ -112,11 +115,11 @@ describeControlUiE2e("Control UI cron mocked Gateway E2E", () => {
   beforeAll(async () => {
     if (!chromiumAvailable) {
       throw new Error(
-        `Playwright Chromium is not installed at ${chromiumExecutablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set OPENCLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
+        `Playwright Chromium is not installed at ${chromiumExecutablePath}. Run \`pnpm --dir ui exec playwright install chromium\`, or set REMOTECLAW_UI_E2E_ALLOW_MISSING_CHROMIUM=1 only when intentionally skipping this lane.`,
       );
     }
     server = await startControlUiE2eServer();
-    browser = await chromium.launch();
+    browser = await chromium.launch({ executablePath: chromiumExecutablePath });
   });
 
   afterAll(async () => {
@@ -174,7 +177,7 @@ describeControlUiE2e("Control UI cron mocked Gateway E2E", () => {
           enabled: true,
           jobs: 2,
           nextWakeAtMs: Date.parse("2026-05-29T09:00:00.000Z"),
-          storePath: "/tmp/openclaw-e2e/cron/jobs.json",
+          storePath: "/tmp/remoteclaw-e2e/cron/jobs.json",
         },
       },
     });

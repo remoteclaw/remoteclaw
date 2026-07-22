@@ -187,19 +187,19 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "skipChannels",
     name: "gateway restart, skip channels",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { REMOTECLAW_SKIP_CHANNELS: "1" },
     config: BASE_CONFIG,
   },
   {
     id: "skipChannelsAcpxProbe",
     name: "gateway restart, skip channels, ACPX startup probe on",
-    env: { OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE: "1", OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { REMOTECLAW_ACPX_RUNTIME_STARTUP_PROBE: "1", REMOTECLAW_SKIP_CHANNELS: "1" },
     config: BASE_CONFIG,
   },
   {
     id: "skipChannelsNoAcpxProbe",
     name: "gateway restart, skip channels, ACPX startup probe off",
-    env: { OPENCLAW_ACPX_RUNTIME_STARTUP_PROBE: "0", OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { REMOTECLAW_ACPX_RUNTIME_STARTUP_PROBE: "0", REMOTECLAW_SKIP_CHANNELS: "1" },
     config: BASE_CONFIG,
   },
   {
@@ -210,7 +210,7 @@ const GATEWAY_CASES: readonly GatewayBenchCase[] = [
   {
     id: "fiftyPlugins",
     name: "gateway restart, 50 manifest plugins",
-    env: { OPENCLAW_SKIP_CHANNELS: "1" },
+    env: { REMOTECLAW_SKIP_CHANNELS: "1" },
     pluginActivationOnStartup: true,
     pluginCount: 50,
     config: BASE_CONFIG,
@@ -315,7 +315,7 @@ function parseOptions(): CliOptions {
 }
 
 function printUsage(): void {
-  console.log(`OpenClaw Gateway restart benchmark
+  console.log(`RemoteClaw Gateway restart benchmark
 
 Usage:
   pnpm test:restart:gateway -- [options]
@@ -777,7 +777,7 @@ function writePluginFixtures(
       `module.exports = { id: ${JSON.stringify(id)}, register() {} };\n`,
     );
     writeFileSync(
-      path.join(pluginDir, "openclaw.plugin.json"),
+      path.join(pluginDir, "remoteclaw.plugin.json"),
       `${JSON.stringify(
         {
           id,
@@ -810,7 +810,7 @@ function writeConfig(root: string, benchCase: GatewayBenchCase): string {
         : {}),
     },
   };
-  const configPath = path.join(root, "openclaw.json");
+  const configPath = path.join(root, "remoteclaw.json");
   writeFileSync(configPath, `${JSON.stringify(config, null, 2)}\n`);
   return configPath;
 }
@@ -831,20 +831,20 @@ function sanitizedEnv(
     TMPDIR: process.env.TMPDIR,
     USER: process.env.USER ?? "remoteclaw-bench",
     npm_config_update_notifier: "false",
-    OPENCLAW_CONFIG: configPath,
-    OPENCLAW_CONFIG_PATH: configPath,
-    OPENCLAW_GATEWAY_RESTART_TRACE: "1",
-    OPENCLAW_GATEWAY_STARTUP_TRACE: "1",
-    OPENCLAW_HOME: root,
-    OPENCLAW_NO_RESPAWN: "1",
-    OPENCLAW_STATE_DIR: path.join(root, "state"),
-    OPENCLAW_TEST_DISABLE_UPDATE_CHECK: "1",
+    REMOTECLAW_CONFIG: configPath,
+    REMOTECLAW_CONFIG_PATH: configPath,
+    REMOTECLAW_GATEWAY_RESTART_TRACE: "1",
+    REMOTECLAW_GATEWAY_STARTUP_TRACE: "1",
+    REMOTECLAW_HOME: root,
+    REMOTECLAW_NO_RESPAWN: "1",
+    REMOTECLAW_STATE_DIR: path.join(root, "state"),
+    REMOTECLAW_TEST_DISABLE_UPDATE_CHECK: "1",
     ...benchCase.env,
   };
 }
 
 function writeRestartIntent(env: NodeJS.ProcessEnv, targetPid: number, reason: string): boolean {
-  const stateDir = env.OPENCLAW_STATE_DIR;
+  const stateDir = env.REMOTECLAW_STATE_DIR;
   if (!stateDir) {
     return false;
   }
@@ -1679,7 +1679,7 @@ export const testing = {
 };
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
-  main().catch((err) => {
+  main().catch((err: unknown) => {
     console.error(err instanceof Error ? err.stack : String(err));
     process.exitCode = 1;
   });

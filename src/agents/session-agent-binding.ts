@@ -1,13 +1,13 @@
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalString,
+} from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   parseAgentSessionKey,
   normalizeAgentId,
   normalizeMainKey,
 } from "../routing/session-key.js";
-import {
-  normalizeLowercaseStringOrEmpty,
-  normalizeOptionalString,
-} from "../shared/string-coerce.js";
 import { resolveDefaultAgentId } from "./agent-scope.js";
 
 export const MODULE_ATTESTATIONS = {

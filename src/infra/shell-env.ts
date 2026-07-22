@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { resolveTimerTimeoutMs } from "@remoteclaw/normalization-core/number-coercion";
 import { isTruthyEnvValue } from "./env.js";
 import { formatErrorMessage } from "./errors.js";
 import { sanitizeHostExecEnv } from "./host-env-security.js";
@@ -37,10 +38,7 @@ function resolveShellExecEnv(env: NodeJS.ProcessEnv): NodeJS.ProcessEnv {
 }
 
 function resolveTimeoutMs(timeoutMs: number | undefined): number {
-  if (typeof timeoutMs !== "number" || !Number.isFinite(timeoutMs)) {
-    return DEFAULT_TIMEOUT_MS;
-  }
-  return Math.max(0, timeoutMs);
+  return resolveTimerTimeoutMs(timeoutMs, DEFAULT_TIMEOUT_MS, 0);
 }
 
 function readEtcShells(): Set<string> | null {
@@ -154,7 +152,7 @@ function createLoginShellEnvCacheKey(params: {
       ) {
         return true;
       }
-      return key.startsWith("XDG_") || key.startsWith("OPENCLAW_");
+      return key.startsWith("XDG_") || key.startsWith("REMOTECLAW_");
     })
     .toSorted(([left], [right]) => left.localeCompare(right));
   return JSON.stringify([
@@ -223,7 +221,7 @@ type ShellEnvFallbackOptions = {
 };
 
 function hasExplicitEnvBinding(env: NodeJS.ProcessEnv, key: string): boolean {
-  return Object.prototype.hasOwnProperty.call(env, key);
+  return Object.hasOwn(env, key);
 }
 
 export function loadShellEnvFallback(opts: ShellEnvFallbackOptions): ShellEnvFallbackResult {
@@ -269,15 +267,15 @@ export function loadShellEnvFallback(opts: ShellEnvFallbackOptions): ShellEnvFal
 }
 
 export function shouldEnableShellEnvFallback(env: NodeJS.ProcessEnv): boolean {
-  return isTruthyEnvValue(env.OPENCLAW_LOAD_SHELL_ENV);
+  return isTruthyEnvValue(env.REMOTECLAW_LOAD_SHELL_ENV);
 }
 
 export function shouldDeferShellEnvFallback(env: NodeJS.ProcessEnv): boolean {
-  return isTruthyEnvValue(env.OPENCLAW_DEFER_SHELL_ENV_FALLBACK);
+  return isTruthyEnvValue(env.REMOTECLAW_DEFER_SHELL_ENV_FALLBACK);
 }
 
 export function resolveShellEnvFallbackTimeoutMs(env: NodeJS.ProcessEnv): number {
-  const raw = env.OPENCLAW_SHELL_ENV_TIMEOUT_MS?.trim();
+  const raw = env.REMOTECLAW_SHELL_ENV_TIMEOUT_MS?.trim();
   if (!raw) {
     return DEFAULT_TIMEOUT_MS;
   }
@@ -285,7 +283,7 @@ export function resolveShellEnvFallbackTimeoutMs(env: NodeJS.ProcessEnv): number
   if (parsed === undefined) {
     return DEFAULT_TIMEOUT_MS;
   }
-  return parsed;
+  return resolveTimeoutMs(parsed);
 }
 
 export function getShellPathFromLoginShell(opts: {

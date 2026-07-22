@@ -187,7 +187,7 @@ message bodies are also approved for export.
 - `gen_ai.client.operation.duration` (histogram, seconds, GenAI semantic-conventions metric, attrs: `gen_ai.provider.name`, `gen_ai.operation.name`, `gen_ai.request.model`, optional `error.type`)
 - `remoteclaw.model_call.duration_ms` (histogram, attrs: `remoteclaw.provider`, `remoteclaw.model`, `remoteclaw.api`, `remoteclaw.transport`, plus `remoteclaw.errorCategory` and `remoteclaw.failureKind` on classified errors)
 - `remoteclaw.model_call.request_bytes` (histogram, UTF-8 byte size of the final model request payload; no raw payload content)
-- `remoteclaw.model_call.response_bytes` (histogram, UTF-8 byte size of streamed model response events; no raw response content)
+- `remoteclaw.model_call.response_bytes` (histogram, UTF-8 byte size of streamed model response events excluding accumulated `partial` snapshots on delta events; no raw response content)
 - `remoteclaw.model_call.time_to_first_byte_ms` (histogram, elapsed time before the first streamed response event)
 
 ### Message flow

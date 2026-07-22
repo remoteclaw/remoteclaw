@@ -14,8 +14,8 @@ async function writeJsonSchema() {
 
   const rootSchema = {
     $schema: "http://json-schema.org/draft-07/schema#",
-    $id: "https://openclaw.ai/protocol.schema.json",
-    title: "OpenClaw Gateway Protocol",
+    $id: "https://remoteclaw.org/protocol.schema.json",
+    title: "RemoteClaw Gateway Protocol",
     description: "Handshake, request/response, and event frames for the Gateway WebSocket.",
     oneOf: [
       { $ref: "#/definitions/RequestFrame" },
@@ -45,7 +45,7 @@ async function main() {
   await writeJsonSchema();
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error(err);
   process.exit(1);
 });

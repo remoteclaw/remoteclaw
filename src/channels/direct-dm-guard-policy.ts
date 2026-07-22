@@ -1,4 +1,4 @@
-import { resolveIntegerOption } from "../shared/number-coercion.js";
+import { resolveIntegerOption } from "@remoteclaw/normalization-core/number-coercion";
 
 export type DirectDmPreCryptoGuardPolicy = {
   allowedKinds: readonly number[];

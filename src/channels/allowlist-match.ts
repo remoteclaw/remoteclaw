@@ -1,7 +1,7 @@
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalLowercaseString,
-} from "../shared/string-coerce.js";
+} from "@remoteclaw/normalization-core/string-coerce";
 
 export type AllowlistMatchSource =
   | "wildcard"

@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
+import { normalizeOptionalLowercaseString } from "@remoteclaw/normalization-core/string-coerce";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
-import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status

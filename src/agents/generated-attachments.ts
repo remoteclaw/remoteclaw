@@ -1,6 +1,6 @@
-import { basenameFromAnyPath } from "../media/file-name.js";
-import { normalizeOptionalString } from "../shared/string-coerce.js";
-import { uniqueStrings } from "../shared/string-normalization.js";
+import { basenameFromAnyPath } from "@remoteclaw/media-core/file-name";
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
+import { uniqueStrings } from "@remoteclaw/normalization-core/string-normalization";
 
 export const MODULE_ATTESTATIONS = {
   generatedAttachmentReference: "live",

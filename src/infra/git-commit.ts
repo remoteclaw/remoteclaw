@@ -2,7 +2,7 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import { resolveGitHeadPath } from "./git-root.js";
 import { resolveRemoteClawPackageRootSync } from "./remoteclaw-root.js";
 

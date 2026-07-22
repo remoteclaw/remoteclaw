@@ -17,7 +17,6 @@ export const MODULE_ATTESTATIONS = {
   resolveModelPayloadDebugMode: "live",
   resolveModelSseDebugMode: "live",
   isModelTransportDebugEnabled: "live",
-  isCodeModeDebugEnabled: "live",
   emitModelTransportDebug: "live",
 } as const;
 
@@ -69,10 +68,6 @@ export function isModelTransportDebugEnabled(env: ModelTransportDebugEnv = proce
     resolveModelSseDebugMode(env) !== "off" ||
     isTruthyEnv(env.REMOTECLAW_DEBUG_CODE_MODE)
   );
-}
-
-export function isCodeModeDebugEnabled(env: ModelTransportDebugEnv = process.env): boolean {
-  return isTruthyEnv(env.REMOTECLAW_DEBUG_CODE_MODE) || isModelTransportDebugEnabled(env);
 }
 
 export function emitModelTransportDebug(log: SubsystemLogger, message: string): void {

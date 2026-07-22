@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
+import { MAX_TIMER_TIMEOUT_MS } from "@remoteclaw/normalization-core/number-coercion";
 import { describe, expect, it, vi } from "vitest";
 import {
   getShellEnvAppliedKeys,
@@ -132,29 +133,57 @@ describe("shell env fallback", () => {
 
   it("is disabled by default", () => {
     expect(shouldEnableShellEnvFallback({} as NodeJS.ProcessEnv)).toBe(false);
-    expect(shouldEnableShellEnvFallback({ OPENCLAW_LOAD_SHELL_ENV: "0" })).toBe(false);
-    expect(shouldEnableShellEnvFallback({ OPENCLAW_LOAD_SHELL_ENV: "1" })).toBe(true);
+    expect(shouldEnableShellEnvFallback({ REMOTECLAW_LOAD_SHELL_ENV: "0" })).toBe(false);
+    expect(shouldEnableShellEnvFallback({ REMOTECLAW_LOAD_SHELL_ENV: "1" })).toBe(true);
   });
 
   it("uses the same truthy env parsing for deferred fallback", () => {
     expect(shouldDeferShellEnvFallback({} as NodeJS.ProcessEnv)).toBe(false);
-    expect(shouldDeferShellEnvFallback({ OPENCLAW_DEFER_SHELL_ENV_FALLBACK: "false" })).toBe(false);
-    expect(shouldDeferShellEnvFallback({ OPENCLAW_DEFER_SHELL_ENV_FALLBACK: "yes" })).toBe(true);
+    expect(shouldDeferShellEnvFallback({ REMOTECLAW_DEFER_SHELL_ENV_FALLBACK: "false" })).toBe(
+      false,
+    );
+    expect(shouldDeferShellEnvFallback({ REMOTECLAW_DEFER_SHELL_ENV_FALLBACK: "yes" })).toBe(true);
   });
 
   it("resolves timeout from env with default fallback", () => {
     expect(resolveShellEnvFallbackTimeoutMs({} as NodeJS.ProcessEnv)).toBe(15000);
-    expect(resolveShellEnvFallbackTimeoutMs({ OPENCLAW_SHELL_ENV_TIMEOUT_MS: "42" })).toBe(42);
+    expect(resolveShellEnvFallbackTimeoutMs({ REMOTECLAW_SHELL_ENV_TIMEOUT_MS: "42" })).toBe(42);
     expect(
       resolveShellEnvFallbackTimeoutMs({
-        OPENCLAW_SHELL_ENV_TIMEOUT_MS: "nope",
+        REMOTECLAW_SHELL_ENV_TIMEOUT_MS: "nope",
       }),
     ).toBe(15000);
     expect(
       resolveShellEnvFallbackTimeoutMs({
-        OPENCLAW_SHELL_ENV_TIMEOUT_MS: "42abc",
+        REMOTECLAW_SHELL_ENV_TIMEOUT_MS: "42abc",
       }),
     ).toBe(15000);
+    expect(
+      resolveShellEnvFallbackTimeoutMs({
+        REMOTECLAW_SHELL_ENV_TIMEOUT_MS: String(Number.MAX_SAFE_INTEGER),
+      }),
+    ).toBe(MAX_TIMER_TIMEOUT_MS);
+  });
+
+  it("caps oversized fallback exec timeouts before probing the login shell", () => {
+    resetShellPathCacheForTests();
+    const env: NodeJS.ProcessEnv = {};
+    let receivedTimeout: number | undefined;
+    const exec = vi.fn((_shell: string, _args: string[], options: { timeout?: number }) => {
+      receivedTimeout = options.timeout;
+      return Buffer.from("OPENAI_API_KEY=from-shell\0");
+    });
+
+    const res = loadShellEnvFallback({
+      enabled: true,
+      env,
+      expectedKeys: ["OPENAI_API_KEY"],
+      timeoutMs: Number.MAX_SAFE_INTEGER,
+      exec: exec as unknown as Parameters<typeof loadShellEnvFallback>[0]["exec"],
+    });
+
+    expect(res.ok).toBe(true);
+    expect(receivedTimeout).toBe(MAX_TIMER_TIMEOUT_MS);
   });
 
   it("skips when already has all expected keys", () => {
@@ -175,10 +204,10 @@ describe("shell env fallback", () => {
   });
 
   it("imports missing expected keys even when another expected key already exists", () => {
-    const env: NodeJS.ProcessEnv = { OPENCLAW_GATEWAY_TOKEN: "set" };
+    const env: NodeJS.ProcessEnv = { REMOTECLAW_GATEWAY_TOKEN: "set" };
     const exec = vi.fn(() =>
       Buffer.from(
-        "OPENCLAW_GATEWAY_TOKEN=from-shell\0TWILIO_ACCOUNT_SID=AC123\0TWILIO_AUTH_TOKEN=secret\0TWILIO_FROM_NUMBER=+15550001234\0",
+        "REMOTECLAW_GATEWAY_TOKEN=from-shell\0TWILIO_ACCOUNT_SID=AC123\0TWILIO_AUTH_TOKEN=secret\0TWILIO_FROM_NUMBER=+15550001234\0",
       ),
     );
 
@@ -186,7 +215,7 @@ describe("shell env fallback", () => {
       enabled: true,
       env,
       expectedKeys: [
-        "OPENCLAW_GATEWAY_TOKEN",
+        "REMOTECLAW_GATEWAY_TOKEN",
         "TWILIO_ACCOUNT_SID",
         "TWILIO_AUTH_TOKEN",
         "TWILIO_FROM_NUMBER",
@@ -198,7 +227,7 @@ describe("shell env fallback", () => {
       ok: true,
       applied: ["TWILIO_ACCOUNT_SID", "TWILIO_AUTH_TOKEN", "TWILIO_FROM_NUMBER"],
     });
-    expect(env.OPENCLAW_GATEWAY_TOKEN).toBe("set");
+    expect(env.REMOTECLAW_GATEWAY_TOKEN).toBe("set");
     expect(env.TWILIO_ACCOUNT_SID).toBe("AC123");
     expect(env.TWILIO_AUTH_TOKEN).toBe("secret");
     expect(env.TWILIO_FROM_NUMBER).toBe("+15550001234");

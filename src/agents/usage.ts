@@ -1,4 +1,4 @@
-import { asFiniteNumber } from "../shared/number-coercion.js";
+import { asFiniteNumber } from "@remoteclaw/normalization-core/number-coercion";
 
 export const MODULE_ATTESTATIONS = {
   makeZeroUsageSnapshot: "live",

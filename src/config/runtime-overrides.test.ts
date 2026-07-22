@@ -51,28 +51,28 @@ describe("runtime overrides", () => {
 
   it("blocks __proto__ keys inside override object values", () => {
     const cfg = { commands: {} } as RemoteClawConfig;
-    setConfigOverride("commands", JSON.parse('{"__proto__":{"debug":true}}'));
+    setConfigOverride("commands", JSON.parse('{"__proto__":{"bash":true}}'));
 
     const next = applyConfigOverrides(cfg);
-    expect(next.commands?.debug).toBeUndefined();
-    expect(Object.prototype.hasOwnProperty.call(next.commands ?? {}, "debug")).toBe(false);
+    expect(next.commands?.bash).toBeUndefined();
+    expect(Object.hasOwn(next.commands ?? {}, "bash")).toBe(false);
   });
 
   it("blocks constructor/prototype keys inside override object values", () => {
     const cfg = { commands: {} } as RemoteClawConfig;
-    setConfigOverride("commands", JSON.parse('{"constructor":{"prototype":{"debug":true}}}'));
+    setConfigOverride("commands", JSON.parse('{"constructor":{"prototype":{"bash":true}}}'));
 
     const next = applyConfigOverrides(cfg);
-    expect(next.commands?.debug).toBeUndefined();
-    expect(Object.prototype.hasOwnProperty.call(next.commands ?? {}, "debug")).toBe(false);
+    expect(next.commands?.bash).toBeUndefined();
+    expect(Object.hasOwn(next.commands ?? {}, "bash")).toBe(false);
   });
 
   it("sanitizes blocked object keys when writing overrides", () => {
-    setConfigOverride("commands", JSON.parse('{"__proto__":{"debug":true},"config":true}'));
+    setConfigOverride("commands", JSON.parse('{"__proto__":{"bash":true},"debug":true}'));
 
     expect(getConfigOverrides()).toEqual({
       commands: {
-        config: true,
+        debug: true,
       },
     });
   });

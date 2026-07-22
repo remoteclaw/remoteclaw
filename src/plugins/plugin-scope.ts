@@ -1,4 +1,4 @@
-import { normalizeStringEntries } from "../shared/string-normalization.js";
+import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";
 
 export type PluginIdScope = readonly string[] | undefined;
 

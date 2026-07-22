@@ -1,5 +1,5 @@
 ---
-summary: "Adds OpenAI, OpenAI Codex model provider support to RemoteClaw."
+summary: "Adds OpenAI model provider support to RemoteClaw."
 read_when:
   - You are installing, configuring, or auditing the openai plugin
 title: "OpenAI plugin"
@@ -7,7 +7,7 @@ title: "OpenAI plugin"
 
 # OpenAI plugin
 
-Adds OpenAI, OpenAI Codex model provider support to RemoteClaw.
+Adds OpenAI model provider support to RemoteClaw.
 
 ## Distribution
 
@@ -16,7 +16,7 @@ Adds OpenAI, OpenAI Codex model provider support to RemoteClaw.
 
 ## Surface
 
-providers: openai, openai-codex; contracts: imageGenerationProviders, mediaUnderstandingProviders, memoryEmbeddingProviders, realtimeTranscriptionProviders, realtimeVoiceProviders, speechProviders, videoGenerationProviders
+providers: openai; contracts: imageGenerationProviders, mediaUnderstandingProviders, memoryEmbeddingProviders, realtimeTranscriptionProviders, realtimeVoiceProviders, speechProviders, videoGenerationProviders
 
 ## Related docs
 

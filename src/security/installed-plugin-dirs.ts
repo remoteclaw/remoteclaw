@@ -1,4 +1,4 @@
-import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
+import { normalizeOptionalLowercaseString } from "@remoteclaw/normalization-core/string-coerce";
 
 const IGNORED_INSTALLED_PLUGIN_DIR_NAMES = new Set(["node_modules", ".remoteclaw-install-backups"]);
 

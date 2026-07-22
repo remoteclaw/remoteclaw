@@ -16,9 +16,9 @@ describe("generateUUID", () => {
   it("falls back to crypto.getRandomValues", () => {
     const id = generateUUID({
       getRandomValues: (bytes) => {
-        const u8 = bytes as unknown as Uint8Array;
-        for (let i = 0; i < u8.length; i++) {
-          u8[i] = i;
+        const view = new Uint8Array(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+        for (let i = 0; i < view.length; i++) {
+          view[i] = i;
         }
         return bytes;
       },

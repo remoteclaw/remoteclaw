@@ -72,22 +72,22 @@ describe("isPidDefinitelyDead", () => {
 
   it("returns true when process probing reports ESRCH", () => {
     const error = Object.assign(new Error("missing process"), { code: "ESRCH" });
-    const killSpy = vi.spyOn(process, "kill").mockImplementation(() => {
+    vi.spyOn(process, "kill").mockImplementation(() => {
       throw error;
     });
 
     expect(isPidDefinitelyDead(42)).toBe(true);
-    expect(killSpy).toHaveBeenCalledWith(42, 0);
+    expect(process["kill"]).toHaveBeenCalledWith(42, 0);
   });
 
   it("returns false when process probing reports EPERM", () => {
     const error = Object.assign(new Error("permission denied"), { code: "EPERM" });
-    const killSpy = vi.spyOn(process, "kill").mockImplementation(() => {
+    vi.spyOn(process, "kill").mockImplementation(() => {
       throw error;
     });
 
     expect(isPidDefinitelyDead(42)).toBe(false);
-    expect(killSpy).toHaveBeenCalledWith(42, 0);
+    expect(process["kill"]).toHaveBeenCalledWith(42, 0);
   });
 
   it("returns true for zombie processes on Linux", async () => {

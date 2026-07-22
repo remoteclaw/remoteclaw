@@ -6,7 +6,7 @@ read_when:
 title: "OpenResponses API"
 ---
 
-OpenClaw's Gateway can serve an OpenResponses-compatible `POST /v1/responses` endpoint.
+RemoteClaw's Gateway can serve an OpenResponses-compatible `POST /v1/responses` endpoint.
 
 This endpoint is **disabled by default**. Enable it in config first.
 
@@ -14,7 +14,7 @@ This endpoint is **disabled by default**. Enable it in config first.
 - Same port as the Gateway (WS + HTTP multiplex): `http://<gateway-host>:<port>/v1/responses`
 
 Under the hood, requests are executed as a normal Gateway agent run (same codepath as
-`openclaw agent`), so routing/permissions/config match your Gateway.
+`remoteclaw agent`), so routing/permissions/config match your Gateway.
 
 ## Authentication, security, and routing
 
@@ -23,13 +23,13 @@ Operational behavior matches [OpenAI Chat Completions](/gateway/openai-http-api)
 - use the matching Gateway HTTP auth path:
   - shared-secret auth (`gateway.auth.mode="token"` or `"password"`): `Authorization: Bearer <token-or-password>`
   - trusted-proxy auth (`gateway.auth.mode="trusted-proxy"`): identity-aware proxy headers from a configured trusted proxy source; same-host loopback proxies require explicit `gateway.auth.trustedProxy.allowLoopback = true`
-  - trusted-proxy local direct fallback: same-host callers with no `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` headers can use `gateway.auth.password` / `OPENCLAW_GATEWAY_PASSWORD`
+  - trusted-proxy local direct fallback: same-host callers with no `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` headers can use `gateway.auth.password` / `REMOTECLAW_GATEWAY_PASSWORD`
   - private-ingress open auth (`gateway.auth.mode="none"`): no auth header
 - treat the endpoint as full operator access for the gateway instance
 - for shared-secret auth modes (`token` and `password`), ignore narrower bearer-declared `x-remoteclaw-scopes` values and restore the normal full operator defaults
 - for trusted identity-bearing HTTP modes (for example trusted proxy auth or `gateway.auth.mode="none"`), honor `x-remoteclaw-scopes` when present and otherwise fall back to the normal operator default scope set
-- select agents with `model: "openclaw"`, `model: "openclaw/default"`, `model: "remoteclaw/<agentId>"`, or `x-remoteclaw-agent-id`
-- use `x-openclaw-model` when you want to override the selected agent's backend model
+- select agents with `model: "remoteclaw"`, `model: "remoteclaw/default"`, `model: "remoteclaw/<agentId>"`, or `x-remoteclaw-agent-id`
+- use `x-remoteclaw-model` when you want to override the selected agent's backend model
 - use `x-remoteclaw-session-key` for explicit session routing
 - use `x-remoteclaw-message-channel` when you want a non-default synthetic ingress channel context
 
@@ -56,7 +56,7 @@ The same compatibility surface also includes:
 - `POST /v1/embeddings`
 - `POST /v1/chat/completions`
 
-For the canonical explanation of how agent-target models, `openclaw/default`, embeddings pass-through, and backend model overrides fit together, see [OpenAI Chat Completions](/gateway/openai-http-api#agent-first-model-contract) and [Model list and agent routing](/gateway/openai-http-api#model-list-and-agent-routing).
+For the canonical explanation of how agent-target models, `remoteclaw/default`, embeddings pass-through, and backend model overrides fit together, see [OpenAI Chat Completions](/gateway/openai-http-api#agent-first-model-contract) and [Model list and agent routing](/gateway/openai-http-api#model-list-and-agent-routing).
 
 ## Session behavior
 
@@ -72,7 +72,7 @@ The request follows the OpenResponses API with item-based input. Current support
 - `input`: string or array of item objects.
 - `instructions`: merged into the system prompt.
 - `tools`: client tool definitions (function tools).
-- `tool_choice`: filter or require client tools.
+- `tool_choice`: `"auto"`, `"none"`, `"required"`, or `{ "type": "function", "name": "..." }` to filter or require client tools.
 - `stream`: enables SSE streaming.
 - `max_output_tokens`: best-effort output limit (provider dependent).
 - `temperature`: best-effort sampling temperature forwarded to the provider. Ignored by the ChatGPT-based Codex Responses backend, which uses fixed server-side sampling.
@@ -89,7 +89,7 @@ Accepted but **currently ignored**:
 
 Supported:
 
-- `previous_response_id`: OpenClaw reuses the earlier response session when the request stays within the same agent/user/requested-session scope.
+- `previous_response_id`: RemoteClaw reuses the earlier response session when the request stays within the same agent/user/requested-session scope.
 
 ## Items (input)
 
@@ -119,10 +119,12 @@ Accepted for schema compatibility but ignored when building the prompt.
 
 ## Tools (client-side function tools)
 
-Provide tools with `tools: [{ type: "function", function: { name, description?, parameters? } }]`.
+Provide tools with `tools: [{ type: "function", name, description?, parameters? }]`.
 
 If the agent decides to call a tool, the response returns a `function_call` output item.
 You then send a follow-up request with `function_call_output` to continue the turn.
+
+For `tool_choice: "required"` and function-pinned `tool_choice`, the endpoint narrows the exposed client function-tool set, instructs the runtime to call a client tool before responding, and rejects the turn if it does not include a matching structured client-tool call. This contract applies to the caller-supplied HTTP `tools` list, not every internal RemoteClaw agent tool. Non-streaming requests return `502` with an `api_error`; streaming requests emit a `response.failed` event. This matches the `/v1/chat/completions` contract.
 
 ## Images (`input_image`)
 
@@ -294,7 +296,7 @@ Event types currently emitted:
 ## Usage
 
 `usage` is populated when the underlying provider reports token counts.
-OpenClaw normalizes common OpenAI-style aliases before those counters reach
+RemoteClaw normalizes common OpenAI-style aliases before those counters reach
 downstream status/session surfaces, including `input_tokens` / `output_tokens`
 and `prompt_tokens` / `completion_tokens`.
 
@@ -322,7 +324,7 @@ curl -sS http://127.0.0.1:18789/v1/responses \
   -H 'Content-Type: application/json' \
   -H 'x-remoteclaw-agent-id: main' \
   -d '{
-    "model": "openclaw",
+    "model": "remoteclaw",
     "input": "hi"
   }'
 ```
@@ -335,7 +337,7 @@ curl -N http://127.0.0.1:18789/v1/responses \
   -H 'Content-Type: application/json' \
   -H 'x-remoteclaw-agent-id: main' \
   -d '{
-    "model": "openclaw",
+    "model": "remoteclaw",
     "stream": true,
     "input": "hi"
   }'

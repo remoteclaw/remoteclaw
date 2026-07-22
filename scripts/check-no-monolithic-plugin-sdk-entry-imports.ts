@@ -49,7 +49,7 @@ function collectSharedExtensionSourceFiles(): string[] {
 
 function collectBundledExtensionSourceFiles(): string[] {
   const extensionsDir = path.join(process.cwd(), "extensions");
-  let entries: fs.Dirent[] = [];
+  let entries: fs.Dirent[];
   try {
     entries = fs.readdirSync(extensionsDir, { withFileTypes: true });
   } catch {
@@ -89,7 +89,7 @@ function main() {
   const legacyCompatOffenders: string[] = [];
   const legacyBroadSubpathOffenders = new Map<string, string[]>();
   for (const entryFile of filesToCheck) {
-    let content = "";
+    let content;
     try {
       content = fs.readFileSync(entryFile, "utf8");
     } catch {

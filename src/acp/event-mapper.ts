@@ -5,13 +5,13 @@ import type {
   ToolCallLocation,
   ToolKind,
 } from "@agentclientprotocol/sdk";
+import { asRecord } from "@remoteclaw/acp-core/record-shared";
 import {
   hasNonEmptyString,
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   readStringValue,
-} from "../shared/string-coerce.js";
-import { asRecord } from "./record-shared.js";
+} from "@remoteclaw/normalization-core/string-coerce";
 
 type GatewayAttachment = {
   type: string;

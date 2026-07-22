@@ -1,3 +1,5 @@
+import { normalizeOptionalLowercaseString } from "@remoteclaw/normalization-core/string-coerce";
+import { normalizeTrimmedStringList } from "@remoteclaw/normalization-core/string-normalization";
 import { formatToolDetail, resolveToolDisplay } from "../agents/tool-display.js";
 import { formatToolAggregate } from "../auto-reply/tool-meta.js";
 import type {
@@ -9,8 +11,6 @@ import type {
   StreamingMode,
   TextChunkMode,
 } from "../config/types.base.js";
-import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
-import { normalizeTrimmedStringList } from "../shared/string-normalization.js";
 import { asBoolean } from "../utils/boolean.js";
 
 export type {
@@ -528,9 +528,29 @@ export function createChannelProgressDraftGate(params: {
     if (disposed || started) {
       return startPromise ?? Promise.resolve();
     }
-    started = true;
+    if (startPromise) {
+      return startPromise;
+    }
     clearTimer();
-    startPromise = Promise.resolve().then(params.onStart);
+    started = true;
+    const nextStart = Promise.resolve()
+      .then(params.onStart)
+      .then(() => {
+        if (disposed) {
+          started = false;
+        }
+        if (startPromise === nextStart) {
+          startPromise = undefined;
+        }
+      })
+      .catch((error: unknown) => {
+        if (startPromise === nextStart) {
+          startPromise = undefined;
+        }
+        started = false;
+        throw error;
+      });
+    startPromise = nextStart;
     return startPromise;
   };
 
@@ -556,12 +576,16 @@ export function createChannelProgressDraftGate(params: {
         return false;
       }
       workEvents += 1;
+      if (startPromise) {
+        await startPromise;
+        return started;
+      }
       if (started) {
         return true;
       }
       if (workEvents > 1) {
         await start();
-        return true;
+        return started;
       }
       schedule();
       return false;
@@ -571,6 +595,7 @@ export function createChannelProgressDraftGate(params: {
     },
     cancel(): void {
       disposed = true;
+      started = false;
       clearTimer();
     },
   };

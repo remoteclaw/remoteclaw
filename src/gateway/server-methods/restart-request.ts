@@ -1,4 +1,5 @@
-import { normalizeOptionalString } from "../../shared/string-coerce.js";
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
+import { stringifyRouteThreadId } from "../../plugin-sdk/channel-route.js";
 
 type RestartDeliveryContext = {
   channel?: string;
@@ -29,13 +30,13 @@ function parseRestartDeliveryContext(params: unknown): {
     deliveryContext.channel || deliveryContext.to || deliveryContext.accountId
       ? deliveryContext
       : undefined;
-  const threadId =
-    typeof context.threadId === "number" && Number.isFinite(context.threadId)
-      ? String(Math.trunc(context.threadId))
-      : normalizeOptionalString(context.threadId);
+  const threadId = stringifyRouteThreadId(context.threadId);
   return { deliveryContext: normalizedContext, threadId };
 }
 
+// Restart sentinels can resume a channel turn after the gateway comes back.
+// Keep only routable delivery fields plus a normalized thread id so malformed
+// UI/tool payloads do not leak arbitrary data into the sentinel file.
 export function parseRestartRequestParams(params: unknown): {
   sessionKey: string | undefined;
   deliveryContext: RestartDeliveryContext | undefined;

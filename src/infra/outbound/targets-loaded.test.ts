@@ -30,8 +30,8 @@ describe("tryResolveLoadedOutboundTarget", () => {
       meta: { label: "Alpha" },
       capabilities: {},
       config: {
-        resolveDefaultTo: ({ cfg }: { cfg: RemoteClawConfig }) =>
-          (cfg.channels?.alpha as { defaultTo?: string } | undefined)?.defaultTo,
+        resolveDefaultTo: ({ cfg: cfgLocal }: { cfg: RemoteClawConfig }) =>
+          (cfgLocal.channels?.alpha as { defaultTo?: string } | undefined)?.defaultTo,
       },
       outbound: {},
       messaging: {},

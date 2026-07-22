@@ -1,15 +1,15 @@
 import { isIP } from "node:net";
+import {
+  normalizeLowercaseStringOrEmpty,
+  normalizeOptionalLowercaseString,
+} from "@remoteclaw/normalization-core/string-coerce";
+import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";
 import type { GatewayAuthConfig } from "../config/types.gateway.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { hasConfiguredSecretInput } from "../config/types.secrets.js";
 import { resolveGatewayAuth } from "../gateway/auth-resolve.js";
 import { resolveGatewayAuthTokenSourceConflict } from "../gateway/auth-token-source-conflict.js";
 import { parseStrictNonNegativeInteger } from "../infra/parse-finite-number.js";
-import {
-  normalizeLowercaseStringOrEmpty,
-  normalizeOptionalLowercaseString,
-} from "../shared/string-coerce.js";
-import { normalizeStringEntries } from "../shared/string-normalization.js";
 import type { SecurityAuditFinding } from "./audit.types.js";
 import { collectCoreInsecureOrDangerousFlags } from "./core-dangerous-config-flags.js";
 import { DEFAULT_GATEWAY_HTTP_TOOL_DENY } from "./dangerous-tools.js";
@@ -52,8 +52,8 @@ export function collectGatewayConfigFindings(
     : [];
   const hasToken = typeof auth.token === "string" && auth.token.trim().length > 0;
   const hasPassword = typeof auth.password === "string" && auth.password.trim().length > 0;
-  const envTokenConfigured = hasNonEmptyString(env.OPENCLAW_GATEWAY_TOKEN);
-  const envPasswordConfigured = hasNonEmptyString(env.OPENCLAW_GATEWAY_PASSWORD);
+  const envTokenConfigured = hasNonEmptyString(env.REMOTECLAW_GATEWAY_TOKEN);
+  const envPasswordConfigured = hasNonEmptyString(env.REMOTECLAW_GATEWAY_PASSWORD);
   const tokenConfiguredFromConfig = hasConfiguredSecretInput(
     sourceConfig.gateway?.auth?.token,
     sourceConfig.secrets?.defaults,
@@ -304,7 +304,7 @@ export function collectGatewayConfigFindings(
   }
 
   if (auth.mode === "trusted-proxy") {
-    const trustedProxies = cfg.gateway?.trustedProxies ?? [];
+    const trustedProxiesLocal = cfg.gateway?.trustedProxies ?? [];
     const trustedProxyConfig = cfg.gateway?.auth?.trustedProxy;
 
     findings.push({
@@ -322,7 +322,7 @@ export function collectGatewayConfigFindings(
         "See /gateway/trusted-proxy-auth for setup guidance.",
     });
 
-    if (trustedProxies.length === 0) {
+    if (trustedProxiesLocal.length === 0) {
       findings.push({
         checkId: "gateway.trusted_proxy_no_proxies",
         severity: "critical",

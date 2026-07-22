@@ -1,4 +1,4 @@
-import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 
 export function parseKeyValueOutput(output: string, separator: string): Record<string, string> {
   const entries: Record<string, string> = {};

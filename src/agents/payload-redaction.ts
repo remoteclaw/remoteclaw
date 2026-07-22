@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import { estimateBase64DecodedBytes } from "../media/base64.js";
-import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
+import { estimateBase64DecodedBytes } from "@remoteclaw/media-core/base64";
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status

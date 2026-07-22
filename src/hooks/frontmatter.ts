@@ -1,4 +1,5 @@
-import { parseFrontmatterBlock } from "../markdown/frontmatter.js";
+import { readStringValue } from "@remoteclaw/normalization-core/string-coerce";
+import { parseFrontmatterBlock } from "../../packages/markdown-core/src/frontmatter.js";
 import {
   applyRemoteClawManifestInstallCommonFields,
   getFrontmatterString,
@@ -10,7 +11,6 @@ import {
   resolveRemoteClawManifestOs,
   resolveRemoteClawManifestRequires,
 } from "../shared/frontmatter.js";
-import { readStringValue } from "../shared/string-coerce.js";
 import type {
   RemoteClawHookMetadata,
   HookEntry,
@@ -64,7 +64,7 @@ export function resolveRemoteClawMetadata(
     export: readStringValue(metadataObj.export),
     os: osRaw.length > 0 ? osRaw : undefined,
     events: eventsRaw.length > 0 ? eventsRaw : [],
-    requires: requires,
+    requires,
     install: install.length > 0 ? install : undefined,
   };
 }

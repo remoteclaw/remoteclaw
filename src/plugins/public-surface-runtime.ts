@@ -142,6 +142,10 @@ function resolvePublicSurfaceFromBundledDir(params: {
   if (fs.existsSync(builtCandidate)) {
     return builtCandidate;
   }
+  const packageLocalBuiltCandidate = path.join(pluginDir, "dist", params.artifactBasename);
+  if (fs.existsSync(packageLocalBuiltCandidate)) {
+    return packageLocalBuiltCandidate;
+  }
   return (
     resolveBundledPluginSourcePublicSurfacePath({
       sourceRoot: params.bundledPluginsDir,

@@ -43,6 +43,7 @@ export function matchesMessagingToolDeliveryTarget(
   return normalizedTargetTo === delivery.to;
 }
 
+/** Returns whether cron delivery should tolerate per-payload send failures. */
 export function resolveCronDeliveryBestEffort(job: CronJob): boolean {
   return job.delivery?.bestEffort === true;
 }
@@ -113,6 +114,7 @@ type DispatchCronDeliveryParams = {
   ) => RunCronAgentTurnResult;
 };
 
+/** Mutable delivery-dispatch accumulator returned to the isolated cron runner. */
 export type DispatchCronDeliveryState = {
   result?: RunCronAgentTurnResult;
   delivered: boolean;

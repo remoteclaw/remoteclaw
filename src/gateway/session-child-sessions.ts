@@ -1,7 +1,7 @@
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import { loadCombinedSessionStoreForGateway } from "../config/sessions/combined-store-gateway.js";
 import type { SessionEntry } from "../config/sessions/types.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
-import { normalizeOptionalString } from "../shared/string-coerce.js";
 
 export type DirectChildSessionEntry = {
   sessionKey: string;

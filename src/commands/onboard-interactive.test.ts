@@ -17,7 +17,7 @@ vi.mock("../wizard/onboarding.js", () => ({
   runOnboardingWizard: mocks.runOnboardingWizard,
 }));
 
-vi.mock("../terminal/restore.js", () => ({
+vi.mock("../../packages/terminal-core/src/restore.js", () => ({
   restoreTerminalState: mocks.restoreTerminalState,
 }));
 

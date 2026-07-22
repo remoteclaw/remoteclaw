@@ -8,7 +8,7 @@
  * Run after `pnpm build` to catch missing exports before release.
  */
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -163,6 +163,24 @@ for (const [entry, names] of Object.entries(requiredSubpathExports)) {
   for (const name of names) {
     if (typeof runtime[name] !== "function") {
       console.error(`MISSING SUBPATH EXPORT: dist/plugin-sdk/${entry}.js#${name}`);
+      missing += 1;
+    }
+  }
+}
+
+for (const entry of readdirSync(resolve(scriptDir, "..", "dist", "plugin-sdk"), {
+  withFileTypes: true,
+})) {
+  if (!entry.isFile() || !entry.name.endsWith(".d.ts")) {
+    continue;
+  }
+  const dtsPath = resolve(scriptDir, "..", "dist", "plugin-sdk", entry.name);
+  const dtsContent = readFileSync(dtsPath, "utf8");
+  for (const specifier of forbiddenPublicDeclarationSpecifiers) {
+    if (dtsContent.includes(`"${specifier}`) || dtsContent.includes(`'${specifier}`)) {
+      console.error(
+        `FORBIDDEN PUBLIC DTS SPECIFIER: dist/plugin-sdk/${entry.name} imports ${specifier}`,
+      );
       missing += 1;
     }
   }

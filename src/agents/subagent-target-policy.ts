@@ -1,5 +1,8 @@
+import {
+  normalizeUniqueStringEntries,
+  sortUniqueStrings,
+} from "@remoteclaw/normalization-core/string-normalization";
 import { normalizeAgentId } from "../routing/session-key.js";
-import { normalizeUniqueStringEntries, sortUniqueStrings } from "../shared/string-normalization.js";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status

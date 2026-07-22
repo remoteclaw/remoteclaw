@@ -20,9 +20,29 @@
     "paths": {
       "remoteclaw/plugin-sdk": ["./src/plugin-sdk/index.ts"],
       "remoteclaw/plugin-sdk/*": ["./src/plugin-sdk/*.ts"],
-      "remoteclaw/plugin-sdk/account-id": ["./src/plugin-sdk/account-id.ts"]
+      "remoteclaw/plugin-sdk/account-id": ["./src/plugin-sdk/account-id.ts"],
+      "@remoteclaw/acp-core": ["./packages/acp-core/src/index.ts"],
+      "@remoteclaw/acp-core/*": ["./packages/acp-core/src/*.ts"],
+      "@remoteclaw/gateway-protocol": ["./packages/gateway-protocol/src/index.ts"],
+      "@remoteclaw/gateway-protocol/*": ["./packages/gateway-protocol/src/*.ts"],
+      "@remoteclaw/llm-core": ["./packages/llm-core/src/index.ts"],
+      "@remoteclaw/llm-core/*": ["./packages/llm-core/src/*.ts"],
+      "@remoteclaw/markdown-core": ["./packages/markdown-core/src/index.ts"],
+      "@remoteclaw/markdown-core/*": ["./packages/markdown-core/src/*.ts"],
+      "@remoteclaw/media-core": ["./packages/media-core/src/index.ts"],
+      "@remoteclaw/media-core/*": ["./packages/media-core/src/*.ts"],
+      "@remoteclaw/media-generation-core": ["./packages/media-generation-core/src/index.ts"],
+      "@remoteclaw/media-generation-core/*": ["./packages/media-generation-core/src/*.ts"],
+      "@remoteclaw/model-catalog-core": ["./packages/model-catalog-core/src/index.ts"],
+      "@remoteclaw/model-catalog-core/*": ["./packages/model-catalog-core/src/*.ts"],
+      "@remoteclaw/net-policy": ["./packages/net-policy/src/index.ts"],
+      "@remoteclaw/net-policy/*": ["./packages/net-policy/src/*.ts"],
+      "@remoteclaw/normalization-core": ["./packages/normalization-core/src/index.ts"],
+      "@remoteclaw/normalization-core/*": ["./packages/normalization-core/src/*.ts"],
+      "@remoteclaw/terminal-core": ["./packages/terminal-core/src/index.ts"],
+      "@remoteclaw/terminal-core/*": ["./packages/terminal-core/src/*.ts"]
     }
   },
-  "include": ["src/**/*", "ui/**/*", "extensions/**/*"],
+  "include": ["src/**/*", "ui/**/*", "extensions/**/*", "packages/**/*"],
   "exclude": ["node_modules", "dist"]
 }

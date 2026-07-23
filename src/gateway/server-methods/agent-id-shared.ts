@@ -1,6 +1,6 @@
-import { ErrorCodes, errorShape } from "../../../packages/gateway-protocol/src/index.js";
 import { listAgentIds, resolveDefaultAgentId } from "../../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
+import { ErrorCodes, errorShape } from "../protocol/index.js";
 import type { RespondFn } from "./types.js";
 
 export function resolveAgentIdOrRespondError(params: {

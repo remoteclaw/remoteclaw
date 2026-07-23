@@ -104,7 +104,7 @@ within their overall connection budget instead of surfacing it as a terminal
 handshake failure.
 
 `server`, `features`, `snapshot`, and `policy` are all required by the schema
-(`packages/gateway-protocol/src/schema/frames.ts`). `auth` is also required and reports
+(`src/gateway/protocol/schema/frames.ts`). `auth` is also required and reports
 the negotiated role/scopes. `pluginSurfaceUrls` is optional and maps plugin
 surface names, such as `canvas`, to scoped hosted URLs.
 
@@ -650,7 +650,7 @@ terminal summary, and sanitized error text.
 
 ## Versioning
 
-- `PROTOCOL_VERSION` lives in `packages/gateway-protocol/src/version.ts`.
+- `PROTOCOL_VERSION` lives in `src/gateway/protocol/version.ts`.
 - Clients send `minProtocol` + `maxProtocol`; the server rejects ranges that
   do not include its current protocol. Current clients and servers require
   protocol v4.
@@ -666,8 +666,8 @@ stable across protocol v4 and are the expected baseline for third-party clients.
 
 | Constant                                  | Default                                               | Source                                                                                     |
 | ----------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `PROTOCOL_VERSION`                        | `4`                                                   | `packages/gateway-protocol/src/version.ts`                                                 |
-| `MIN_CLIENT_PROTOCOL_VERSION`             | `4`                                                   | `packages/gateway-protocol/src/version.ts`                                                 |
+| `PROTOCOL_VERSION`                        | `4`                                                   | `src/gateway/protocol/version.ts`                                                          |
+| `MIN_CLIENT_PROTOCOL_VERSION`             | `4`                                                   | `src/gateway/protocol/version.ts`                                                          |
 | Request timeout (per RPC)                 | `30_000` ms                                           | `src/gateway/client.ts` (`requestTimeoutMs`)                                               |
 | Preauth / connect-challenge timeout       | `15_000` ms                                           | `src/gateway/handshake-timeouts.ts` (config/env can raise the paired server/client budget) |
 | Initial reconnect backoff                 | `1_000` ms                                            | `src/gateway/client.ts` (`backoffMs`)                                                      |
@@ -820,7 +820,7 @@ Migration target:
 
 This protocol exposes the **full gateway API** (status, channels, models, chat,
 agent, sessions, nodes, approvals, etc.). The exact surface is defined by the
-TypeBox schemas in `packages/gateway-protocol/src/schema.ts`.
+TypeBox schemas in `src/gateway/protocol/schema.ts`.
 
 ## Related
 

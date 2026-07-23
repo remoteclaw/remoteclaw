@@ -1,7 +1,7 @@
 import type WebSocket from "ws";
 import type { WebSocketServer } from "ws";
-import { PROTOCOL_VERSION } from "../../packages/gateway-protocol/src/index.js";
 import { rawDataToString } from "../infra/ws.js";
+import { PROTOCOL_VERSION } from "./protocol/index.js";
 
 export type MinimalGatewayRequestFrame = {
   type?: string;

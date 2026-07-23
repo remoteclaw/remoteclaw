@@ -1,7 +1,7 @@
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ProtocolSchemas } from "../packages/gateway-protocol/src/schema.js";
+import { ProtocolSchemas } from "../src/gateway/protocol/schema.js";
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(scriptDir, "..");

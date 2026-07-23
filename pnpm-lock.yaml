@@ -519,12 +519,6 @@ importers:
         specifier: workspace:*
         version: link:../normalization-core
 
-  packages/gateway-protocol:
-    dependencies:
-      typebox:
-        specifier: 1.1.28
-        version: 1.1.28
-
   packages/llm-core:
     dependencies:
       typebox:

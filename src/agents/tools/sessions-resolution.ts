@@ -1,10 +1,10 @@
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
+import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
+import { callGateway } from "../../gateway/call.js";
 import {
   GATEWAY_CLIENT_IDS,
   normalizeGatewayClientId,
-} from "../../../packages/gateway-protocol/src/client-info.js";
-import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
-import { callGateway } from "../../gateway/call.js";
+} from "../../gateway/protocol/client-info.js";
 import { formatErrorMessage } from "../../infra/errors.js";
 import {
   listSpawnedSessionKeys,

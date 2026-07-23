@@ -214,42 +214,6 @@ export const sharedVitestConfig = {
         replacement: path.join(repoRoot, "packages", "gateway-client", "src", "index.ts"),
       },
       {
-        find: "@remoteclaw/gateway-protocol/client-info",
-        replacement: path.join(repoRoot, "packages", "gateway-protocol", "src", "client-info.ts"),
-      },
-      {
-        find: "@remoteclaw/gateway-protocol/connect-error-details",
-        replacement: path.join(
-          repoRoot,
-          "packages",
-          "gateway-protocol",
-          "src",
-          "connect-error-details.ts",
-        ),
-      },
-      {
-        find: "@remoteclaw/gateway-protocol/schema",
-        replacement: path.join(repoRoot, "packages", "gateway-protocol", "src", "schema.ts"),
-      },
-      {
-        find: "@remoteclaw/gateway-protocol/startup-unavailable",
-        replacement: path.join(
-          repoRoot,
-          "packages",
-          "gateway-protocol",
-          "src",
-          "startup-unavailable.ts",
-        ),
-      },
-      {
-        find: "@remoteclaw/gateway-protocol/version",
-        replacement: path.join(repoRoot, "packages", "gateway-protocol", "src", "version.ts"),
-      },
-      {
-        find: "@remoteclaw/gateway-protocol",
-        replacement: path.join(repoRoot, "packages", "gateway-protocol", "src", "index.ts"),
-      },
-      {
         find: "@remoteclaw/llm-core/diagnostics",
         replacement: path.join(repoRoot, "packages", "llm-core", "src", "utils", "diagnostics.ts"),
       },
@@ -654,7 +618,6 @@ export const sharedVitestConfig = {
         "src/webchat/**",
         "src/gateway/server.ts",
         "src/gateway/client.ts",
-        "packages/gateway-protocol/src/**",
         "src/infra/tailscale.ts",
       ],
     },

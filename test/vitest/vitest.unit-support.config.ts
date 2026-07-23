@@ -6,8 +6,9 @@ export default createUnitVitestConfigWithOptions(process.env, {
   extraExcludePatterns: [
     // The gateway-client package owns its own browser/runtime protocol lane.
     "packages/gateway-client/src/**/*.test.ts",
-    // The gateway-protocol package rides with gateway-client because the client
-    // package owns the browser/runtime protocol compatibility lane.
+    // Protocol tests live under src/gateway/protocol/ (the authoritative gateway
+    // protocol home) and run in the main unit lane, so keep them out of this
+    // packages-scoped support lane.
     "src/gateway/protocol/**/*.test.ts",
     "packages/gateway-client/src/**/*.test.ts",
   ],

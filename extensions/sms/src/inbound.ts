@@ -39,8 +39,41 @@ const smsWebhookRateLimiter = createFixedWindowRateLimiter({
   maxTrackedKeys: WEBHOOK_RATE_LIMIT_DEFAULTS.maxTrackedKeys,
 });
 
+/**
+ * Bounded replay/retry dedup for the public SMS webhook, keyed by `MessageSid`.
+ *
+ * Twilio's `X-Twilio-Signature` carries no timestamp and no nonce, so a
+ * captured, signature-valid POST stays valid indefinitely and can be replayed
+ * to re-inject the same inbound message into the agent (#3035). A fixed-window
+ * limiter with `maxRequests: 1` IS a bounded dedup: the first request carrying
+ * a given sid passes, any repeat inside the window is a replay. Reuses the same
+ * kept primitive as `smsWebhookRateLimiter` above, so memory stays bounded —
+ * `maxTrackedKeys` LRU-evicts the least-recently-seen sids.
+ *
+ * The window also makes legitimate Twilio retries idempotent: a redelivered
+ * webhook is ACKed without re-running the agent.
+ *
+ * Two bounds are deliberately accepted for this LOW-severity hardening:
+ *  - Per-process and in-memory, exactly like the rate limiter above: a restart
+ *    or a second gateway instance starts with an empty window.
+ *  - Fixed window rather than a sliding TTL: a replay that arrives after the
+ *    window has elapsed is allowed through again.
+ * Both are acceptable because Twilio retries and duplicates land within
+ * minutes, and presenting a sid at all still requires a signature-valid request
+ * (i.e. the account auth token) — this guard sits AFTER signature validation.
+ */
+const SMS_REPLAY_WINDOW_MS = 5 * 60_000;
+const SMS_REPLAY_MAX_TRACKED_SIDS = 2_048;
+
+const smsReplayGuard = createFixedWindowRateLimiter({
+  windowMs: SMS_REPLAY_WINDOW_MS,
+  maxRequests: 1,
+  maxTrackedKeys: SMS_REPLAY_MAX_TRACKED_SIDS,
+});
+
 export function clearSmsWebhookRateLimitStateForTest(): void {
   smsWebhookRateLimiter.clear();
+  smsReplayGuard.clear();
 }
 
 export type SmsWebhookLog = {
@@ -89,8 +122,10 @@ function isSmsSenderAllowed(senderId: string, allowFrom: string[]): boolean {
  *  2. `X-Twilio-Signature` is verified fail-closed against the account auth
  *     token before ANY message reaches the runtime. Missing/invalid/unsigned
  *     ⇒ 403 and no delivery.
- *  3. Allowlist authorization is default-deny via the shared command-auth path.
- *  4. Every response body is empty TwiML: no secret, token, or signature is
+ *  3. A signature-valid POST is deduped by `MessageSid` before delivery, so a
+ *     captured request cannot be replayed into repeated agent runs (#3035).
+ *  4. Allowlist authorization is default-deny via the shared command-auth path.
+ *  5. Every response body is empty TwiML: no secret, token, or signature is
  *     echoed back to the caller.
  */
 export function createSmsWebhookHandler(
@@ -175,6 +210,26 @@ export function createSmsWebhookHandler(
           `[sms] dropped malformed inbound webhook payload for account ${account.accountId}`,
         );
         respondTwiml(res, 400);
+        return true;
+      }
+
+      // Replay dedup (#3035), after signature validation and before any
+      // delivery: a signature-valid POST is only acted on once per `MessageSid`
+      // inside the window. `buildTwilioInboundMessage` already rejects a blank
+      // sid with 400 above, so this is unreachable with an empty key; the
+      // explicit check keeps a future relaxation of that guard from coalescing
+      // distinct messages under one blank key.
+      if (
+        inbound.messageSid &&
+        smsReplayGuard.isRateLimited(`${account.accountId}:${inbound.messageSid}`)
+      ) {
+        log?.info?.(
+          `[sms] ignored duplicate inbound webhook for account ${account.accountId} ` +
+            `(MessageSid ${inbound.messageSid} already handled)`,
+        );
+        // Same empty-TwiML ACK as the success path: a replay learns nothing
+        // from the response, and a legitimate Twilio retry is satisfied.
+        respondTwiml(res, 200);
         return true;
       }
 

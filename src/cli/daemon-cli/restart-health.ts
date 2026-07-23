@@ -240,6 +240,7 @@ export async function waitForGatewayHealthyRestart(params: {
   delayMs?: number;
   env?: NodeJS.ProcessEnv;
   includeUnknownListenersAsStale?: boolean;
+  requireRunningService?: boolean;
 }): Promise<GatewayRestartSnapshot> {
   const attempts = params.attempts ?? DEFAULT_RESTART_HEALTH_ATTEMPTS;
   const delayMs = params.delayMs ?? DEFAULT_RESTART_HEALTH_DELAY_MS;
@@ -259,7 +260,9 @@ export async function waitForGatewayHealthyRestart(params: {
   );
 
   for (let attempt = 0; attempt < attempts; attempt += 1) {
-    if (snapshot.healthy) {
+    const healthy =
+      snapshot.healthy && (!params.requireRunningService || snapshot.runtime.status === "running");
+    if (healthy) {
       return withWaitContext(snapshot, "healthy", attempt * delayMs);
     }
     if (snapshot.staleGatewayPids.length > 0 && snapshot.runtime.status !== "running") {

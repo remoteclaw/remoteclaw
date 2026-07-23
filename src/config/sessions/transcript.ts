@@ -82,6 +82,7 @@ async function ensureSessionHeader(params: {
 export async function appendAssistantMessageToSessionTranscript(params: {
   agentId?: string;
   sessionKey: string;
+  expectedSessionId?: string;
   text?: string;
   mediaUrls?: string[];
   /** Optional override for store path (mostly for tests). */
@@ -124,6 +125,9 @@ export async function appendAssistantMessageToSessionTranscript(params: {
       ok: false,
       reason: err instanceof Error ? err.message : String(err),
     };
+  }
+  if (!entry?.sessionId) {
+    return { ok: false, reason: `unknown sessionKey: ${sessionKey}` };
   }
 
   await ensureSessionHeader({ sessionFile, sessionId: entry.sessionId });

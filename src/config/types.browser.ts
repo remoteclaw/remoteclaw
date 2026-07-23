@@ -2,7 +2,7 @@
 export type BrowserProfileConfig = {
   /** CDP port for this profile. Allocated once at creation, persisted permanently. */
   cdpPort?: number;
-  /** CDP URL for this profile (use for remote Chrome). */
+  /** CDP/DevTools endpoint URL for this profile (remote CDP or existing-session endpoint attach). */
   cdpUrl?: string;
   /** Profile driver (default: remoteclaw). */
   driver?: "remoteclaw" | "clawd" | "extension" | "existing-session";

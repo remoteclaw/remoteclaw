@@ -263,7 +263,7 @@ export type AgentDefaultsConfig = {
      */
     skipWhenBusy?: boolean;
   };
-  /** Max concurrent agent runs across all conversations. Default: 1 (sequential). */
+  /** Max concurrent agent runs across all conversations. Default: 4. */
   maxConcurrent?: number;
   /** Sub-agent defaults (spawned via sessions_spawn). */
   subagents?: {

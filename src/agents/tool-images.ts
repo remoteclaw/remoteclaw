@@ -39,12 +39,17 @@ const MAX_IMAGE_DIMENSION_PX = DEFAULT_IMAGE_MAX_DIMENSION_PX;
 const MAX_IMAGE_BYTES = DEFAULT_IMAGE_MAX_BYTES;
 const log = createSubsystemLogger("agents/tool-images");
 
+function isImageTypeBlock(block: unknown): block is Record<string, unknown> & { type: "image" } {
+  return (
+    Boolean(block) && typeof block === "object" && (block as { type?: unknown }).type === "image"
+  );
+}
+
 function isImageBlock(block: unknown): block is ImageContentBlock {
-  if (!block || typeof block !== "object") {
+  if (!isImageTypeBlock(block)) {
     return false;
   }
-  const rec = block as Record<string, unknown>;
-  return rec.type === "image" && typeof rec.data === "string" && typeof rec.mimeType === "string";
+  return typeof block.data === "string" && typeof block.mimeType === "string";
 }
 
 function isTextBlock(block: unknown): block is TextContentBlock {
@@ -296,6 +301,13 @@ export async function sanitizeContentBlocksImages(
     }
 
     if (!isImageBlock(block)) {
+      if (isImageTypeBlock(block)) {
+        out.push({
+          type: "text",
+          text: `[${label}] omitted image payload: missing data or mimeType`,
+        } satisfies TextContentBlock);
+        continue;
+      }
       out.push(block);
       continue;
     }
@@ -364,7 +376,7 @@ export async function sanitizeToolResultImages(
   opts: ImageSanitizationLimits = {},
 ): Promise<AgentToolResult> {
   const content = Array.isArray(result.content) ? result.content : [];
-  if (!content.some((b) => isImageBlock(b) || isTextBlock(b))) {
+  if (!content.some((block) => isImageTypeBlock(block) || isTextBlock(block))) {
     return result;
   }
 

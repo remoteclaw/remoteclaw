@@ -280,6 +280,17 @@ export const RemoteClawSchema = z
       })
       .strict()
       .optional(),
+    tui: z
+      .object({
+        footer: z
+          .object({
+            showRemoteHost: z.boolean().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
     secrets: SecretsConfigSchema,
     auth: z
       .object({

@@ -41,6 +41,7 @@ export type FeishuMessageContext = {
   chatId: string;
   messageId: string;
   replyTargetMessageId?: string;
+  typingTargetMessageId?: string;
   suppressReplyTarget?: boolean;
   senderId: string;
   senderOpenId: string;

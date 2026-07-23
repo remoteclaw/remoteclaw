@@ -1,3 +1,4 @@
+// Import Cycle Graph script supports RemoteClaw repository automation.
 import { readdirSync, statSync } from "node:fs";
 import path from "node:path";
 

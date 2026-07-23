@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+// Logger timestamp tests cover timestamp formatting in log output.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

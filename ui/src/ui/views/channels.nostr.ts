@@ -1,3 +1,4 @@
+// Control UI view renders channels.nostr screen content.
 import { html, nothing } from "lit";
 import { formatRelativeTimestamp } from "../format.ts";
 import type { ChannelAccountSnapshot, NostrStatus } from "../types.ts";

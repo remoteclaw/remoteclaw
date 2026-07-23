@@ -914,9 +914,9 @@ Uploaded files are stored in a `/RemoteClawShared/` folder in the configured Sha
 
 RemoteClaw sends Teams polls as Adaptive Cards (there is no native Teams poll API).
 
-- CLI: `remoteclaw message poll --channel msteams --target conversation:<id> ...`
-- Votes are recorded by the gateway in RemoteClaw plugin-state SQLite under `state/remoteclaw.sqlite`.
-- Existing `msteams-polls.json` files are imported once when the MSTeams plugin starts.
+- CLI: `openclaw message poll --channel msteams --target conversation:<id> ...`
+- Votes are recorded by the gateway in OpenClaw plugin-state SQLite under `state/openclaw.sqlite`.
+- Existing `msteams-polls.json` files are imported by `openclaw doctor --fix`, not by the running plugin.
 - The gateway must stay online to record votes.
 - Polls do not auto-post result summaries yet, and there is no supported poll-results CLI yet.
 

@@ -1,6 +1,6 @@
 import SwiftUI
 
-enum OpenClawProMetric {
+enum RemoteClawProMetric {
     static let pagePadding: CGFloat = 20
     static let cardRadius: CGFloat = 14
     static let controlRadius: CGFloat = 12
@@ -8,12 +8,12 @@ enum OpenClawProMetric {
     static let heroRadius: CGFloat = 22
 }
 
-struct OpenClawProBackground: View {
+struct RemoteClawProBackground: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         LinearGradient(
-            colors: OpenClawBrand.canvasColors(for: self.colorScheme),
+            colors: RemoteClawBrand.canvasColors(for: self.colorScheme),
             startPoint: .top,
             endPoint: .bottom)
             .ignoresSafeArea()
@@ -21,12 +21,13 @@ struct OpenClawProBackground: View {
                 if self.colorScheme == .light {
                     LinearGradient(
                         colors: [
-                            OpenClawBrand.accent.opacity(0.05),
+                            RemoteClawBrand.accent.opacity(0.05),
+                            RemoteClawBrand.accent.opacity(0.02),
                             .clear,
                         ],
                         startPoint: .topTrailing,
                         endPoint: .bottomLeading)
-                        .frame(height: 260)
+                        .frame(height: 620)
                         .ignoresSafeArea()
                 }
             }
@@ -50,7 +51,7 @@ struct ProSectionHeader: View {
                 if let action {
                     Button(actionTitle, action: action)
                         .font(.caption.weight(.medium))
-                        .foregroundStyle(OpenClawBrand.accent)
+                        .foregroundStyle(RemoteClawBrand.accent)
                 } else {
                     Text(actionTitle)
                         .font(.caption.weight(.medium))
@@ -58,7 +59,7 @@ struct ProSectionHeader: View {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 }
 
@@ -66,7 +67,7 @@ struct ProCard<Content: View>: View {
     var tint: Color?
     var isProminent: Bool = false
     var padding: CGFloat = 14
-    var radius: CGFloat = OpenClawProMetric.cardRadius
+    var radius: CGFloat = RemoteClawProMetric.cardRadius
     @ViewBuilder var content: Content
 
     var body: some View {
@@ -139,7 +140,7 @@ private struct ProPanelBackground: View {
         let gradient = LinearGradient(
             colors: [
                 Color.white.opacity(0.72),
-                (self.tint ?? OpenClawBrand.accent).opacity(0.10),
+                (self.tint ?? RemoteClawBrand.accent).opacity(0.10),
                 Color.black.opacity(0.08),
             ],
             startPoint: .topLeading,
@@ -209,7 +210,7 @@ private struct ProGlassSurfaceModifier: ViewModifier {
 extension View {
     func proPanelSurface(
         tint: Color? = nil,
-        radius: CGFloat = OpenClawProMetric.cardRadius,
+        radius: CGFloat = RemoteClawProMetric.cardRadius,
         isProminent: Bool = false) -> some View
     {
         self.modifier(ProPanelSurfaceModifier(
@@ -302,23 +303,23 @@ struct ProValuePill: View {
     }
 }
 
-struct OpenClawProMark: View {
+struct RemoteClawProMark: View {
     var size: CGFloat = 42
     var shadowRadius: CGFloat = 10
 
     var body: some View {
-        Image("OpenClawIcon")
+        Image("RemoteClawIcon")
             .resizable()
             .scaledToFit()
             .frame(width: self.size, height: self.size)
-            .shadow(color: OpenClawBrand.accent.opacity(0.28), radius: self.shadowRadius, y: self.shadowRadius / 2)
-            .accessibilityLabel("OpenClaw")
+            .shadow(color: RemoteClawBrand.accent.opacity(0.28), radius: self.shadowRadius, y: self.shadowRadius / 2)
+            .accessibilityLabel("RemoteClaw")
     }
 }
 
 struct ProProgressBar: View {
     let progress: Double
-    var color: Color = OpenClawBrand.accentHot
+    var color: Color = RemoteClawBrand.accentHot
 
     var body: some View {
         GeometryReader { proxy in
@@ -462,7 +463,7 @@ struct ProHeroActionButton: View {
                     .font(.headline.weight(.semibold))
                     .foregroundStyle(.white)
                     .frame(width: 42, height: 42)
-                    .background(OpenClawBrand.accentHot, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
+                    .background(RemoteClawBrand.accentHot, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(self.title)
@@ -478,12 +479,12 @@ struct ProHeroActionButton: View {
 
                 Image(systemName: "arrow.right")
                     .font(.subheadline.weight(.bold))
-                    .foregroundStyle(OpenClawBrand.accentHot)
+                    .foregroundStyle(RemoteClawBrand.accentHot)
             }
             .padding(12)
             .proGlassSurface(
                 fill: self.colorScheme == .dark ? Color.white.opacity(0.045) : Color.white.opacity(0.68),
-                stroke: OpenClawBrand.accent.opacity(self.colorScheme == .dark ? 0.22 : 0.14),
+                stroke: RemoteClawBrand.accent.opacity(self.colorScheme == .dark ? 0.22 : 0.14),
                 radius: 18,
                 isProminent: true,
                 interactive: true)
@@ -564,7 +565,7 @@ struct ProTimelineRow: View {
         HStack(alignment: .top, spacing: 10) {
             ProIconBadge(
                 systemName: self.done ? "checkmark.circle.fill" : "clock.fill",
-                color: self.done ? OpenClawBrand.ok : OpenClawBrand.warn)
+                color: self.done ? RemoteClawBrand.ok : RemoteClawBrand.warn)
             VStack(alignment: .leading, spacing: 3) {
                 Text(self.title)
                     .font(.subheadline.weight(.medium))

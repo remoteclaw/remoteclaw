@@ -1,3 +1,4 @@
+// Verifies logging-level schema parsing and defaults.
 import { describe, expect, it } from "vitest";
 import { RemoteClawSchema } from "./zod-schema.js";
 

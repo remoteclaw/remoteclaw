@@ -1,3 +1,5 @@
+// Covers directory cache key dimensions, TTL expiration, config invalidation,
+// recency refresh, bounded eviction, and matching clears.
 import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { DirectoryCache, buildDirectoryCacheKey } from "./directory-cache.js";

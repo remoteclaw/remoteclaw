@@ -1,3 +1,4 @@
+// Slack plugin module implements file reference behavior.
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { SlackFile } from "./types.js";
 

@@ -1,3 +1,4 @@
+/** Discovers plugin candidates from bundled, workspace, global, package, and bundle roots. */
 import fs from "node:fs";
 import path from "node:path";
 import { openBoundaryFileSync } from "../infra/boundary-file-read.js";
@@ -19,6 +20,7 @@ import type { PluginDiagnostic, PluginOrigin } from "./types.js";
 
 const EXTENSION_EXTS = new Set([".ts", ".js", ".mts", ".cts", ".mjs", ".cjs"]);
 
+/** One potential plugin root discovered before manifest validation and registry normalization. */
 export type PluginCandidate = {
   idHint: string;
   source: string;
@@ -32,6 +34,7 @@ export type PluginCandidate = {
   packageManifest?: RemoteClawPackageManifest;
 };
 
+/** Discovery candidates plus warnings/errors emitted while scanning roots. */
 export type PluginDiscoveryResult = {
   candidates: PluginCandidate[];
   diagnostics: PluginDiagnostic[];

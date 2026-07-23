@@ -63,8 +63,7 @@ struct AgentProTab: View {
     enum AgentRosterFilter: String, CaseIterable, Identifiable {
         case all
         case online
-        case busy
-        case idle
+        case ready
 
         var id: Self {
             self
@@ -74,8 +73,7 @@ struct AgentProTab: View {
             switch self {
             case .all: "All"
             case .online: "Online"
-            case .busy: "Busy"
-            case .idle: "Idle"
+            case .ready: "Ready"
             }
         }
     }
@@ -90,22 +88,19 @@ struct AgentProTab: View {
 
     enum AgentRosterState: Equatable {
         case online
-        case busy
-        case idle
+        case ready
 
         var title: String {
             switch self {
             case .online: "Online"
-            case .busy: "Busy"
-            case .idle: "Idle"
+            case .ready: "Ready"
             }
         }
 
         var color: Color {
             switch self {
-            case .online: OpenClawBrand.ok
-            case .busy: OpenClawBrand.warn
-            case .idle: Color(red: 0 / 255.0, green: 122 / 255.0, blue: 255 / 255.0)
+            case .online: RemoteClawBrand.ok
+            case .ready: Color(red: 0 / 255.0, green: 122 / 255.0, blue: 255 / 255.0)
             }
         }
     }
@@ -127,7 +122,7 @@ struct AgentProTab: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                OpenClawProBackground()
+                RemoteClawProBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         self.rosterHeader
@@ -142,7 +137,6 @@ struct AgentProTab: View {
                 .refreshable {
                     await self.refreshOverview(force: true)
                 }
-                .safeAreaPadding(.bottom, OpenClawProMetric.bottomScrollInset)
             }
             .navigationBarHidden(true)
             .navigationDestination(for: AgentRoute.self) { route in

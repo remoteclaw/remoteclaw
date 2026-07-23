@@ -1,8 +1,14 @@
 # RemoteClaw iOS Changelog
 
+## 2026.6.5 - 2026-06-05
+
+Maintenance update for the current RemoteClaw beta release.
+
 ## 2026.6.2 - 2026-06-02
 
-Maintenance update for the current RemoteClaw release.
+RemoteClaw is now available on iPhone.
+
+Connect to your RemoteClaw Gateway to chat with your assistant, use realtime Talk mode, review approvals, share content from iOS, and bring device capabilities like camera, location, screen, and notifications into your private automation workflows.
 
 ## 2026.6.1 - 2026-06-01
 

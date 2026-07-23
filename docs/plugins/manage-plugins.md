@@ -119,7 +119,11 @@ the install instead; for nix-remoteclaw, use the agent-first
 You can publish external plugins to ClawHub, npmjs.com, or
 both.
 
-### Publish to ClawHub
+Managed local path installs must be plugin directories or archives. Put
+standalone plugin files in `plugins.load.paths` instead of installing them with
+`plugins install`.
+
+## Publish plugins
 
 ClawHub is the primary public discovery surface for RemoteClaw plugins. It gives
 users searchable metadata, version history, and registry scan results before

@@ -1,8 +1,15 @@
+/** Builds prompt lines for a full BOOTSTRAP.md workflow handoff. */
+
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   buildFullBootstrapPromptLines: "live",
   buildLimitedBootstrapPromptLines: "live",
 } as const;
-
 export function buildFullBootstrapPromptLines(params: {
   readLine: string;
   firstReplyLine: string;
@@ -17,6 +24,7 @@ export function buildFullBootstrapPromptLines(params: {
   ];
 }
 
+/** Builds prompt lines for a constrained BOOTSTRAP.md workflow handoff. */
 export function buildLimitedBootstrapPromptLines(params: {
   introLine: string;
   nextStepLine: string;

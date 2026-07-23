@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/** ACP stdio server that bridges Agent Client Protocol clients to the RemoteClaw Gateway. */
 import { Readable, Writable } from "node:stream";
 import { fileURLToPath } from "node:url";
 import { AgentSideConnection, ndJsonStream } from "@agentclientprotocol/sdk";
@@ -12,6 +13,7 @@ import { readSecretFromFile } from "./secret-file.js";
 import { AcpGatewayAgent } from "./translator.js";
 import { normalizeAcpProvenanceMode, type AcpServerOptions } from "./types.js";
 
+/** Starts the ACP Gateway bridge and serves AgentSideConnection over stdio. */
 export async function serveAcpGateway(opts: AcpServerOptions = {}): Promise<void> {
   const cfg = loadConfig();
   const connection = buildGatewayConnectionDetails({

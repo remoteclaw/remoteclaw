@@ -1,3 +1,5 @@
+// Gateway reload settings resolver.
+// Normalizes reload mode and debounce config for watcher/reload handlers.
 import type { GatewayReloadMode } from "../config/types.gateway.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
@@ -11,6 +13,7 @@ const DEFAULT_RELOAD_SETTINGS: GatewayReloadSettings = {
   debounceMs: 300,
 };
 
+/** Resolves gateway reload mode/debounce from config with bounded defaults. */
 export function resolveGatewayReloadSettings(cfg: RemoteClawConfig): GatewayReloadSettings {
   const rawMode = cfg.gateway?.reload?.mode;
   const mode =

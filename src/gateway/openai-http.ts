@@ -1,3 +1,5 @@
+// Gateway OpenAI-compatible chat completions endpoint.
+// Translates OpenAI chat requests to RemoteClaw agent runs and SSE/JSON responses.
 import { randomUUID } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createDefaultDeps } from "../cli/deps.js";

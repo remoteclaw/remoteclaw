@@ -1,3 +1,4 @@
+// Telegram plugin module implements delivery.send behavior.
 import { type Bot, GrammyError } from "grammy";
 import { formatErrorMessage } from "../../../../src/infra/errors.js";
 import type { RuntimeEnv } from "../../../../src/runtime.js";

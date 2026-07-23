@@ -1,3 +1,4 @@
+// Explicit session key tests cover normalization of caller-provided session keys.
 import { describe, expect, it } from "vitest";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { normalizeExplicitSessionKey } from "./explicit-session-key-normalization.js";

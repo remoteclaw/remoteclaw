@@ -1,7 +1,16 @@
+/**
+ * Formats generated attachment references for agent-visible output.
+ */
 import { basenameFromAnyPath } from "@remoteclaw/media-core/file-name";
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import { uniqueStrings } from "@remoteclaw/normalization-core/string-normalization";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   generatedAttachmentReference: "live",
   mediaUrlsFromGeneratedAttachments: "live",
@@ -9,6 +18,8 @@ export const MODULE_ATTESTATIONS = {
   formatGeneratedAttachmentLines: "live",
 } as const;
 
+// Shared helpers for generated media/file attachments returned by tools or
+// subagents. They normalize paths/URLs for prompt text and delivery routing.
 export type AgentGeneratedAttachment = {
   type?: "image" | "audio" | "video" | "file";
   path?: string;
@@ -19,6 +30,7 @@ export type AgentGeneratedAttachment = {
   name?: string;
 };
 
+/** Resolve the first usable path or URL reference for a generated attachment. */
 export function generatedAttachmentReference(
   attachment: AgentGeneratedAttachment,
 ): string | undefined {
@@ -27,6 +39,7 @@ export function generatedAttachmentReference(
   );
 }
 
+/** Return unique media URLs/paths from generated attachments. */
 export function mediaUrlsFromGeneratedAttachments(
   attachments: readonly AgentGeneratedAttachment[] | undefined,
 ): string[] {
@@ -35,6 +48,7 @@ export function mediaUrlsFromGeneratedAttachments(
   );
 }
 
+/** Resolve a display name from attachment metadata or path basename. */
 export function nameFromGeneratedAttachment(
   attachment: AgentGeneratedAttachment,
 ): string | undefined {
@@ -44,6 +58,7 @@ export function nameFromGeneratedAttachment(
   );
 }
 
+/** Format generated attachment metadata as prompt-safe text lines. */
 export function formatGeneratedAttachmentLines(
   attachments: readonly AgentGeneratedAttachment[] | undefined,
 ): string[] {

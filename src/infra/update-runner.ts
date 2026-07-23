@@ -1,3 +1,4 @@
+// Runs RemoteClaw package update checks, package steps, and restart handoff.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
@@ -83,6 +84,14 @@ export type UpdateRunResult = {
           message: string;
           currentVersion?: string;
           nextVersion?: string;
+          channelFallback?: {
+            requestedSpec: string;
+            usedSpec: string;
+            requestedLabel: string;
+            usedLabel: string;
+            reason: "unavailable" | "failed";
+            message: string;
+          };
         }>;
       };
       integrityDrifts: Array<{

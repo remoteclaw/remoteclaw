@@ -1,5 +1,11 @@
-import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
-import { computeBackoff, sleepWithAbort, type BackoffPolicy } from "../../../src/infra/backoff.js";
+// Telegram plugin module implements sendchataction 401 backoff behavior.
+import type { Bot } from "grammy";
+import {
+  computeBackoff,
+  sleepWithAbort,
+  type BackoffPolicy,
+} from "remoteclaw/plugin-sdk/runtime-env";
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 export type TelegramSendChatActionLogger = (message: string) => void;
 

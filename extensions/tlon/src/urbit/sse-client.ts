@@ -1,3 +1,4 @@
+// Tlon plugin module implements sse client behavior.
 import { randomUUID } from "node:crypto";
 import { Readable } from "node:stream";
 import type { ReadableStream as WebReadableStream } from "node:stream/web";

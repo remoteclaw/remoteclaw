@@ -1,3 +1,6 @@
+// Telegram plugin module implements message dispatch dedupe behavior.
+import { createHash } from "node:crypto";
+import fs from "node:fs";
 import path from "node:path";
 import type { Message } from "grammy/types";
 import {

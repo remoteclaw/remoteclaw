@@ -1,3 +1,8 @@
+/**
+ * Tests shared OAuth credential overlay/replacement policy.
+ * Covers runtime-only provenance, cloned store isolation, and stale credential
+ * replacement decisions.
+ */
 import { describe, expect, it, vi } from "vitest";
 import { overlayRuntimeExternalOAuthProfiles } from "./oauth-shared.js";
 import type { AuthProfileStore } from "./types.js";

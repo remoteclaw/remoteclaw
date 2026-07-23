@@ -1,3 +1,4 @@
+// Covers npm install env and freshness bypass args.
 import fsSync from "node:fs";
 import { describe, expect, it, vi } from "vitest";
 import { createNpmProjectInstallEnv } from "./npm-install-env.js";

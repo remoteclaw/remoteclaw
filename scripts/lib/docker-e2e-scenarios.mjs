@@ -1,20 +1,27 @@
 // Docker E2E scenario catalog.
 // Keep lane names, commands, image kind, timeout, resources, and release chunks
 // here. Planning and execution live in separate modules.
+import { fileURLToPath } from "node:url";
 
 export const DEFAULT_LIVE_RETRIES = 1;
+const LIVE_DOCKER_DEFAULT_HARNESS_DIR =
+  /[\\/]\\.release-harness[\\/]/u.test(fileURLToPath(import.meta.url)) &&
+  process.env.REMOTECLAW_DOCKER_E2E_REPO_ROOT
+    ? ".release-harness"
+    : ".";
 const LIVE_ACP_TIMEOUT_MS = 20 * 60 * 1000;
 const LIVE_CLI_TIMEOUT_MS = 20 * 60 * 1000;
 const LIVE_PROFILE_TIMEOUT_MS = 30 * 60 * 1000;
 const OPENWEBUI_TIMEOUT_MS = 20 * 60 * 1000;
 const RELEASE_OPENWEBUI_COMMAND =
-  "REMOTECLAW_OPENWEBUI_MODEL=openai/gpt-5.4-mini OPENWEBUI_SMOKE_MODE=models REMOTECLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=300 REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:openwebui";
+  "REMOTECLAW_OPENWEBUI_MODEL=openai/gpt-5.4-mini REMOTECLAW_OPENWEBUI_PROVIDER_TIMEOUT_SECONDS=300 REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:openwebui";
 export const BUNDLED_PLUGIN_INSTALL_UNINSTALL_SHARDS = 24;
 const upgradeSurvivorCommand = "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:upgrade-survivor";
 const rootManagedVpsUpgradeCommand =
   "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:root-managed-vps-upgrade";
 const updateRestartAuthCommand =
   "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:update-restart-auth";
+const CODEX_HARNESS_API_KEY_ENV = "REMOTECLAW_LIVE_CODEX_HARNESS_AUTH=api-key";
 
 const LIVE_RETRY_PATTERNS = [
   /529\b/i,
@@ -28,7 +35,7 @@ const LIVE_RETRY_PATTERNS = [
 function liveDockerScriptCommand(script, envPrefix = "", options = {}) {
   const prefix = envPrefix ? `${envPrefix} ` : "";
   const skipBuild = options.skipBuild === false ? "" : "REMOTECLAW_SKIP_DOCKER_BUILD=1 ";
-  return `${prefix}${skipBuild}bash -c 'harness="\${REMOTECLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR:-}"; if [ -z "$harness" ]; then if [ -d .release-harness/scripts ]; then harness=.release-harness; else harness=.; fi; fi; REMOTECLAW_LIVE_DOCKER_REPO_ROOT="\${REMOTECLAW_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/${script}"'`;
+  return `${prefix}${skipBuild}bash -c 'harness="\${REMOTECLAW_DOCKER_E2E_TRUSTED_HARNESS_DIR:-${LIVE_DOCKER_DEFAULT_HARNESS_DIR}}"; REMOTECLAW_LIVE_DOCKER_REPO_ROOT="\${REMOTECLAW_DOCKER_E2E_REPO_ROOT:-$PWD}" bash "$harness/scripts/${script}"'`;
 }
 
 function lane(name, command, options = {}) {
@@ -517,13 +524,17 @@ export const tailLanes = [
     "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:openai-web-search-minimal",
     { stateScenario: "empty", timeoutMs: 8 * 60 * 1000 },
   ),
-  liveLane("live-codex-harness", liveDockerScriptCommand("test-live-codex-harness-docker.sh"), {
-    cacheKey: "codex-harness",
-    provider: "codex-cli",
-    resources: ["npm"],
-    timeoutMs: LIVE_ACP_TIMEOUT_MS,
-    weight: 3,
-  }),
+  liveLane(
+    "live-codex-harness",
+    liveDockerScriptCommand("test-live-codex-harness-docker.sh", CODEX_HARNESS_API_KEY_ENV),
+    {
+      cacheKey: "codex-harness",
+      provider: "openai",
+      resources: ["npm"],
+      timeoutMs: LIVE_ACP_TIMEOUT_MS,
+      weight: 3,
+    },
+  ),
   liveLane(
     "live-codex-media-path",
     liveDockerScriptCommand(
@@ -553,11 +564,11 @@ export const tailLanes = [
     "live-codex-bind",
     liveDockerScriptCommand(
       "test-live-codex-harness-docker.sh",
-      "REMOTECLAW_LIVE_CODEX_BIND=1 REMOTECLAW_LIVE_CODEX_TEST_FILES=src/gateway/gateway-codex-bind.live.test.ts",
+      `${CODEX_HARNESS_API_KEY_ENV} REMOTECLAW_LIVE_CODEX_BIND=1 REMOTECLAW_LIVE_CODEX_TEST_FILES=src/gateway/gateway-codex-bind.live.test.ts`,
     ),
     {
       cacheKey: "codex-harness",
-      provider: "codex-cli",
+      provider: "openai",
       resources: ["npm"],
       timeoutMs: LIVE_ACP_TIMEOUT_MS,
       weight: 3,
@@ -699,11 +710,14 @@ const releasePathBundledChannelLanes = [
 ];
 
 const releasePathPackageInstallOpenAiLanes = [
-  npmLane(
+  liveLane(
     "install-e2e-openai",
     "REMOTECLAW_INSTALL_TAG=beta REMOTECLAW_E2E_MODELS=openai REMOTECLAW_INSTALL_E2E_IMAGE=remoteclaw-install-e2e-openai:local REMOTECLAW_INSTALL_E2E_AGENT_TOOL_SMOKE=0 REMOTECLAW_INSTALL_E2E_OPENAI_MODEL=openai/gpt-5.4-mini REMOTECLAW_INSTALL_E2E_AGENT_TURN_TIMEOUT_SECONDS=120 REMOTECLAW_INSTALL_E2E_OPENAI_PROVIDER_TIMEOUT_SECONDS=120 pnpm test:install:e2e",
     {
-      resources: ["service"],
+      e2eImageKind: "bare",
+      needsLiveImage: false,
+      provider: "openai",
+      resources: ["npm", "service"],
       timeoutMs: 15 * 60 * 1000,
       weight: 3,
     },
@@ -719,11 +733,14 @@ const releasePathPackageInstallOpenAiLanes = [
 ];
 
 const releasePathPackageInstallAnthropicLanes = [
-  npmLane(
+  liveLane(
     "install-e2e-anthropic",
     "REMOTECLAW_INSTALL_TAG=beta REMOTECLAW_E2E_MODELS=anthropic REMOTECLAW_INSTALL_E2E_IMAGE=remoteclaw-install-e2e-anthropic:local pnpm test:install:e2e",
     {
-      resources: ["service"],
+      e2eImageKind: "bare",
+      needsLiveImage: false,
+      provider: "claude",
+      resources: ["npm", "service"],
       weight: 3,
     },
   ),

@@ -1,3 +1,4 @@
+// Session store pruning tests cover pruning decisions and retention ordering.
 import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";

@@ -1,18 +1,29 @@
+/**
+ * Manages transient transcripts used for internal session side effects.
+ */
 import { promises as fs } from "node:fs";
 import path from "node:path";
 import { resolveStateDir } from "../config/paths.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   resolveInternalSessionEffectsTranscriptPath: "live",
   prepareInternalSessionEffectsTranscript: "live",
   removeInternalSessionEffectsTranscript: "live",
 } as const;
 
+/** Resolves the private transcript path for an internal session-effect run. */
 export function resolveInternalSessionEffectsTranscriptPath(runId: string): string {
   const safeRunId = runId.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) || "run";
   return path.join(resolveStateDir(), "internal-agent-runs", `${safeRunId}.jsonl`);
 }
 
+/** Copies or creates a private transcript for internal session-effect recovery. */
 export async function prepareInternalSessionEffectsTranscript(params: {
   sessionFile?: string;
   runId: string;
@@ -40,6 +51,7 @@ export async function prepareInternalSessionEffectsTranscript(params: {
   return sessionFile;
 }
 
+/** Removes an internal session-effect transcript if it is inside the owned dir. */
 export async function removeInternalSessionEffectsTranscript(
   sessionFile: string | undefined,
 ): Promise<void> {

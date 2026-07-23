@@ -1,3 +1,4 @@
+// Matrix tests cover accounts plugin behavior.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CoreConfig } from "../types.js";
 import { resolveDefaultMatrixAccountId, resolveMatrixAccount } from "./accounts.js";

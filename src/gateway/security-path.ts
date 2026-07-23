@@ -1,3 +1,5 @@
+// Gateway path security canonicalizes repeatedly encoded paths and protects
+// plugin HTTP routes even under malformed encoding.
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 
 type SecurityPathCanonicalization = {

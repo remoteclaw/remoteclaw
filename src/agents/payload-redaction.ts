@@ -1,3 +1,8 @@
+/**
+ * Redacts diagnostic payloads before persistence. It removes credential-like
+ * fields, masks embedded auth strings, and replaces image/base64 data with
+ * size and digest metadata.
+ */
 import crypto from "node:crypto";
 import { estimateBase64DecodedBytes } from "@remoteclaw/media-core/base64";
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";

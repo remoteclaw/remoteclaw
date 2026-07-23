@@ -1,3 +1,4 @@
+// Slack plugin module implements client behavior.
 import { createHash } from "node:crypto";
 import { type RetryOptions, type WebClientOptions, WebClient } from "@slack/web-api";
 import { HttpsProxyAgent } from "https-proxy-agent";

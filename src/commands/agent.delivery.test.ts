@@ -1,3 +1,4 @@
+// Agent delivery tests cover command result delivery to reply payloads and CLI dependencies.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CliDeps } from "../cli/deps.js";
 import type { RemoteClawConfig } from "../config/config.js";

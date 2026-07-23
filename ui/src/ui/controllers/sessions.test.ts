@@ -1,3 +1,4 @@
+// Control UI tests cover sessions behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deleteSession, deleteSessionAndRefresh, type SessionsState } from "./sessions.ts";
 

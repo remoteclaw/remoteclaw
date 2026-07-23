@@ -1,8 +1,10 @@
+// Resolves development source roots for local plugin installs.
 import fs from "node:fs";
 import path from "node:path";
 import { resolveUserPath } from "../utils.js";
 import { isPathInside, safeRealpathSync } from "./path-safety.js";
 
+/** Env var that points bundled-plugin lookup at an RemoteClaw source checkout. */
 export const REMOTECLAW_DEV_SOURCE_ROOT_ENV = "REMOTECLAW_DEV_SOURCE_ROOT";
 
 function readPackageName(packageJsonPath: string): string | null {
@@ -14,6 +16,7 @@ function readPackageName(packageJsonPath: string): string | null {
   }
 }
 
+/** Resolves and validates the configured RemoteClaw development source root. */
 export function resolveRemoteClawDevSourceRoot(
   env: NodeJS.ProcessEnv = process.env,
 ): string | null {
@@ -38,6 +41,7 @@ export function resolveRemoteClawDevSourceRoot(
   return realRoot;
 }
 
+/** True when a bundled plugin root is inside the configured development source root. */
 export function isBundledPluginInsideDevSourceRoot(params: {
   rootDir: string;
   env: NodeJS.ProcessEnv;

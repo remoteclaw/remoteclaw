@@ -1,3 +1,4 @@
+// Slack plugin module implements context behavior.
 import type { App } from "@slack/bolt";
 import {
   normalizeLowercaseStringOrEmpty,

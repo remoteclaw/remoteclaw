@@ -1,3 +1,4 @@
+// Signal plugin module implements runtime behavior.
 import type { PluginRuntime } from "remoteclaw/plugin-sdk/core";
 import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
 

@@ -1,18 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Build and bundle OpenClaw into a minimal .app we can open.
-# Outputs to dist/OpenClaw.app
+# Build and bundle RemoteClaw into a minimal .app we can open.
+# Outputs to dist/RemoteClaw.app
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/scripts/lib/plistbuddy.sh"
-APP_ROOT="$ROOT_DIR/dist/OpenClaw.app"
+APP_ROOT="$ROOT_DIR/dist/RemoteClaw.app"
 BUILD_ROOT="$ROOT_DIR/apps/macos/.build"
-PRODUCT="OpenClaw"
+PRODUCT="RemoteClaw"
 MLX_TTS_HELPER_PRODUCT="remoteclaw-mlx-tts"
 MLX_TTS_HELPER_ROOT="$ROOT_DIR/apps/macos-mlx-tts"
 MLX_TTS_HELPER_BUILD_ROOT="$MLX_TTS_HELPER_ROOT/.build"
-BUNDLE_ID="${BUNDLE_ID:-ai.openclaw.mac.debug}"
+BUNDLE_ID="${BUNDLE_ID:-org.remoteclaw.mac.debug}"
 PKG_VERSION="$(cd "$ROOT_DIR" && node -p "require('./package.json').version" 2>/dev/null || echo "0.0.0")"
 BUILD_TS=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 GIT_COMMIT=$(cd "$ROOT_DIR" && git rev-parse --short HEAD 2>/dev/null || echo "unknown")
@@ -42,7 +42,7 @@ if [[ "$BUNDLE_ID" == *.debug ]]; then
 fi
 
 sparkle_canonical_build_from_version() {
-  node --import tsx "$ROOT_DIR/scripts/sparkle-build.ts" canonical-build "$1"
+  (cd "$ROOT_DIR" && node --import tsx "$ROOT_DIR/scripts/sparkle-build.ts" canonical-build "$1")
 }
 
 build_path_for_arch() {
@@ -207,7 +207,7 @@ mkdir -p "$APP_ROOT/Contents/Resources"
 mkdir -p "$APP_ROOT/Contents/Frameworks"
 
 echo "📄 Copying Info.plist template"
-INFO_PLIST_SRC="$ROOT_DIR/apps/macos/Sources/OpenClaw/Resources/Info.plist"
+INFO_PLIST_SRC="$ROOT_DIR/apps/macos/Sources/RemoteClaw/Resources/Info.plist"
 if [ ! -f "$INFO_PLIST_SRC" ]; then
   echo "ERROR: Info.plist template missing at $INFO_PLIST_SRC" >&2
   exit 1
@@ -223,17 +223,17 @@ plist_set_or_add_string "$APP_ROOT/Contents/Info.plist" SUPublicEDKey "$SPARKLE_
 plist_set_or_add_bool "$APP_ROOT/Contents/Info.plist" SUEnableAutomaticChecks "$AUTO_CHECKS"
 
 echo "🚚 Copying binary"
-cp "$BIN_PRIMARY" "$APP_ROOT/Contents/MacOS/OpenClaw"
+cp "$BIN_PRIMARY" "$APP_ROOT/Contents/MacOS/RemoteClaw"
 if [[ "${#BUILD_ARCHS[@]}" -gt 1 ]]; then
   BIN_INPUTS=()
   for arch in "${BUILD_ARCHS[@]}"; do
     BIN_INPUTS+=("$(bin_for_arch "$arch")")
   done
-  /usr/bin/lipo -create "${BIN_INPUTS[@]}" -output "$APP_ROOT/Contents/MacOS/OpenClaw"
+  /usr/bin/lipo -create "${BIN_INPUTS[@]}" -output "$APP_ROOT/Contents/MacOS/RemoteClaw"
 fi
-chmod +x "$APP_ROOT/Contents/MacOS/OpenClaw"
+chmod +x "$APP_ROOT/Contents/MacOS/RemoteClaw"
 # SwiftPM outputs ad-hoc signed binaries; strip the signature before install_name_tool to avoid warnings.
-/usr/bin/codesign --remove-signature "$APP_ROOT/Contents/MacOS/OpenClaw" 2>/dev/null || true
+/usr/bin/codesign --remove-signature "$APP_ROOT/Contents/MacOS/RemoteClaw" 2>/dev/null || true
 
 echo "🚚 Copying MLX TTS helper"
 cp "$(helper_bin_for_arch "$PRIMARY_ARCH")" "$APP_ROOT/Contents/MacOS/$MLX_TTS_HELPER_PRODUCT"
@@ -269,16 +269,19 @@ SWIFT_COMPAT_LIB="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib
 if [ -f "$SWIFT_COMPAT_LIB" ]; then
   cp "$SWIFT_COMPAT_LIB" "$APP_ROOT/Contents/Frameworks/"
   chmod +x "$APP_ROOT/Contents/Frameworks/libswiftCompatibilitySpan.dylib"
+elif [[ "$BUILD_CONFIG" == "release" ]]; then
+  echo "ERROR: Swift compatibility library not found at $SWIFT_COMPAT_LIB" >&2
+  exit 1
 else
   echo "WARN: Swift compatibility library not found at $SWIFT_COMPAT_LIB (continuing)" >&2
 fi
 
 echo "🖼  Copying app icon"
-cp "$ROOT_DIR/apps/macos/Sources/OpenClaw/Resources/OpenClaw.icns" "$APP_ROOT/Contents/Resources/OpenClaw.icns"
+cp "$ROOT_DIR/apps/macos/Sources/RemoteClaw/Resources/RemoteClaw.icns" "$APP_ROOT/Contents/Resources/RemoteClaw.icns"
 
 echo "📦 Copying device model resources"
 rm -rf "$APP_ROOT/Contents/Resources/DeviceModels"
-cp -R "$ROOT_DIR/apps/macos/Sources/OpenClaw/Resources/DeviceModels" "$APP_ROOT/Contents/Resources/DeviceModels"
+cp -R "$ROOT_DIR/apps/macos/Sources/RemoteClaw/Resources/DeviceModels" "$APP_ROOT/Contents/Resources/DeviceModels"
 
 echo "📦 Copying Control UI assets"
 CONTROL_UI_SRC="$ROOT_DIR/dist/control-ui"
@@ -330,7 +333,7 @@ fi
 
 running_packaged_app_pids() {
   command -v pgrep >/dev/null 2>&1 || return 0
-  local app_binary="$APP_ROOT/Contents/MacOS/OpenClaw"
+  local app_binary="$APP_ROOT/Contents/MacOS/RemoteClaw"
   local pid
   pgrep -x "$PRODUCT" 2>/dev/null | while IFS= read -r pid; do
     [[ "$pid" =~ ^[0-9]+$ ]] || continue
@@ -357,7 +360,7 @@ stop_packaged_app_if_running() {
     return 0
   fi
 
-  echo "⏹  Stopping packaged OpenClaw bundle (${pids[*]})"
+  echo "⏹  Stopping packaged RemoteClaw bundle (${pids[*]})"
   kill "${pids[@]}" 2>/dev/null || true
   for _ in $(seq 1 40); do
     local alive=0
@@ -370,6 +373,18 @@ stop_packaged_app_if_running() {
     sleep 0.25
   done
   kill -KILL "${pids[@]}" 2>/dev/null || true
+  for _ in $(seq 1 20); do
+    local alive=0
+    for pid in "${pids[@]}"; do
+      if kill -0 "$pid" 2>/dev/null; then
+        alive=1
+      fi
+    done
+    [[ "$alive" == "0" ]] && return 0
+    sleep 0.1
+  done
+  echo "ERROR: Packaged RemoteClaw bundle did not exit: ${pids[*]}" >&2
+  return 1
 }
 
 stop_packaged_app_if_running

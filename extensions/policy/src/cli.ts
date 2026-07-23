@@ -1,3 +1,5 @@
+// Policy plugin module implements cli behavior.
+import { isAbsolute, resolve } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
 import type { Command } from "commander";
 import {

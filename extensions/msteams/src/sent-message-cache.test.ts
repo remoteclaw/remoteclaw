@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+// Msteams tests cover sent message cache plugin behavior.
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { setMSTeamsRuntime } from "./runtime.js";
 import {
   clearMSTeamsSentMessageCache,
   recordMSTeamsSentMessage,

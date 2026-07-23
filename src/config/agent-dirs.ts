@@ -1,3 +1,4 @@
+// Resolves agent-specific config and workspace directories.
 import os from "node:os";
 import path from "node:path";
 import { resolveRequiredHomeDir } from "../infra/home-dir.js";
@@ -12,6 +13,7 @@ type DuplicateAgentDir = {
   agentIds: string[];
 };
 
+/** Error thrown when multiple configured agents resolve to the same state directory. */
 export class DuplicateAgentDirError extends Error {
   readonly duplicates: DuplicateAgentDir[];
 
@@ -25,6 +27,7 @@ export class DuplicateAgentDirError extends Error {
 function canonicalizeAgentDir(agentDir: string): string {
   const resolved = path.resolve(agentDir);
   if (process.platform === "darwin" || process.platform === "win32") {
+    // Agent dirs collide case-insensitively on the common macOS/Windows filesystems.
     return normalizeLowercaseStringOrEmpty(resolved);
   }
   return resolved;
@@ -74,6 +77,7 @@ function resolveEffectiveAgentDir(
   return path.join(root, "agents", id, "agent");
 }
 
+/** Finds agent ids whose effective agentDir would share auth/session state. */
 export function findDuplicateAgentDirs(
   cfg: RemoteClawConfig,
   deps?: { env?: NodeJS.ProcessEnv; homedir?: () => string },
@@ -94,6 +98,7 @@ export function findDuplicateAgentDirs(
   return [...byDir.values()].filter((v) => v.agentIds.length > 1);
 }
 
+/** Formats duplicate agentDir conflicts with the remediation operators should take. */
 export function formatDuplicateAgentDirError(dups: DuplicateAgentDir[]): string {
   const lines: string[] = [
     "Duplicate agentDir detected (multi-agent config).",

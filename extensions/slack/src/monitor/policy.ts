@@ -1,5 +1,4 @@
-import { evaluateGroupRouteAccessForPolicy } from "../../../../src/plugin-sdk/group-access.js";
-
+// Slack plugin module implements policy behavior.
 export function isSlackChannelAllowedByPolicy(params: {
   groupPolicy: "open" | "disabled" | "allowlist";
   channelAllowlistConfigured: boolean;

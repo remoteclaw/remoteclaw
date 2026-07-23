@@ -1,3 +1,5 @@
+// Subagent orphan-recovery tests cover restart recovery for child sessions whose
+// embedded run was interrupted while the registry still considers them active.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as sessions from "../config/sessions.js";
 import * as gateway from "../gateway/call.js";
@@ -6,7 +8,8 @@ import { recoverOrphanedSubagentSessions } from "./subagent-orphan-recovery.js";
 import * as subagentRegistrySteerRuntime from "./subagent-registry-steer-runtime.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
-// Mock dependencies before importing the module under test
+// Mocks are installed before importing the recovery module so registry/runtime
+// helpers resolve to deterministic restart fixtures.
 vi.mock("../config/config.js", () => ({
   getRuntimeConfig: vi.fn(() => ({
     session: { store: undefined },
@@ -131,7 +134,8 @@ describe("subagent-orphan-recovery", () => {
     expect(result.failed).toBe(0);
     expect(result.skipped).toBe(0);
 
-    // Should have called callGateway to resume the session
+    // Recovery resumes through the gateway and records the new run id so the
+    // registry follows the resumed transcript instead of the idempotency key.
     expect(gateway.callGateway).toHaveBeenCalledOnce();
     const callArgs = vi.mocked(gateway.callGateway).mock.calls.at(0);
     if (callArgs === undefined) {

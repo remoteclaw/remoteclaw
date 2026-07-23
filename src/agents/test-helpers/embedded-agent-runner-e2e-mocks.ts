@@ -1,3 +1,8 @@
+/**
+ * Fast embedded-runner E2E mocks.
+ *
+ * Installs targeted Vitest module mocks for tests that do not need live plugin/runtime boot.
+ */
 import { vi } from "vitest";
 
 type EmbeddedRunnerFastRunMockOptions = {
@@ -16,6 +21,7 @@ type EmbeddedRunnerBackoffMockOptions = {
   sleepWithAbort: (ms: number, abortSignal?: AbortSignal) => unknown;
 };
 
+/** Installs baseline mocks for hook runner, context engine, and runtime plugin loading. */
 export function installEmbeddedRunnerBaseE2eMocks(options?: {
   hookRunner?: "minimal" | "full";
 }): void {
@@ -50,6 +56,7 @@ export function installEmbeddedRunnerBaseE2eMocks(options?: {
   }));
 }
 
+/** Installs mocks that route embedded attempts through a caller-provided fast run function. */
 export function installEmbeddedRunnerFastRunE2eMocks(
   options: EmbeddedRunnerFastRunMockOptions,
 ): void {
@@ -66,7 +73,7 @@ export function installEmbeddedRunnerFastRunE2eMocks(
         runAttempt: vi.fn(),
       }),
     ),
-    resolveAgentHarnessPolicy: vi.fn(() => ({ runtime: "openclaw" })),
+    resolveAgentHarnessPolicy: vi.fn(() => ({ runtime: "remoteclaw" })),
     runAgentHarnessAttempt: (params: unknown) => options.runEmbeddedAttempt(params),
   }));
   vi.doMock("../runtime-plan/build.js", () => ({
@@ -162,14 +169,15 @@ function resolveMockHarnessId(params: {
   provider?: string;
   agentHarnessId?: string;
   agentHarnessRuntimeOverride?: string;
-}): "codex" | "openclaw" {
+}): "codex" | "remoteclaw" {
   return params.provider === "codex-cli" ||
     params.agentHarnessId === "codex" ||
     params.agentHarnessRuntimeOverride === "codex"
     ? "codex"
-    : "openclaw";
+    : "remoteclaw";
 }
 
+/** Installs deterministic backoff mocks for retry/timeout E2E tests. */
 export function installEmbeddedRunnerBackoffE2eMocks(
   options: EmbeddedRunnerBackoffMockOptions,
 ): void {

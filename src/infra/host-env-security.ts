@@ -1,3 +1,4 @@
+// Filters host environment variables before passing them to runtimes.
 import { sortUniqueStrings } from "@remoteclaw/normalization-core/string-normalization";
 import { HOST_ENV_SECURITY_POLICY } from "./host-env-security-policy.js";
 import { markRemoteClawExecEnv } from "./remoteclaw-exec-env.js";

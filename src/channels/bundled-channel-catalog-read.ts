@@ -1,3 +1,8 @@
+/**
+ * Bundled channel catalog reader.
+ *
+ * Loads channel metadata from generated package catalogs and bundled plugin package manifests.
+ */
 import fs from "node:fs";
 import path from "node:path";
 import { resolveRemoteClawPackageRootSync } from "../infra/remoteclaw-root.js";
@@ -23,6 +28,8 @@ const OFFICIAL_CHANNEL_CATALOG_RELATIVE_PATH = path.join("dist", "channel-catalo
 const officialCatalogFileCache = new Map<string, ChannelCatalogEntryLike[] | null>();
 
 function listPackageRoots(): string[] {
+  // Source checkouts and packaged installs can resolve RemoteClaw from different roots; scan both
+  // once so channel metadata works in dev, linked packages, and published CLI layouts.
   return uniqueStrings(
     [
       resolveRemoteClawPackageRootSync({ cwd: process.cwd() }),
@@ -103,6 +110,9 @@ function toBundledChannelEntry(
   };
 }
 
+/**
+ * Lists bundled channel catalog entries from package manifests and generated catalog files.
+ */
 export function listBundledChannelCatalogEntries(): BundledChannelCatalogEntry[] {
   const entries = new Map<string, BundledChannelCatalogEntry>();
   for (const entry of readBundledExtensionCatalogEntriesSync()) {
@@ -114,6 +124,7 @@ export function listBundledChannelCatalogEntries(): BundledChannelCatalogEntry[]
   for (const entry of readOfficialCatalogFileSync()) {
     const channelEntry = toBundledChannelEntry(entry);
     if (channelEntry) {
+      // Package manifests win over the generated catalog when both describe the same id.
       entries.set(channelEntry.id, entries.get(channelEntry.id) ?? channelEntry);
     }
   }

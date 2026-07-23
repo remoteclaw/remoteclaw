@@ -1,3 +1,4 @@
+// Session patch applier for gateway session metadata and model/runtime overrides.
 import { randomUUID } from "node:crypto";
 import { parseModelRef } from "../agents/provider-utils.js";
 import { normalizeGroupActivation } from "../auto-reply/group-activation.js";
@@ -43,6 +44,7 @@ function normalizeSubagentControlScope(raw: string): "children" | "none" | undef
   return undefined;
 }
 
+/** Apply a validated gateway session patch to an in-memory session store entry. */
 export async function applySessionsPatchToStore(params: {
   cfg: RemoteClawConfig;
   store: Record<string, SessionEntry>;
@@ -54,7 +56,8 @@ export async function applySessionsPatchToStore(params: {
   const resolvedDefault = { provider: "unknown", model: "unknown" };
 
   const existing = store[storeKey];
-  const next: SessionEntry = existing
+  // Existing entries without session ids are placeholder aliases; assigning an id makes them real.
+  const next: SessionEntry = existing?.sessionId
     ? {
         ...existing,
         updatedAt: Math.max(existing.updatedAt ?? 0, now),

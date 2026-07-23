@@ -1,3 +1,4 @@
+// Installs package directories under canonical plugin roots.
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runCommandWithTimeout } from "../process/exec.js";
@@ -154,6 +155,11 @@ async function resolveInstallPublishTarget(params: {
   };
 }
 
+/**
+ * Publishes a package directory into an install target via a staged copy.
+ * Update mode backs up the existing target, runs optional validation hooks,
+ * and rolls back when copy, dependency install, or validation fails.
+ */
 export async function installPackageDir(params: {
   sourceDir: string;
   targetDir: string;
@@ -309,6 +315,10 @@ export async function installPackageDir(params: {
   return { ok: true };
 }
 
+/**
+ * Installs a manifest-backed package directory while deriving whether npm
+ * dependencies must be installed and which hardlink policy is safe to use.
+ */
 export async function installPackageDirWithManifestDeps(params: {
   sourceDir: string;
   targetDir: string;

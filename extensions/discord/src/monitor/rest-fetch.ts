@@ -1,3 +1,4 @@
+// Discord plugin module implements rest fetch behavior.
 import { randomUUID } from "node:crypto";
 import { Agent, type Dispatcher, fetch as undiciFetch } from "undici";
 import { danger } from "../../../../src/globals.js";

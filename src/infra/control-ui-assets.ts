@@ -1,3 +1,4 @@
+// Resolves and checks packaged Control UI assets.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";

@@ -1,4 +1,5 @@
-export type { MatrixAuth, MatrixResolvedConfig } from "./client/types.js";
+// Matrix plugin module implements client behavior.
+export type { MatrixAuth } from "./client/types.js";
 export { isBunRuntime } from "./client/runtime.js";
 export {
   resolveMatrixConfig,

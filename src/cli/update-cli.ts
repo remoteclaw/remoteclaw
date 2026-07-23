@@ -1,3 +1,4 @@
+// Commander wiring for `remoteclaw update`, its status/finalize subcommands, and help text.
 import type { Command } from "commander";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
@@ -31,6 +32,7 @@ function inheritedUpdateTimeout(
   return inheritOptionFromParent<string>(command, "timeout");
 }
 
+/** Attach the update command group to the root CLI. */
 export function registerUpdateCli(program: Command) {
   const update = program
     .command("update")

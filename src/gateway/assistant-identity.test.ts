@@ -1,3 +1,6 @@
+/**
+ * Assistant identity resolution tests for gateway-visible agents.
+ */
 import { describe, expect, it } from "vitest";
 import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../config/config.js";

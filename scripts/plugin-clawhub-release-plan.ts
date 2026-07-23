@@ -1,4 +1,5 @@
 #!/usr/bin/env -S node --import tsx
+// Plugin Clawhub Release Plan script supports RemoteClaw repository automation.
 
 import { pathToFileURL } from "node:url";
 import {

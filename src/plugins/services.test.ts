@@ -1,3 +1,4 @@
+// Covers plugin service registration and lookup behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createEmptyPluginRegistry } from "./registry.js";
 import type { RemoteClawPluginService, RemoteClawPluginServiceContext } from "./types.js";

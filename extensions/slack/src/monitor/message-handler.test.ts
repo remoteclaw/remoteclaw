@@ -1,3 +1,4 @@
+// Slack tests cover message handler plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createSlackMessageHandler } from "./message-handler.js";
 

@@ -1,3 +1,4 @@
+// Register agent tests cover agent command registration and option wiring.
 import { Command } from "commander";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 

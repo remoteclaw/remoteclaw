@@ -1,3 +1,4 @@
+/** Doctor prompt adapter that centralizes repair, force, update, and noninteractive behavior. */
 import { confirm, select } from "@clack/prompts";
 import type { RuntimeEnv } from "../runtime.js";
 import { stylePromptHint, stylePromptMessage } from "../terminal/prompt-style.js";
@@ -25,6 +26,7 @@ export type DoctorPrompter = {
   shouldForce: boolean;
 };
 
+/** Creates a doctor prompter honoring --fix, --yes, --force, noninteractive, and update modes. */
 export function createDoctorPrompter(params: {
   runtime: RuntimeEnv;
   options: DoctorOptions;

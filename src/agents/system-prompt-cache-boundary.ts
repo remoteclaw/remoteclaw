@@ -1,3 +1,8 @@
+/**
+ * System prompt cache-boundary helpers.
+ *
+ * Keeps stable prompt prefixes separate from dynamic runtime additions for provider prompt caching.
+ */
 import { normalizeStructuredPromptSection } from "./prompt-cache-stability.js";
 
 /**

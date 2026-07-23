@@ -1,3 +1,4 @@
+// Whatsapp plugin module implements vcard behavior.
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 type ParsedVcard = {

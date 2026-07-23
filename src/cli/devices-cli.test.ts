@@ -1,3 +1,4 @@
+// Devices CLI tests cover device command registration and output behavior.
 import { Command } from "commander";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { registerDevicesCli } from "./devices-cli.js";

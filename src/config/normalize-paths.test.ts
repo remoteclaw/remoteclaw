@@ -1,3 +1,4 @@
+// Verifies config path normalization and platform-specific behavior.
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { withTempHome } from "../../test/helpers/temp-home.js";

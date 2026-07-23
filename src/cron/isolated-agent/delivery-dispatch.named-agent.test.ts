@@ -1,3 +1,4 @@
+// Named-agent delivery dispatch tests cover routing cron delivery to named agents.
 import { describe, expect, it, vi } from "vitest";
 import { matchesMessagingToolDeliveryTarget } from "./delivery-dispatch.js";
 

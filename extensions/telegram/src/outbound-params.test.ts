@@ -1,3 +1,4 @@
+// Telegram tests cover outbound params plugin behavior.
 import { describe, expect, it } from "vitest";
 import { parseTelegramReplyToMessageId, parseTelegramThreadId } from "./outbound-params.js";
 

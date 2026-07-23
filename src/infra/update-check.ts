@@ -1,3 +1,4 @@
+// Computes git, dependency, and registry update status for RemoteClaw installs.
 import fs from "node:fs/promises";
 import path from "node:path";
 import { runCommandWithTimeout } from "../process/exec.js";

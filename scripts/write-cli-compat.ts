@@ -1,3 +1,4 @@
+// Write Cli Compat script supports RemoteClaw repository automation.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

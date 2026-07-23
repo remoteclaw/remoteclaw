@@ -1,3 +1,4 @@
+// Control UI view renders sessions screen content.
 import { html, nothing } from "lit";
 import { formatRelativeTimestamp } from "../format.ts";
 import { pathForTab } from "../navigation.ts";

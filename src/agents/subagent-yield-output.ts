@@ -1,5 +1,16 @@
+/**
+ * sessions_yield transcript detectors.
+ *
+ * Accepts provider-specific tool-call and tool-result shapes used by transcript repair and announce capture.
+ */
 import { asOptionalRecord } from "@remoteclaw/normalization-core/record-coerce";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   assistantCallsSessionsYield: "live",
   isSessionsYieldToolResult: "live",
@@ -33,6 +44,7 @@ function isToolCallBlock(value: unknown): boolean {
   );
 }
 
+/** Returns true when an assistant message requested the sessions_yield tool. */
 export function assistantCallsSessionsYield(message: unknown): boolean {
   const record = asOptionalRecord(message);
   if (!record || record.role !== "assistant" || !Array.isArray(record.content)) {
@@ -83,6 +95,7 @@ function readStructuredToolPayload(content: unknown): Record<string, unknown> | 
   return undefined;
 }
 
+/** Returns true when a tool result represents a completed sessions_yield handoff. */
 export function isSessionsYieldToolResult(
   message: unknown,
   previousAssistantCalledYield: boolean,
@@ -98,6 +111,7 @@ export function isSessionsYieldToolResult(
   if (!previousAssistantCalledYield) {
     return false;
   }
+  // Some providers omit the tool name on results; use adjacency plus yielded status as fallback.
   const details = asOptionalRecord(record.details);
   if (details?.status === "yielded") {
     return true;

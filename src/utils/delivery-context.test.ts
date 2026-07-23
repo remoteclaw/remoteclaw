@@ -1,3 +1,4 @@
+// Delivery context tests cover context normalization for channel delivery.
 import { describe, expect, it } from "vitest";
 import {
   formatConversationTarget,
@@ -90,31 +91,14 @@ describe("delivery context helpers", () => {
     );
   });
 
-  it("formats matrix conversation targets as rooms", () => {
-    expect(formatConversationTarget({ channel: "matrix", conversationId: "!room:example" })).toBe(
-      "room:!room:example",
-    );
-    expect(
-      formatConversationTarget({
-        channel: "matrix",
-        conversationId: "$thread",
-        parentConversationId: "!room:example",
-      }),
-    ).toBe("room:!room:example");
-    expect(formatConversationTarget({ channel: "matrix", conversationId: "  " })).toBeUndefined();
-  });
-
-  it("resolves delivery targets for Matrix child threads", () => {
+  it("resolves generic parent-scoped thread delivery targets without channel runtime", () => {
     expect(
       resolveConversationDeliveryTarget({
-        channel: "matrix",
-        conversationId: "$thread",
-        parentConversationId: "!room:example",
+        channel: "thread-child-chat",
+        conversationId: "msg-child-id",
+        parentConversationId: "channel-parent-id",
       }),
-    ).toEqual({
-      to: "room:!room:example",
-      threadId: "$thread",
-    });
+    ).toEqual({ to: "channel:msg-child-id" });
   });
 
   it("derives delivery context from a session entry", () => {

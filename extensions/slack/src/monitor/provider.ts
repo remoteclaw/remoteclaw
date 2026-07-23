@@ -1,3 +1,4 @@
+// Slack provider module implements model/runtime integration.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import SlackBolt from "@slack/bolt";
 import { resolveTextChunkLimit } from "../../../../src/auto-reply/chunk.js";

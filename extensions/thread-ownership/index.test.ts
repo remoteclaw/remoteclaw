@@ -1,3 +1,4 @@
+// Thread Ownership tests cover index plugin behavior.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import register from "./index.js";
 

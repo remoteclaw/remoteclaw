@@ -17,7 +17,7 @@ extension AgentProTab {
                     Spacer(minLength: 8)
                     ProValuePill(
                         value: self.agentSkillFilter == nil ? "all" : "\(self.agentSkillFilter?.count ?? 0)",
-                        color: OpenClawBrand.accent)
+                        color: RemoteClawBrand.accent)
                 }
 
                 HStack(spacing: 8) {
@@ -42,16 +42,16 @@ extension AgentProTab {
                 if let skillMutationStatusText {
                     Text(skillMutationStatusText)
                         .font(.caption2)
-                        .foregroundStyle(OpenClawBrand.accent)
+                        .foregroundStyle(RemoteClawBrand.accent)
                 }
                 if let skillMutationErrorText {
                     Text(skillMutationErrorText)
                         .font(.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .foregroundStyle(RemoteClawBrand.warn)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     var skillsFilterField: some View {
@@ -84,14 +84,14 @@ extension AgentProTab {
                 .controlSize(.small)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     var clawHubSearchCard: some View {
         ProCard(radius: AgentLayout.cardRadius) {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 10) {
-                    ProIconBadge(systemName: "square.and.arrow.down", color: OpenClawBrand.accent)
+                    ProIconBadge(systemName: "square.and.arrow.down", color: RemoteClawBrand.accent)
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Install Skills")
                             .font(.headline)
@@ -107,7 +107,7 @@ extension AgentProTab {
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.small)
-                    .disabled(self.clawHubLoading || !self.gatewayConnected)
+                    .disabled(self.clawHubLoading || !self.liveGatewayConnected)
                     .accessibilityLabel("Search ClawHub")
                 }
 
@@ -127,7 +127,7 @@ extension AgentProTab {
                 if let clawHubErrorText {
                     Text(clawHubErrorText)
                         .font(.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .foregroundStyle(RemoteClawBrand.warn)
                 }
                 if !self.clawHubResults.isEmpty {
                     VStack(spacing: 0) {
@@ -142,13 +142,13 @@ extension AgentProTab {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     func clawHubResultRow(_ result: ClawHubSearchResultLite) -> some View {
         let installing = self.clawHubInstallSlug == result.slug
         return HStack(alignment: .top, spacing: 10) {
-            ProIconBadge(systemName: "sparkles", color: OpenClawBrand.accent)
+            ProIconBadge(systemName: "sparkles", color: RemoteClawBrand.accent)
             VStack(alignment: .leading, spacing: 3) {
                 Text(result.displayName)
                     .font(.subheadline.weight(.semibold))
@@ -196,7 +196,7 @@ extension AgentProTab {
                     }
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, RemoteClawProMetric.pagePadding)
         }
     }
 
@@ -212,6 +212,7 @@ extension AgentProTab {
     }
 
     var skillPolicySummary: String {
+        if self.appModel.isAppleReviewDemoModeEnabled { return "Demo mode keeps live skill changes disabled." }
         guard self.gatewayConnected else { return "Connect a gateway to edit skills." }
         guard let filter = self.agentSkillFilter else {
             return "All available skills are allowed for this agent."
@@ -285,7 +286,7 @@ extension AgentProTab {
                 if let missing = skill.missingSummary {
                     Text("Missing: \(missing)")
                         .font(.caption2)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .foregroundStyle(RemoteClawBrand.warn)
                         .lineLimit(1)
                 }
                 if let install = skill.installSummary {
@@ -391,7 +392,7 @@ extension AgentProTab {
     func skillEditorSheet(_ skill: SkillStatusEntryLite) -> some View {
         NavigationStack {
             ZStack {
-                OpenClawProBackground()
+                RemoteClawProBackground()
                 ScrollView {
                     VStack(alignment: .leading, spacing: 16) {
                         self.skillEditorHeader(skill)
@@ -433,20 +434,19 @@ extension AgentProTab {
                 ProValuePill(value: status.text, color: status.color)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     func skillEditorControls(_ skill: SkillStatusEntryLite) -> some View {
         ProCard(radius: AgentLayout.cardRadius) {
             VStack(alignment: .leading, spacing: 12) {
-                Toggle(
+                self.skillEditorToggleRow(
                     "Enabled globally",
-                    isOn: Binding(
-                        get: { skill.isGloballyEnabled },
-                        set: { enabled in
-                            Task { await self.updateSkillGlobalEnabled(skill, enabled: enabled) }
-                        }))
-                        .disabled(self.isSkillConfigBusy(skill))
+                    isOn: skill.isGloballyEnabled,
+                    disabled: self.isSkillConfigBusy(skill))
+                { enabled in
+                    Task { await self.updateSkillGlobalEnabled(skill, enabled: enabled) }
+                }
 
                 if let primaryEnv = skill.primaryEnv, !primaryEnv.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
@@ -473,11 +473,48 @@ extension AgentProTab {
                 if let message = self.skillConfigMessages[skill.effectiveSkillKey] {
                     Text(message.text)
                         .font(.caption2)
-                        .foregroundStyle(message.kind == .success ? OpenClawBrand.accent : OpenClawBrand.warn)
+                        .foregroundStyle(message.kind == .success ? RemoteClawBrand.accent : RemoteClawBrand.warn)
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
+    }
+
+    func skillEditorToggleRow(
+        _ title: String,
+        isOn: Bool,
+        disabled: Bool,
+        onToggle: @escaping (Bool) -> Void) -> some View
+    {
+        // Native Toggle rows in this sheet can ignore visible-row taps on iOS 26.
+        // Keep the switch semantics explicit so the control always dispatches the mutation.
+        Button {
+            onToggle(!isOn)
+        } label: {
+            HStack {
+                Text(title)
+                Spacer(minLength: 8)
+                self.skillEditorSwitchIndicator(isOn: isOn)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+        .accessibilityLabel(title)
+        .accessibilityValue(isOn ? "On" : "Off")
+    }
+
+    func skillEditorSwitchIndicator(isOn: Bool) -> some View {
+        Capsule()
+            .fill(isOn ? Color.accentColor : Color.secondary.opacity(0.35))
+            .frame(width: 52, height: 32)
+            .overlay(alignment: isOn ? .trailing : .leading) {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 28, height: 28)
+                    .padding(2)
+                    .shadow(color: Color.black.opacity(0.14), radius: 1, x: 0, y: 1)
+            }
     }
 
     func skillEditorSetup(_ skill: SkillStatusEntryLite) -> some View {
@@ -488,7 +525,7 @@ extension AgentProTab {
                 if let missing = skill.missingSummary {
                     Text("Missing: \(missing)")
                         .font(.caption)
-                        .foregroundStyle(OpenClawBrand.warn)
+                        .foregroundStyle(RemoteClawBrand.warn)
                 } else {
                     Text("No missing requirements reported.")
                         .font(.caption)
@@ -506,7 +543,7 @@ extension AgentProTab {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     func skillEditorMetadata(_ skill: SkillStatusEntryLite) -> some View {
@@ -522,7 +559,7 @@ extension AgentProTab {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     @MainActor
@@ -565,7 +602,7 @@ extension AgentProTab {
 
     @MainActor
     func patchAgentSkills(_ skills: [String]?, busyKey: String) async {
-        guard self.gatewayConnected else { return }
+        guard self.liveGatewayConnected else { return }
         self.skillMutationBusyKeys.insert(busyKey)
         self.skillMutationErrorText = nil
         self.skillMutationStatusText = nil
@@ -584,7 +621,10 @@ extension AgentProTab {
             }
 
             let raw = try Self.agentSkillsPatchRaw(agentId: self.activeAgentID, skills: skills)
-            let params = ConfigPatchParams(raw: raw, baseHash: baseHash)
+            let params = ConfigPatchParams(
+                raw: raw,
+                baseHash: baseHash,
+                replacePaths: ["agents.list[].skills"])
             let data = try JSONEncoder().encode(params)
             guard let json = String(data: data, encoding: .utf8) else {
                 throw SkillMutationError.invalidPatchPayload
@@ -640,7 +680,7 @@ extension AgentProTab {
 
     @MainActor
     func installClawHubSkill(_ result: ClawHubSearchResultLite) async {
-        guard self.gatewayConnected else { return }
+        guard self.liveGatewayConnected else { return }
         self.clawHubInstallSlug = result.slug
         self.clawHubErrorText = nil
         defer { self.clawHubInstallSlug = nil }
@@ -656,7 +696,7 @@ extension AgentProTab {
 
     @MainActor
     func searchClawHubSkills() async {
-        guard self.gatewayConnected else { return }
+        guard self.liveGatewayConnected else { return }
         self.clawHubLoading = true
         self.clawHubErrorText = nil
         defer { self.clawHubLoading = false }
@@ -675,6 +715,7 @@ extension AgentProTab {
         _ skill: SkillStatusEntryLite,
         action: () async throws -> String) async
     {
+        guard self.liveGatewayConnected else { return }
         let key = skill.effectiveSkillKey
         self.skillConfigBusyKeys.insert(key)
         self.skillConfigMessages[key] = nil
@@ -697,6 +738,9 @@ extension AgentProTab {
         params: some Encodable,
         timeoutSeconds: Int) async throws -> Data
     {
+        guard self.liveGatewayConnected else {
+            throw SkillMutationError.liveGatewayUnavailable
+        }
         let data = try JSONEncoder().encode(params)
         guard let json = String(data: data, encoding: .utf8) else {
             throw SkillMutationError.invalidPatchPayload
@@ -708,6 +752,9 @@ extension AgentProTab {
     }
 
     func requestConfigSnapshot() async throws -> ConfigSnapshotLite {
+        guard self.liveGatewayConnected else {
+            throw SkillMutationError.liveGatewayUnavailable
+        }
         let data = try await self.appModel.operatorSession.request(
             method: "config.get",
             paramsJSON: "{}",
@@ -759,8 +806,8 @@ extension AgentProTab {
             return ("disabled", .secondary)
         }
         if skill.hasMissingRequirements {
-            return ("setup", OpenClawBrand.warn)
+            return ("setup", RemoteClawBrand.warn)
         }
-        return ("enabled", OpenClawBrand.accent)
+        return ("enabled", RemoteClawBrand.accent)
     }
 }

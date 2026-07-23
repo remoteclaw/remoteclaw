@@ -1,3 +1,4 @@
+// Builds package-local runtime dist files for publishable bundled plugins.
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -16,6 +17,7 @@ function readJsonFile(filePath) {
   return JSON.parse(fs.readFileSync(filePath, "utf8"));
 }
 
+/** Return whether a plugin package is marked for npm publishing. */
 export function isPublishablePluginPackage(packageJson) {
   return packageJson.remoteclaw?.release?.publishToNpm === true;
 }
@@ -87,6 +89,7 @@ function packageRelativePathExists(packageDir, relativePath) {
   return fs.existsSync(path.join(packageDir, relativePath));
 }
 
+/** List extension package dirs whose package metadata enables npm publishing. */
 export function listPublishablePluginPackageDirs(params = {}) {
   const repoRoot = path.resolve(params.repoRoot ?? ".");
   const extensionsRoot = path.join(repoRoot, "extensions");
@@ -103,12 +106,14 @@ export function listPublishablePluginPackageDirs(params = {}) {
     .toSorted((left, right) => left.localeCompare(right));
 }
 
+/** List package-local runtime output files expected from a runtime build plan. */
 export function listPluginNpmRuntimeBuildOutputs(plan) {
   return Object.keys(plan.entry)
     .map((entryKey) => `./dist/${entryKey}.js`)
     .toSorted((left, right) => left.localeCompare(right));
 }
 
+/** Resolve package `files` entries needed for runtime build outputs and plugin metadata. */
 export function resolvePluginNpmRuntimePackageFiles(plan) {
   const merged = new Set(
     Array.isArray(plan.packageJson.files)
@@ -154,6 +159,7 @@ function resolveRemoteClawPeerRange(packageJson, rootPackageJson) {
   );
 }
 
+/** Resolve package peer dependency metadata for the RemoteClaw plugin API. */
 export function resolvePluginNpmRuntimePackagePeerMetadata(plan) {
   const remoteclawPeerRange = resolveRemoteClawPeerRange(plan.packageJson, plan.rootPackageJson);
   if (!remoteclawPeerRange) {
@@ -179,6 +185,7 @@ export function resolvePluginNpmRuntimePackagePeerMetadata(plan) {
   };
 }
 
+/** Resolve the package-local runtime build plan for one publishable plugin package. */
 export function resolvePluginNpmRuntimeBuildPlan(params) {
   const repoRoot = path.resolve(params.repoRoot ?? ".");
   const packageDir = resolvePackageDir(repoRoot, params.packageDir);
@@ -245,6 +252,7 @@ export function resolvePluginNpmRuntimeBuildPlan(params) {
   };
 }
 
+/** Build package-local runtime files and static assets for one plugin package. */
 export async function buildPluginNpmRuntime(params) {
   const plan = resolvePluginNpmRuntimeBuildPlan(params);
   if (!plan) {
@@ -276,11 +284,16 @@ export async function buildPluginNpmRuntime(params) {
   };
 }
 
-function parseArgs(argv) {
+function readPackageDirArg(argv) {
   const packageDir = argv[0];
-  if (!packageDir) {
+  if (!packageDir || packageDir.startsWith("--")) {
     throw new Error("usage: node scripts/lib/plugin-npm-runtime-build.mjs <package-dir>");
   }
+  return packageDir;
+}
+
+export function parseArgs(argv) {
+  const packageDir = readPackageDirArg(argv);
   return { packageDir };
 }
 

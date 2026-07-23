@@ -1,3 +1,4 @@
+// Discord plugin module implements command behavior.
 import {
   ChannelType as CarbonChannelType,
   Command,

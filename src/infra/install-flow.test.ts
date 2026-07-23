@@ -1,3 +1,4 @@
+// Covers install archive extraction and existing install path resolution.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";

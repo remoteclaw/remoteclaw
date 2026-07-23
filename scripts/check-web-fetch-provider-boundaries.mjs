@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { promises as fs } from "node:fs";
+// Checks core web-fetch surfaces for provider-owned Firecrawl coupling.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { runAsScript } from "./lib/ts-guard-utils.mjs";
@@ -62,6 +62,9 @@ function normalizeRepoPath(filePath) {
   return path.relative(repoRoot, filePath).split(path.sep).join("/");
 }
 
+/**
+ * Collects web-fetch provider boundary violations in core source files.
+ */
 export async function collectWebFetchProviderBoundaryViolations() {
   const files = await walkFiles(path.join(repoRoot, "src"));
   const violations = [];
@@ -91,6 +94,9 @@ export async function collectWebFetchProviderBoundaryViolations() {
   );
 }
 
+/**
+ * Runs the web-fetch provider boundary check.
+ */
 export async function main(argv, io) {
   const args = argv ?? process.argv.slice(2);
   const json = args.includes("--json");

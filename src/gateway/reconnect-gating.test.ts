@@ -1,3 +1,5 @@
+// Reconnect gating tests keep UI reconnect policy aligned with gateway protocol
+// auth error details that cannot recover by retrying.
 import { describe, expect, it } from "vitest";
 import { type GatewayErrorInfo, isNonRecoverableAuthError } from "../../ui/src/ui/gateway.ts";
 import { ConnectErrorDetailCodes } from "./protocol/connect-error-details.js";

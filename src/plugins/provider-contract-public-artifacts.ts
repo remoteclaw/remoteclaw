@@ -1,3 +1,4 @@
+// Extracts provider contract public artifacts from plugin manifests.
 import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
 import { sortUniqueStrings } from "@remoteclaw/normalization-core/string-normalization";
 import { loadBundledPluginPublicArtifactModuleSync } from "./public-surface-loader.js";

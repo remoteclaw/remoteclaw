@@ -1,3 +1,4 @@
+// Resolves bundled plugin source metadata from package manifests.
 import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import { discoverRemoteClawPlugins, type PluginDiscoveryResult } from "./discovery.js";

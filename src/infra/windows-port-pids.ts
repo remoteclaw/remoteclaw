@@ -1,3 +1,4 @@
+// Resolves Windows process ids that own listening ports.
 import { spawnSync } from "node:child_process";
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";

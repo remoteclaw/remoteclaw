@@ -1,5 +1,7 @@
+// Verifies exec approval allowlist pattern parsing and matching.
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { withEnv } from "../test-utils/env.js";
 import { matchesExecAllowlistPattern } from "./exec-allowlist-pattern.js";
 
 describe("matchesExecAllowlistPattern", () => {
@@ -55,27 +57,12 @@ describe("matchesExecAllowlistPattern", () => {
   );
 
   it("expands home-prefix patterns", () => {
-    const prevRemoteClawHome = process.env.REMOTECLAW_HOME;
-    const prevHome = process.env.HOME;
-    process.env.REMOTECLAW_HOME = "/srv/remoteclaw-home";
-    process.env.HOME = "/home/other";
     const remoteClawHome = path.join(path.resolve("/srv/remoteclaw-home"), "bin", "tool");
     const fallbackHome = path.join(path.resolve("/home/other"), "bin", "tool");
-    try {
+    withEnv({ REMOTECLAW_HOME: "/srv/remoteclaw-home", HOME: "/home/other" }, () => {
       expect(matchesExecAllowlistPattern("~/bin/tool", remoteClawHome)).toBe(true);
       expect(matchesExecAllowlistPattern("~/bin/tool", fallbackHome)).toBe(false);
-    } finally {
-      if (prevRemoteClawHome === undefined) {
-        delete process.env.REMOTECLAW_HOME;
-      } else {
-        process.env.REMOTECLAW_HOME = prevRemoteClawHome;
-      }
-      if (prevHome === undefined) {
-        delete process.env.HOME;
-      } else {
-        process.env.HOME = prevHome;
-      }
-    }
+    });
   });
 
   it.runIf(process.platform !== "win32")("preserves case sensitivity on POSIX", () => {

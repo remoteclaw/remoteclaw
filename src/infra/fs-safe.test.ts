@@ -1,7 +1,9 @@
+// Tests safe filesystem wrappers and protected file-handle behavior.
 import type { FileHandle } from "node:fs/promises";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { withEnv, withEnvAsync } from "../test-utils/env.js";
 import {
   createRebindableDirectoryAlias,
   withRealpathSymlinkRebindRace,
@@ -30,7 +32,6 @@ const tempDirs = createTrackedTempDirs();
 afterEach(async () => {
   __setFsSafeTestHooksForTest(undefined);
   vi.restoreAllMocks();
-  vi.unstubAllEnvs();
   await tempDirs.cleanup();
 });
 
@@ -342,15 +343,14 @@ describe("fs-safe", () => {
     });
   });
 
-  it("rejects setting fs-safe test hooks outside test mode", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("VITEST", undefined);
-
-    expect(() =>
-      __setFsSafeTestHooksForTest({
-        afterPreOpenLstat: () => {},
-      }),
-    ).toThrow("__setFsSafeTestHooksForTest is only available in tests");
+  it("rejects setting fs-safe test hooks outside test mode", () => {
+    withEnv({ NODE_ENV: "production", VITEST: undefined }, () => {
+      expect(() =>
+        __setFsSafeTestHooksForTest({
+          afterPreOpenLstat: () => {},
+        }),
+      ).toThrow("__setFsSafeTestHooksForTest is only available in tests");
+    });
   });
 
   it.runIf(process.platform !== "win32")("blocks hardlink aliases under root", async () => {
@@ -741,23 +741,15 @@ describe("fs-safe", () => {
 describe("tilde expansion in file tools", () => {
   it("keeps tilde expansion behavior aligned", async () => {
     const { expandHomePrefix } = await import("./home-dir.js");
-    const originalHome = process.env.HOME;
-    const originalRemoteClawHome = process.env.REMOTECLAW_HOME;
     const fakeHome = path.resolve(path.sep, "tmp", "fake-home-test");
-    process.env.HOME = fakeHome;
-    process.env.REMOTECLAW_HOME = fakeHome;
-    try {
+
+    withEnv({ HOME: fakeHome, REMOTECLAW_HOME: fakeHome }, () => {
       const result = expandHomePrefix("~/file.txt");
       expect(path.normalize(result)).toBe(path.join(fakeHome, "file.txt"));
-    } finally {
-      process.env.HOME = originalHome;
-      process.env.REMOTECLAW_HOME = originalRemoteClawHome;
-    }
+    });
 
     const root = await tempDirs.make("remoteclaw-tilde-test-");
-    process.env.HOME = root;
-    process.env.REMOTECLAW_HOME = root;
-    try {
+    await withEnvAsync({ HOME: root, REMOTECLAW_HOME: root }, async () => {
       await fs.writeFile(path.join(root, "hello.txt"), "tilde-works");
       const result = await openFileWithinRoot({
         rootDir: root,
@@ -775,10 +767,7 @@ describe("tilde expansion in file tools", () => {
       });
       const content = await fs.readFile(path.join(root, "output.txt"), "utf8");
       expect(content).toBe("tilde-write-works");
-    } finally {
-      process.env.HOME = originalHome;
-      process.env.REMOTECLAW_HOME = originalRemoteClawHome;
-    }
+    });
 
     const outsideRoot = await tempDirs.make("remoteclaw-tilde-outside-");
     await expect(

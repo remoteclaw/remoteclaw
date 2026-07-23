@@ -1,7 +1,19 @@
+/**
+ * OpenAI-compatible conversation turn detector.
+ *
+ * Some providers reject requests without a non-empty user/assistant turn; this
+ * helper checks the loose message payload shape before transport submission.
+ */
+
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   hasOpenAICompatibleConversationTurn: "live",
 } as const;
-
 function hasNonEmptyString(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
@@ -37,6 +49,7 @@ function hasAssistantToolCall(message: Record<string, unknown>): boolean {
   );
 }
 
+/** Returns whether an OpenAI-compatible messages payload contains a usable turn. */
 export function hasOpenAICompatibleConversationTurn(messages: unknown): boolean {
   if (!Array.isArray(messages)) {
     return false;

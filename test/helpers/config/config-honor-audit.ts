@@ -1,8 +1,12 @@
+// Config honor audit helper checks config fields against expected consumers.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { GENERATED_BASE_CONFIG_SCHEMA } from "../../../src/config/schema.base.generated.js";
 
+// Config honor audit helpers that compare schema keys with proof inventories.
+
+/** Inventory row describing where one config key is declared, merged, consumed, and tested. */
 export type ConfigHonorInventoryRow = {
   key: string;
   schemaPaths: string[];
@@ -22,6 +26,7 @@ type ConfigHonorProofKey =
   | "reloadPaths"
   | "testPaths";
 
+/** Result of auditing one config honor inventory. */
 export type ConfigHonorAuditResult = {
   schemaKeys: string[];
   missingKeys: string[];
@@ -36,6 +41,7 @@ export type ConfigHonorAuditResult = {
 
 const REPO_ROOT = fileURLToPath(new URL("../../../", import.meta.url));
 
+/** Return true when a dotted schema path exists in the generated base config schema. */
 function hasSchemaPath(schemaPath: string): boolean {
   const segments = schemaPath.split(".");
   let current: unknown = GENERATED_BASE_CONFIG_SCHEMA.schema;
@@ -60,6 +66,7 @@ function hasSchemaPath(schemaPath: string): boolean {
   return true;
 }
 
+/** List leaf schema keys for the requested config prefixes. */
 export function listSchemaLeafKeysForPrefixes(prefixes: string[]): string[] {
   const keys = new Set<string>();
   for (const prefix of prefixes) {
@@ -87,6 +94,7 @@ export function listSchemaLeafKeysForPrefixes(prefixes: string[]): string[] {
   return [...keys].toSorted();
 }
 
+/** Audit an inventory against schema keys, proof paths, and file existence. */
 export function auditConfigHonorInventory(params: {
   prefixes: string[];
   rows: ConfigHonorInventoryRow[];

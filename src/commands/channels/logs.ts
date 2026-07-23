@@ -1,3 +1,4 @@
+// Implements channel-scoped tailing of the RemoteClaw log file.
 import fs from "node:fs/promises";
 import { listChannelPlugins } from "../../channels/plugins/index.js";
 import { parseStrictPositiveInteger } from "../../infra/parse-finite-number.js";
@@ -93,6 +94,7 @@ async function readTailLines(file: string, limit: number): Promise<string[]> {
   }
 }
 
+/** Print or serialize recent log lines matching one channel subsystem/module. */
 export async function channelsLogsCommand(
   opts: ChannelsLogsOptions,
   runtime: RuntimeEnv = defaultRuntime,

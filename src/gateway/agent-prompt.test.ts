@@ -1,3 +1,6 @@
+/**
+ * Gateway agent prompt RPC regression tests.
+ */
 import { describe, expect, it } from "vitest";
 import { buildHistoryContextFromEntries } from "../auto-reply/reply/history.js";
 import { extractTextFromChatContent } from "../shared/chat-content.js";

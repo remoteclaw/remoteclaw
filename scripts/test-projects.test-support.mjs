@@ -1,3 +1,6 @@
+// Test-project planning helpers used by scripts/run-vitest.mjs,
+// scripts/test-projects.mjs, and focused tests. Exports are intentionally
+// granular so project selection stays testable without spawning Vitest.
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
@@ -250,6 +253,9 @@ function uniqueOrdered(values) {
   return [...new Set(values)];
 }
 
+/**
+ * Orders full-suite specs so expensive shards start first in parallel runs.
+ */
 export function orderFullSuiteSpecsForParallelRun(specs, shardTimings = new Map()) {
   const sortedSpecs = specs.toSorted((a, b) => {
     const weightDelta =
@@ -395,8 +401,16 @@ const TOOLING_SOURCE_TEST_TARGETS = new Map([
     ["test/scripts/ci-workflow-guards.test.ts", "test/scripts/package-acceptance-workflow.test.ts"],
   ],
   [
+    ".github/workflows/ci-check-arm-testbox.yml",
+    ["test/scripts/ci-workflow-guards.test.ts", "test/scripts/package-acceptance-workflow.test.ts"],
+  ],
+  [
     ".github/workflows/crabbox-hydrate.yml",
     ["test/scripts/ci-workflow-guards.test.ts", "test/scripts/package-acceptance-workflow.test.ts"],
+  ],
+  [
+    ".github/workflows/remoteclaw-release-checks.yml",
+    ["test/scripts/package-acceptance-workflow.test.ts"],
   ],
   ["scripts/build-all.mjs", ["test/scripts/build-all.test.ts"]],
   ["scripts/crabbox-wrapper.mjs", ["test/scripts/crabbox-wrapper.test.ts"]],
@@ -513,6 +527,7 @@ const TOOLING_SOURCE_TEST_TARGETS = new Map([
   ["scripts/lib/format-generated-module.mjs", ["test/scripts/format-generated-module.test.ts"]],
   ["scripts/lib/live-docker-stage.sh", ["test/scripts/live-docker-stage.test.ts"]],
   ["scripts/lib/local-heavy-check-runtime.mjs", ["test/scripts/local-heavy-check-runtime.test.ts"]],
+  ["scripts/lib/kova-report-gate.mjs", ["test/scripts/kova-report-gate.test.ts"]],
   ["scripts/lib/managed-child-process.mjs", ["test/scripts/managed-child-process.test.ts"]],
   ["scripts/lib/npm-verify-exec.ts", ["test/scripts/npm-verify-exec.test.ts"]],
   ["scripts/lib/remoteclaw-test-state.mjs", ["test/scripts/remoteclaw-test-state.test.ts"]],
@@ -610,6 +625,10 @@ const TOOLING_SOURCE_TEST_TARGETS = new Map([
     ["test/scripts/docker-build-helper.test.ts", "test/scripts/remoteclaw-test-state.test.ts"],
   ],
   ["scripts/e2e/plugin-lifecycle-matrix-docker.sh", ["test/scripts/docker-build-helper.test.ts"]],
+  [
+    "scripts/e2e/lib/plugin-lifecycle-matrix/measure.mjs",
+    ["test/scripts/plugin-lifecycle-measure.test.ts"],
+  ],
   [
     "scripts/e2e/lib/plugin-lifecycle-matrix/probe.mjs",
     ["test/scripts/plugin-lifecycle-probe.test.ts"],
@@ -829,7 +848,9 @@ const BROAD_CHANGED_ENV_KEY = "REMOTECLAW_TEST_CHANGED_BROAD";
 const VITEST_NO_OUTPUT_TIMEOUT_ENV_KEY = "REMOTECLAW_VITEST_NO_OUTPUT_TIMEOUT_MS";
 const VITEST_NO_OUTPUT_HEARTBEAT_ENV_KEY = "REMOTECLAW_VITEST_NO_OUTPUT_HEARTBEAT_MS";
 const VITEST_NO_OUTPUT_RETRY_ENV_KEY = "REMOTECLAW_VITEST_NO_OUTPUT_RETRY";
+/** Default no-output timeout applied to test-projects Vitest children. */
 export const DEFAULT_TEST_PROJECTS_VITEST_NO_OUTPUT_TIMEOUT_MS = String(900_000);
+/** Default heartbeat interval applied to test-projects Vitest children. */
 export const DEFAULT_TEST_PROJECTS_VITEST_NO_OUTPUT_HEARTBEAT_MS = String(
   DEFAULT_VITEST_NO_OUTPUT_HEARTBEAT_MS,
 );
@@ -1136,6 +1157,9 @@ function expandExplicitSourceTestTargets(targetArgs, cwd) {
   });
 }
 
+/**
+ * Finds explicit test path targets that do not match any known project plan.
+ */
 export function findUnmatchedExplicitTestTargets(args, cwd = process.cwd()) {
   const { targetArgs } = parseTestProjectsArgs(args, cwd);
   if (targetArgs.length === 0) {
@@ -1645,8 +1669,10 @@ function resolveToolingChangedTestTargets(changedPaths, cwd = process.cwd()) {
   return [...new Set(targets)];
 }
 
+const TOOLING_SCRIPT_PATH_PATTERN = /^scripts\/(.+)\.(?:mjs|cjs|js|mts|cts|ts|sh|py|ps1)$/u;
+
 function resolveConventionalToolingTestTargets(changedPath, cwd = process.cwd()) {
-  const match = /^scripts\/(.+)\.(?:mjs|ts|js|sh|py)$/u.exec(changedPath);
+  const match = TOOLING_SCRIPT_PATH_PATTERN.exec(changedPath);
   if (!match) {
     return null;
   }
@@ -1665,14 +1691,45 @@ function resolveConventionalToolingTestTargets(changedPath, cwd = process.cwd())
   return targets.length > 0 ? targets : null;
 }
 
+function isToolingScriptPath(changedPath) {
+  return TOOLING_SCRIPT_PATH_PATTERN.test(changedPath);
+}
+
+function resolveParallelsToolingTestTargets(changedPath) {
+  if (!/^scripts\/e2e\/parallels\/[^/]+\.ts$/u.test(changedPath)) {
+    return null;
+  }
+  const targets = ["test/scripts/parallels-smoke-model.test.ts"];
+  if (
+    [
+      "scripts/e2e/parallels/guest-transports.ts",
+      "scripts/e2e/parallels/host-command.ts",
+      "scripts/e2e/parallels/npm-update-scripts.ts",
+      "scripts/e2e/parallels/npm-update-smoke.ts",
+    ].includes(changedPath)
+  ) {
+    targets.push("test/scripts/parallels-npm-update-smoke.test.ts");
+  }
+  if (changedPath === "scripts/e2e/parallels/update-job-timeout.ts") {
+    targets.push("test/scripts/parallels-update-job-timeout.test.ts");
+  }
+  return targets;
+}
+
 function resolveToolingTestTargets(changedPath, cwd = process.cwd()) {
   const explicitTargets =
-    TOOLING_SOURCE_TEST_TARGETS.get(changedPath) ?? TOOLING_TEST_TARGETS.get(changedPath);
+    TOOLING_SOURCE_TEST_TARGETS.get(changedPath) ??
+    TOOLING_TEST_TARGETS.get(changedPath) ??
+    resolveParallelsToolingTestTargets(changedPath);
   const conventionalTargets = resolveConventionalToolingTestTargets(changedPath, cwd);
   if (explicitTargets && conventionalTargets) {
     return uniqueOrdered([...explicitTargets, ...conventionalTargets]);
   }
-  return explicitTargets ?? conventionalTargets;
+  return (
+    explicitTargets ??
+    conventionalTargets ??
+    (isToolingScriptPath(changedPath) ? [TOOLING_VITEST_CONFIG] : null)
+  );
 }
 
 function shouldUseBroadChangedTargets(env = process.env) {
@@ -1740,6 +1797,9 @@ function resolvePreciseChangedTestTargets(changedPath, options) {
   return null;
 }
 
+/**
+ * Maps changed repo paths to the smallest useful Vitest target plan.
+ */
 export function resolveChangedTestTargetPlan(changedPaths, options = {}) {
   if (changedPaths.length === 0) {
     return { mode: "none", targets: [] };
@@ -1754,6 +1814,7 @@ export function resolveChangedTestTargetPlan(changedPaths, options = {}) {
   const useBroadFallback = options.broad ?? shouldUseBroadChangedTargets(env);
   const skipImportGraph = changedLanes.lanes.all && !useBroadFallback;
   const targets = [];
+  const skippedBroadFallbackPaths = [];
   for (const changedPath of changedPaths) {
     const preciseTargets = resolvePreciseChangedTestTargets(changedPath, {
       ...options,
@@ -1768,6 +1829,7 @@ export function resolveChangedTestTargetPlan(changedPaths, options = {}) {
       if (useBroadFallback) {
         return { mode: "broad", targets: [] };
       }
+      skippedBroadFallbackPaths.push(changedPath);
       continue;
     }
     if (isRoutableChangedTarget(changedPath)) {
@@ -1777,7 +1839,11 @@ export function resolveChangedTestTargetPlan(changedPaths, options = {}) {
   if (useBroadFallback && changedLanes.extensionImpactFromCore) {
     targets.push("extensions");
   }
-  return { mode: "targets", targets: [...new Set(targets)] };
+  const plan = { mode: "targets", targets: [...new Set(targets)] };
+  if (skippedBroadFallbackPaths.length > 0) {
+    plan.skippedBroadFallbackPaths = [...new Set(skippedBroadFallbackPaths)];
+  }
+  return plan;
 }
 
 export function listFullExtensionVitestProjectConfigs() {
@@ -1793,19 +1859,31 @@ export function resolveChangedTargetArgs(
   listChangedPaths = listChangedPathsFromGit,
   options = {},
 ) {
+  const plan = resolveChangedTestTargetPlanForArgs(args, cwd, listChangedPaths, options);
+  if (!plan) {
+    return null;
+  }
+  if (plan.mode === "broad") {
+    return null;
+  }
+  return plan.targets;
+}
+
+export function resolveChangedTestTargetPlanForArgs(
+  args,
+  cwd = process.cwd(),
+  listChangedPaths = listChangedPathsFromGit,
+  options = {},
+) {
   const baseRef = extractChangedBaseRef(args);
   if (!baseRef) {
     return null;
   }
   const changedPaths = listChangedPaths(baseRef, cwd);
-  const plan = resolveChangedTestTargetPlan(changedPaths, {
+  return resolveChangedTestTargetPlan(changedPaths, {
     cwd,
     ...options,
   });
-  if (plan.mode === "broad") {
-    return null;
-  }
-  return plan.targets;
 }
 
 function classifyTarget(arg, cwd) {
@@ -2052,6 +2130,9 @@ function shouldUseWholeConfigTarget(kind, targetArg, cwd) {
     return false;
   }
   const relative = toRepoRelativeTarget(targetArg, cwd);
+  if (isTestFileTarget(relative)) {
+    return false;
+  }
   return relative.startsWith("ui/src/") && !relative.startsWith("ui/src/ui/");
 }
 
@@ -2328,9 +2409,9 @@ export function buildFullSuiteVitestRunPlans(args, cwd = process.cwd()) {
       },
     ];
   }
-  const parallelShardCount = Number.parseInt(
-    process.env.REMOTECLAW_TEST_PROJECTS_PARALLEL ?? "",
-    10,
+  const parallelShardCount = parsePositiveInt(
+    process.env.REMOTECLAW_TEST_PROJECTS_PARALLEL,
+    "REMOTECLAW_TEST_PROJECTS_PARALLEL",
   );
   const expandToProjectConfigs =
     process.env.REMOTECLAW_TEST_PROJECTS_LEAF_SHARDS === "1" ||
@@ -2383,14 +2464,27 @@ export function shouldUseLocalFullSuiteParallelByDefault(env = process.env) {
   );
 }
 
-function parsePositiveInt(value) {
-  const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+function parsePositiveInt(value, label) {
+  const text = value?.trim();
+  if (!text) {
+    return null;
+  }
+  if (!/^\d+$/u.test(text)) {
+    throw new Error(`${label} must be a positive integer; got: ${value}`);
+  }
+  const parsed = Number(text);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be a positive integer; got: ${value}`);
+  }
+  return parsed;
 }
 
 function hasConservativeVitestWorkerBudget(env) {
   const workerBudget = parsePositiveInt(
     env.REMOTECLAW_VITEST_MAX_WORKERS ?? env.REMOTECLAW_TEST_WORKERS,
+    env.REMOTECLAW_VITEST_MAX_WORKERS === undefined
+      ? "REMOTECLAW_TEST_WORKERS"
+      : "REMOTECLAW_VITEST_MAX_WORKERS",
   );
   return workerBudget !== null && workerBudget <= 1;
 }
@@ -2398,7 +2492,10 @@ function hasConservativeVitestWorkerBudget(env) {
 export function resolveParallelFullSuiteConcurrency(specCount, envInput, hostInfo) {
   let env = envInput;
   env ??= process.env;
-  const override = parsePositiveInt(env.REMOTECLAW_TEST_PROJECTS_PARALLEL);
+  const override = parsePositiveInt(
+    env.REMOTECLAW_TEST_PROJECTS_PARALLEL,
+    "REMOTECLAW_TEST_PROJECTS_PARALLEL",
+  );
   if (override !== null) {
     return Math.min(override, specCount);
   }

@@ -1,3 +1,4 @@
+// Covers hook routing security audit findings.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { collectHooksHardeningFindings } from "./audit-extra.sync.js";

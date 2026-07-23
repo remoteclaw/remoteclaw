@@ -1,3 +1,4 @@
+// Control UI tests cover navigation groups behavior.
 import { describe, expect, it } from "vitest";
 import { TAB_GROUPS, tabFromPath } from "./navigation.ts";
 

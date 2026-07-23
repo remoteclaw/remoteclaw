@@ -1,3 +1,4 @@
+// Slack plugin module implements channels behavior.
 import type { SlackEventMiddlewareArgs } from "@slack/bolt";
 import { resolveChannelConfigWrites } from "../../../../../src/channels/plugins/config-writes.js";
 import { loadConfig, writeConfigFile } from "../../../../../src/config/config.js";

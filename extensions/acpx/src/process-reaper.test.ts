@@ -1,3 +1,5 @@
+// ACPX tests cover process reaper plugin behavior.
+import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import {
   REMOTECLAW_ACPX_LEASE_ID_ARG,

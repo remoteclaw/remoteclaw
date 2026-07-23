@@ -1,3 +1,4 @@
+// Session key case tests cover preserving meaningful case in session keys.
 import { describe, expect, it } from "vitest";
 import { resolveSessionStoreEntry } from "../config/sessions/store-entry.js";
 import type { SessionEntry } from "../config/sessions/types.js";
@@ -18,7 +19,7 @@ const entry = (to: string, updatedAt: number): SessionEntry =>
   ({ updatedAt, deliveryContext: { channel: "matrix", to } }) as unknown as SessionEntry;
 
 // Regression matrix for the generic opt-in case-preservation registry
-// (openclaw/openclaw#75670 — Matrix room ids; #82853 — Signal groups).
+// (remoteclaw/remoteclaw#75670 — Matrix room ids; #82853 — Signal groups).
 // Synthetic mixed-case opaque IDs: a room id with an embedded ":server" and a
 // case-sensitive thread event id, mirroring the Matrix spec.
 const ROOM_A = "!MixedRoomAbCdEf:example.org";

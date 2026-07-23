@@ -1,3 +1,4 @@
+// Manages device pairing requests, approvals, and token issuance.
 import { randomUUID } from "node:crypto";
 import { normalizeDeviceAuthScopes } from "../shared/device-auth.js";
 import { resolveMissingRequestedScope, roleScopesAllow } from "../shared/operator-scope-compat.js";

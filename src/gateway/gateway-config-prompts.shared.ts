@@ -1,3 +1,5 @@
+// Gateway setup prompt shared constants.
+// Provides Tailscale copy and Control UI origin updates for CLI setup flows.
 import { isIpv6Address, parseCanonicalIpAddress } from "@remoteclaw/net-policy/ip";
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
@@ -81,6 +83,8 @@ export async function maybeAddTailnetOriginToControlUiAllowedOrigins(params: {
 
   const existing = params.config.gateway?.controlUi?.allowedOrigins ?? [];
   const updatedOrigins = appendAllowedOrigin(existing, tsOrigin);
+  // Preserve all unrelated gateway/controlUi config while adding the derived
+  // tailnet origin, because setup writes partial gateway config objects.
   return {
     ...params.config,
     gateway: {

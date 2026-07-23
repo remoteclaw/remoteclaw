@@ -1,3 +1,4 @@
+// Slack plugin entrypoint registers its RemoteClaw integration.
 export {
   listEnabledSlackAccounts,
   listSlackAccountIds,

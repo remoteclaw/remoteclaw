@@ -1,3 +1,4 @@
+// Telegram tests cover bot.mediaownloads media file path no file download plugin behavior.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { setNextSavedMediaPath } from "./bot.media.e2e-harness.js";
 import {

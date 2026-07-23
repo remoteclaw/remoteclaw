@@ -1,4 +1,5 @@
-import { createSubsystemLogger } from "../../../../src/logging/subsystem.js";
+// Whatsapp plugin module implements loggers behavior.
+import { createSubsystemLogger } from "remoteclaw/plugin-sdk/runtime-env";
 
 export const whatsappLog = createSubsystemLogger("gateway/channels/whatsapp");
 export const whatsappInboundLog = whatsappLog.child("inbound");

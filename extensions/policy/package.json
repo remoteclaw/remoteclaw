@@ -11,7 +11,7 @@
     "remoteclaw": "workspace:*"
   },
   "peerDependencies": {
-    "remoteclaw": ">=2026.6.1"
+    "remoteclaw": ">=2026.6.5"
   },
   "peerDependenciesMeta": {
     "remoteclaw": {

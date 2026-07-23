@@ -1,3 +1,5 @@
+// Gateway hook mapping resolver.
+// Normalizes hook presets, templates, transforms, and resolved hook actions.
 import fs from "node:fs";
 import path from "node:path";
 import { CONFIG_PATH, type HookMappingConfig, type HooksConfig } from "../config/config.js";
@@ -88,6 +90,7 @@ type HookTransformFn = (
   ctx: HookMappingContext,
 ) => HookTransformResult | Promise<HookTransformResult>;
 
+/** Resolve configured hook mappings plus preset mappings into normalized matcher entries. */
 export function resolveHookMappings(
   hooks?: HooksConfig,
   opts?: { configDir?: string },

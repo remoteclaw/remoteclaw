@@ -1,3 +1,4 @@
+/** Reusable group-intro prompt assertions shared by auto-reply trigger tests. */
 import { describe, expect, it } from "vitest";
 import {
   getRunAgentMock,

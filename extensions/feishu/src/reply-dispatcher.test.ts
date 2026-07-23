@@ -1,4 +1,14 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+// Feishu tests cover reply dispatcher plugin behavior.
+import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
+
+type StreamingSessionStub = {
+  active: boolean;
+  start: ReturnType<typeof vi.fn>;
+  update: ReturnType<typeof vi.fn>;
+  close: ReturnType<typeof vi.fn>;
+  discard: ReturnType<typeof vi.fn>;
+  isActive: ReturnType<typeof vi.fn>;
+};
 
 const resolveFeishuAccountMock = vi.hoisted(() => vi.fn());
 const getFeishuRuntimeMock = vi.hoisted(() => vi.fn());

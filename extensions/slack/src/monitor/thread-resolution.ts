@@ -1,3 +1,4 @@
+// Slack plugin module implements thread resolution behavior.
 import type { WebClient as SlackWebClient } from "@slack/web-api";
 import { logVerbose, shouldLogVerbose } from "../../../../src/globals.js";
 import { pruneMapToMaxSize } from "../../../../src/infra/map-size.js";

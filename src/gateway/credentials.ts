@@ -1,4 +1,6 @@
-import type { RemoteClawConfig } from "../config/config.js";
+// Gateway credential resolution.
+// Selects token/password credentials from explicit, env, local, and remote config inputs.
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   createGatewayCredentialPlan,
   type GatewayCredentialPlan,

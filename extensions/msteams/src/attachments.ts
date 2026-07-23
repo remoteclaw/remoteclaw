@@ -1,3 +1,4 @@
+// Msteams plugin module implements attachments behavior.
 export {
   downloadMSTeamsAttachments,
   /** @deprecated Use `downloadMSTeamsAttachments` instead. */

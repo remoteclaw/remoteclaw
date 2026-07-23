@@ -1,3 +1,4 @@
+// Audits config paths and values for diagnostics and safety checks.
 import path from "node:path";
 import { resolveStateDir } from "./paths.js";
 

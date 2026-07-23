@@ -1,3 +1,4 @@
+// Defines provider config context types for plugin-owned providers.
 import type { ModelProviderConfig } from "../config/types.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 

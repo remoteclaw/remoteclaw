@@ -1,3 +1,4 @@
+// Verifies redacted snapshot schema metadata stays aligned with config schema.
 import { describe, expect, it } from "vitest";
 import {
   REDACTED_SENTINEL,

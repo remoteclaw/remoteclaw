@@ -1,3 +1,4 @@
+// Slack plugin module implements events behavior.
 import type { ResolvedSlackAccount } from "../accounts.js";
 import type { SlackMonitorContext } from "./context.js";
 import { registerSlackChannelEvents } from "./events/channels.js";

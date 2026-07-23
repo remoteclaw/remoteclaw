@@ -1,7 +1,9 @@
+/** Silent-reply and heartbeat tokens plus helpers for suppressing token-only model output. */
 import { escapeRegExp } from "../shared/regexp.js";
 
-// Single source of truth lives in the browser-safe ./heartbeat-token.js module.
-export { HEARTBEAT_TOKEN } from "./heartbeat-token.js";
+/** Token that marks a heartbeat response as an acknowledgement with no user notification. */
+export const HEARTBEAT_TOKEN = "HEARTBEAT_OK";
+/** Token that marks an auto-reply response as intentionally silent. */
 export const SILENT_REPLY_TOKEN = "NO_REPLY";
 
 const silentExactRegexByToken = new Map<string, RegExp>();
@@ -30,6 +32,7 @@ function getSilentTrailingRegex(token: string): RegExp {
   return regex;
 }
 
+/** Returns true only for token-only silent replies. */
 export function isSilentReplyText(
   text: string | undefined,
   token: string = SILENT_REPLY_TOKEN,
@@ -172,6 +175,7 @@ function isReasoningPrefixedSilentReplyText(
   );
 }
 
+/** Returns true for token-only, JSON-envelope, or reasoning-prefixed silent payload text. */
 export function isSilentReplyPayloadText(
   text: string | undefined,
   token: string = SILENT_REPLY_TOKEN,

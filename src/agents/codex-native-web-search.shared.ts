@@ -1,15 +1,27 @@
+/**
+ * Shared config normalization for Codex native web search.
+ */
 import { normalizeUniqueTrimmedStringList } from "@remoteclaw/normalization-core/string-normalization";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { isRecord } from "../utils.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   resolveCodexNativeWebSearchConfig: "live",
   describeCodexNativeWebSearch: "live",
 } as const;
 
+/** Whether native Codex search may use cached or live external web access. */
 export type CodexNativeSearchMode = "cached" | "live";
+/** OpenAI search context-size hint for Codex native web search. */
 export type CodexNativeSearchContextSize = "low" | "medium" | "high";
 
+/** Optional approximate user location for Codex native web search. */
 export type CodexNativeSearchUserLocation = {
   country?: string;
   region?: string;
@@ -17,6 +29,7 @@ export type CodexNativeSearchUserLocation = {
   timezone?: string;
 };
 
+/** Normalized Codex native web-search settings. */
 export type ResolvedCodexNativeWebSearchConfig = {
   enabled: boolean;
   mode: CodexNativeSearchMode;
@@ -56,6 +69,7 @@ function normalizeUserLocation(value: unknown): CodexNativeSearchUserLocation | 
     : undefined;
 }
 
+/** Resolve Codex native web-search config from RemoteClaw tool settings. */
 export function resolveCodexNativeWebSearchConfig(
   config: RemoteClawConfig | undefined,
 ): ResolvedCodexNativeWebSearchConfig {
@@ -69,6 +83,7 @@ export function resolveCodexNativeWebSearchConfig(
   };
 }
 
+/** Return concise prompt/status text for enabled Codex native search. */
 export function describeCodexNativeWebSearch(
   config: RemoteClawConfig | undefined,
 ): string | undefined {

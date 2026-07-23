@@ -1,3 +1,4 @@
+// Check No Monolithic Plugin Sdk Entry Imports script supports RemoteClaw repository automation.
 import fs from "node:fs";
 import path from "node:path";
 import { discoverRemoteClawPlugins } from "../src/plugins/discovery.js";

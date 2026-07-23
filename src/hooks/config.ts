@@ -1,3 +1,4 @@
+// Hook config helpers read, normalize, and update hook configuration.
 import type { RemoteClawConfig, HookConfig } from "../config/config.js";
 import {
   evaluateRuntimeEligibility,
@@ -15,6 +16,7 @@ const DEFAULT_CONFIG_VALUES: Record<string, boolean> = {
 
 export { hasBinary };
 
+/** Evaluate a config path with hook-specific defaults for legacy runtime requirements. */
 export function isConfigPathTruthy(config: RemoteClawConfig | undefined, pathStr: string): boolean {
   return isConfigPathTruthyWithDefaults(config, pathStr, DEFAULT_CONFIG_VALUES);
 }
@@ -42,6 +44,8 @@ function evaluateHookRuntimeEligibility(params: {
 }): boolean {
   const { entry, config, hookConfig, eligibility } = params;
   const remote = eligibility?.remote;
+  // Hook metadata uses the same requirement language as plugins, but hook env
+  // can also come from the per-hook config block.
   const base = {
     os: entry.metadata?.os,
     remotePlatforms: remote?.platforms,
@@ -58,6 +62,7 @@ function evaluateHookRuntimeEligibility(params: {
   });
 }
 
+/** Return true when a hook passes enable policy and runtime requirements. */
 export function shouldIncludeHook(params: {
   entry: HookEntry;
   config?: RemoteClawConfig;

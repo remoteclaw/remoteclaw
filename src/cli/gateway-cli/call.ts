@@ -1,3 +1,4 @@
+// Shared gateway RPC command options and progress-wrapped CLI call helper.
 import type { Command } from "commander";
 import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { callGateway } from "../../gateway/call.js";

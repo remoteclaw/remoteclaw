@@ -1,3 +1,4 @@
+// Doctor gateway daemon flow tests cover managed service inspection, duplicate services, and repair prompts.
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 const service = vi.hoisted(() => ({

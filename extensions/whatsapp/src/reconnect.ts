@@ -1,3 +1,4 @@
+// Whatsapp plugin module implements reconnect behavior.
 import { randomUUID } from "node:crypto";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import type { BackoffPolicy } from "../../../src/infra/backoff.js";

@@ -1,6 +1,8 @@
-import { normalizeChatChannelId } from "../channels/registry.js";
-import type { RemoteClawConfig } from "../config/config.js";
+// Toggles plugin enablement config for channels and agents.
+import { normalizeChatChannelId } from "../channels/ids.js";
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
+/** Returns config with a plugin enabled/disabled and optional built-in channel state synced. */
 export function setPluginEnabledInConfig(
   config: RemoteClawConfig,
   pluginId: string,

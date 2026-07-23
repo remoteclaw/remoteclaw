@@ -1,3 +1,4 @@
+// Evaluates plugin config policy without activating plugin runtime code.
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import {
   resolveMemorySlotDecisionShared,

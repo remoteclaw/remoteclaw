@@ -1,7 +1,18 @@
-import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
+/**
+ * Channel conversation kind normalization.
+ *
+ * Maps channel-specific direct/group/channel labels into RemoteClaw chat types.
+ */
+import { normalizeOptionalLowercaseString } from "@remoteclaw/normalization-core/string-coerce";
 
+/**
+ * Normalized conversation kind shared by channel routing, sessions, and SDK helpers.
+ */
 export type ChatType = "direct" | "group" | "channel";
 
+/**
+ * Normalizes channel-specific chat type labels into RemoteClaw conversation kinds.
+ */
 export function normalizeChatType(raw?: string): ChatType | undefined {
   const value = normalizeOptionalLowercaseString(raw);
   if (!value) {

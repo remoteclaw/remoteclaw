@@ -1,9 +1,13 @@
+// Guards config writes that are disallowed in Nix-managed installs.
 import { resolveIsNixMode } from "./paths.js";
 
+/** Agent-first Nix install docs shown when runtime config writes are blocked. */
 export const NIX_REMOTECLAW_AGENT_FIRST_URL =
   "https://github.com/remoteclaw/nix-remoteclaw#quick-start";
+/** Public RemoteClaw Nix overview shown with immutable-config errors. */
 export const REMOTECLAW_NIX_OVERVIEW_URL = "https://docs.remoteclaw.org/install/nix";
 
+/** Error thrown when a mutating config path is attempted while Nix owns config state. */
 export class NixModeConfigMutationError extends Error {
   readonly code = "REMOTECLAW_NIX_MODE_CONFIG_IMMUTABLE";
 
@@ -13,6 +17,7 @@ export class NixModeConfigMutationError extends Error {
   }
 }
 
+/** Build the operator-facing immutable-config message for Nix-managed installs. */
 export function formatNixModeConfigMutationMessage(params: { configPath?: string } = {}): string {
   return [
     "Config is managed by Nix (`REMOTECLAW_NIX_MODE=1`), so RemoteClaw treats remoteclaw.json as immutable.",
@@ -25,6 +30,7 @@ export function formatNixModeConfigMutationMessage(params: { configPath?: string
   ].join("\n");
 }
 
+/** Throw when the current environment marks RemoteClaw config as Nix-managed and immutable. */
 export function assertConfigWriteAllowedInCurrentMode(
   params: {
     configPath?: string;
@@ -34,5 +40,6 @@ export function assertConfigWriteAllowedInCurrentMode(
   if (!resolveIsNixMode(params.env)) {
     return;
   }
+  // In Nix mode, all writes must happen in the declarative source and then rebuild.
   throw new NixModeConfigMutationError({ configPath: params.configPath });
 }

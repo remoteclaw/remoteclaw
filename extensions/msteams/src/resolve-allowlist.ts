@@ -1,3 +1,4 @@
+// Msteams plugin module implements resolve allowlist behavior.
 import { mapAllowlistResolutionInputs } from "remoteclaw/plugin-sdk/allow-from";
 import {
   normalizeLowercaseStringOrEmpty,

@@ -1,3 +1,4 @@
+// Manages node pairing identities for gateway and remote device trust.
 import { randomUUID } from "node:crypto";
 import { resolveMissingRequestedScope } from "../shared/operator-scope-compat.js";
 import { type NodeApprovalScope, resolveNodePairApprovalScopes } from "./node-pairing-authz.js";

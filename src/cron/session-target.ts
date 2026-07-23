@@ -1,3 +1,4 @@
+/** Resolves and validates session-target keys used by cron jobs and delivery. */
 const INVALID_CRON_SESSION_TARGET_ID_ERROR = "invalid cron sessionTarget session id";
 
 export function isInvalidCronSessionTargetIdError(error: unknown): boolean {

@@ -1,3 +1,4 @@
+/** Tests parsing of inline reply directives and command tags. */
 import { describe, expect, it } from "vitest";
 import { extractQueueDirective, extractReplyToTag, extractVerboseDirective } from "./reply.js";
 import { extractStatusDirective } from "./reply/directives.js";

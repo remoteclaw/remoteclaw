@@ -1,3 +1,4 @@
+// Tests HTTP body reading and size-limit handling.
 import { EventEmitter } from "node:events";
 import type { IncomingMessage } from "node:http";
 import { beforeEach, describe, expect, it, vi } from "vitest";

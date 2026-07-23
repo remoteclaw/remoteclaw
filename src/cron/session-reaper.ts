@@ -1,11 +1,4 @@
-/**
- * Cron session reaper — prunes completed isolated cron run sessions
- * from the session store after a configurable retention period.
- *
- * Pattern: sessions keyed as `...:cron:<jobId>:run:<uuid>` are ephemeral
- * run records. The base session (`...:cron:<jobId>`) is kept as-is.
- */
-
+/** Prunes expired per-run cron sessions and archives unreferenced transcripts. */
 import { parseDurationMs } from "../cli/parse-duration.js";
 import {
   archiveRemovedSessionTranscripts,

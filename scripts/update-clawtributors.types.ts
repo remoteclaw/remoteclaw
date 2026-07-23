@@ -1,3 +1,4 @@
+// Update Clawtributors.Types script supports RemoteClaw repository automation.
 export type MapConfig = {
   ensureLogins?: string[];
   displayName?: Record<string, string>;

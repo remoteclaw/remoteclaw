@@ -1,3 +1,4 @@
+// Ios Version script supports RemoteClaw repository automation.
 import path from "node:path";
 import { resolveIosVersion } from "./lib/ios-version.ts";
 

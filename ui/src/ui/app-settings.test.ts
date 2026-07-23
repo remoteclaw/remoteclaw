@@ -1,3 +1,4 @@
+// Control UI tests cover app settings behavior.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { setTabFromRoute, type SettingsHost } from "./app-settings.ts";
 import type { Tab } from "./navigation.ts";

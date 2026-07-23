@@ -1,3 +1,4 @@
+// Detects and formats plugin install path warnings.
 import fs from "node:fs/promises";
 import path from "node:path";
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";

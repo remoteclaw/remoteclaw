@@ -1,3 +1,8 @@
+/**
+ * Registry and runtime projection for code-mode namespaces. Plugins register
+ * namespaced tool scopes here; code mode receives descriptors, virtual API
+ * files, and a guarded invocation runtime.
+ */
 import { isRecord } from "../../packages/normalization-core/src/record-coerce.js";
 
 export const MODULE_ATTESTATIONS = {
@@ -40,6 +45,7 @@ const RESERVED_NAMESPACE_GLOBALS = new Set([
 ]);
 const CODE_MODE_NAMESPACE_REGISTRY_KEY = Symbol.for("remoteclaw.codeMode.namespaces");
 
+/** Runtime context passed to plugin code-mode namespace scope factories. */
 export type CodeModeNamespaceContext = {
   config?: unknown;
   runtimeConfig?: unknown;
@@ -52,10 +58,13 @@ export type CodeModeNamespaceContext = {
   executeTool?: unknown;
 };
 
+/** Object installed into a code-mode namespace global. */
 export type CodeModeNamespaceScope = Record<string, unknown>;
 
+/** Maps JavaScript namespace function arguments into a tool input payload. */
 export type CodeModeNamespaceToolInputMapper = (args: unknown[]) => unknown;
 
+/** Marker object used inside namespace scopes to represent a tool invocation. */
 export type CodeModeNamespaceToolCall = {
   readonly [CODE_MODE_NAMESPACE_TOOL_CALL]: true;
   readonly toolName: string;
@@ -64,6 +73,7 @@ export type CodeModeNamespaceToolCall = {
   readonly input?: CodeModeNamespaceToolInputMapper;
 };
 
+/** Plugin registration contract for one code-mode namespace. */
 export type CodeModeNamespaceRegistration = {
   id: string;
   globalName: string;
@@ -75,16 +85,19 @@ export type CodeModeNamespaceRegistration = {
   ): CodeModeNamespaceScope | Promise<CodeModeNamespaceScope>;
 };
 
+/** Registration with the owning plugin id attached. */
 export type RegisteredCodeModeNamespace = CodeModeNamespaceRegistration & {
   pluginId: string;
 };
 
+/** JSON-serializable descriptor value emitted to the code-mode runtime. */
 export type SerializedCodeModeNamespaceValue =
   | { kind: "array"; items: SerializedCodeModeNamespaceValue[] }
   | { kind: "function"; path: string[] }
   | { kind: "object"; entries: Array<[string, SerializedCodeModeNamespaceValue]> }
   | { kind: "value"; value: unknown };
 
+/** Descriptor sent to code mode for one visible namespace. */
 export type CodeModeNamespaceDescriptor = {
   id: string;
   globalName: string;
@@ -114,6 +127,7 @@ type CodeModeNamespaceCatalogEntry = {
   };
 };
 
+/** Runtime dispatcher for invoking callable namespace paths. */
 export type CodeModeNamespaceRuntime = {
   descriptors: CodeModeNamespaceDescriptor[];
   invoke(
@@ -168,6 +182,7 @@ function normalizeRequiredToolNames(value: readonly string[] | undefined): strin
   return [...names].toSorted();
 }
 
+/** Creates a namespace function marker for a plugin-owned tool. */
 export function createCodeModeNamespaceTool(
   toolName: string,
   input?: CodeModeNamespaceToolInputMapper,
@@ -260,6 +275,7 @@ function normalizeRegistration(
   };
 }
 
+/** Registers a plugin namespace after validating id/global/tool contracts. */
 export function registerCodeModeNamespaceForPlugin(
   pluginId: string,
   registration: CodeModeNamespaceRegistration,
@@ -279,18 +295,22 @@ export function registerCodeModeNamespaceForPlugin(
   registryState.registrations.set(normalized.id, normalized);
 }
 
+/** Removes one namespace registration by id. */
 export function unregisterCodeModeNamespace(namespaceId: string): boolean {
   return registryState.registrations.delete(namespaceId.trim());
 }
 
+/** Lists registered namespaces in deterministic id order. */
 export function listCodeModeNamespaces(): RegisteredCodeModeNamespace[] {
   return [...registryState.registrations.values()].toSorted((a, b) => a.id.localeCompare(b.id));
 }
 
+/** Clears all namespace registrations for isolated tests. */
 export function clearCodeModeNamespacesForTest(): void {
   registryState.registrations.clear();
 }
 
+/** Clears namespace registrations owned by one plugin. */
 export function clearCodeModeNamespacesForPlugin(pluginId: string): void {
   const normalized = pluginId.trim();
   for (const registration of registryState.registrations.values()) {
@@ -565,6 +585,7 @@ type McpApiServerDoc = {
   tools: McpApiToolDoc[];
 };
 
+/** Virtual TypeScript-style API file exposed to code mode. */
 export type CodeModeApiVirtualFile = {
   path: string;
   description?: string;
@@ -859,6 +880,7 @@ function createMcpNamespaceScope(
   return createMcpNamespaceModel(catalog)?.root;
 }
 
+/** Builds virtual API declaration files for visible MCP namespace tools. */
 export function createCodeModeApiVirtualFiles(
   catalog: readonly CodeModeNamespaceCatalogEntry[] = [],
 ): CodeModeApiVirtualFile[] {
@@ -932,6 +954,7 @@ function describeMcpNamespaceForPrompt(
   ];
 }
 
+/** Builds system-prompt text describing visible code-mode namespace globals. */
 export function describeCodeModeNamespacesForPrompt(
   ctx: CodeModeNamespaceContext,
   catalog?: readonly CodeModeNamespaceCatalogEntry[],
@@ -1074,6 +1097,7 @@ function readScope(value: unknown, id: string): CodeModeNamespaceScope {
   return value;
 }
 
+/** Creates the runtime descriptor/invocation layer for visible namespaces. */
 export async function createCodeModeNamespaceRuntime(
   ctx: CodeModeNamespaceContext,
   catalog: readonly CodeModeNamespaceCatalogEntry[] = [],

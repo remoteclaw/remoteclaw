@@ -1,3 +1,4 @@
+// Control UI chat module implements chat queue behavior.
 import { html, nothing } from "lit";
 import { icons } from "../icons.ts";
 import type { ChatQueueItem } from "../ui-types.ts";

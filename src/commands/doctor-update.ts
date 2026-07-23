@@ -1,3 +1,4 @@
+/** Optional pre-doctor update prompt for source checkouts and package installs. */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
@@ -34,6 +35,7 @@ async function detectRemoteClawGitCheckout(root: string): Promise<"git" | "not-g
     : "not-git";
 }
 
+/** Offers to update RemoteClaw before doctor when running interactively from an updatable install. */
 export async function maybeOfferUpdateBeforeDoctor(params: {
   runtime: RuntimeEnv;
   options: DoctorOptions;

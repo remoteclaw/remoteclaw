@@ -1,3 +1,4 @@
+// Defines agent-related Zod schema fragments for config parsing.
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import { z } from "zod";
 import { AgentDefaultsSchema } from "./zod-schema.agent-defaults.js";

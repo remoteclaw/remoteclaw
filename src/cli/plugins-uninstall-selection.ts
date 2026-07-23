@@ -1,7 +1,9 @@
+// Plugin uninstall id resolver for registry ids, display names, npm specs, and ClawHub specs.
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { parseClawHubPluginSpec } from "../infra/clawhub-spec.js";
 import type { PluginRecord } from "../plugins/registry.js";
 
+/** Resolve user input to the plugin id that should be removed from config/install records. */
 export function resolvePluginUninstallId<
   TPlugin extends Pick<PluginRecord, "id" | "name">,
 >(params: {

@@ -1,3 +1,4 @@
+// Slack plugin module implements preview finalize behavior.
 import type { Block, KnownBlock, WebClient } from "@slack/web-api";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { editSlackMessage } from "../../actions.js";

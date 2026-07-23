@@ -1,3 +1,4 @@
+// Matrix helper module supports config adapter behavior.
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
 import {
   adaptScopedAccountAccessor,

@@ -1,4 +1,12 @@
 /**
+ * Helpers for capturing the latest subagent completion reply after a run ends.
+ *
+ * Completion output can lag behind lifecycle state, so callers can retry briefly
+ * before sending an empty or stale announcement.
+ */
+/** Reads subagent output repeatedly until non-empty text appears or the bounded wait expires. */
+
+/**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
  * attestations for the category definitions and the convention for
@@ -8,7 +16,6 @@ export const MODULE_ATTESTATIONS = {
   readLatestSubagentOutputWithRetryUsing: "live",
   captureSubagentCompletionReplyUsing: "live",
 } as const;
-
 export async function readLatestSubagentOutputWithRetryUsing<Outcome = unknown>(params: {
   sessionKey: string;
   maxWaitMs: number;
@@ -29,6 +36,7 @@ export async function readLatestSubagentOutputWithRetryUsing<Outcome = unknown>(
       break;
     }
     const sleepMs = Math.min(params.retryIntervalMs, remainingMs);
+    // Use real timers here; tests provide fake timers around this small retry loop.
     await new Promise((resolve) => {
       setTimeout(resolve, sleepMs);
     });
@@ -37,6 +45,7 @@ export async function readLatestSubagentOutputWithRetryUsing<Outcome = unknown>(
   return result;
 }
 
+/** Captures immediate output first, then optionally waits for a delayed completion reply. */
 export async function captureSubagentCompletionReplyUsing(params: {
   sessionKey: string;
   waitForReply?: boolean;

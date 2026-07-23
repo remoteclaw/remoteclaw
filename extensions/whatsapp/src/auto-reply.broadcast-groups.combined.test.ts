@@ -1,3 +1,4 @@
+// Whatsapp tests cover auto reply.broadcast groups.combined plugin behavior.
 import "./test-helpers.js";
 import { describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../src/config/config.js";

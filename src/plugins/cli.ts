@@ -1,3 +1,4 @@
+// Registers plugin-related CLI commands.
 import type { Command } from "commander";
 import { resolveFirstAgentWorkspace } from "../agents/agent-scope.js";
 import type { RemoteClawConfig } from "../config/config.js";

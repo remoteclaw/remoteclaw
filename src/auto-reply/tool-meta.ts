@@ -1,3 +1,4 @@
+/** Formats compact tool metadata labels for auto-reply progress/status messages. */
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import { formatToolSummary, resolveToolDisplay } from "../agents/tool-display.js";
 import { shortenHomeInString, shortenHomePath } from "../utils.js";
@@ -6,10 +7,12 @@ type ToolAggregateOptions = {
   markdown?: boolean;
 };
 
+/** Shortens a filesystem path for display. */
 export function shortenPath(p: string): string {
   return shortenHomePath(p);
 }
 
+/** Shortens user-home paths inside arbitrary tool metadata. */
 export function shortenMeta(meta: string): string {
   if (!meta) {
     return meta;
@@ -17,6 +20,7 @@ export function shortenMeta(meta: string): string {
   return shortenHomeInString(meta);
 }
 
+/** Formats one grouped tool-progress label from a tool name and metadata entries. */
 export function formatToolAggregate(
   toolName?: string,
   metas?: string[],
@@ -30,7 +34,7 @@ export function formatToolAggregate(
   }
 
   const rawSegments: string[] = [];
-  // Group by directory and brace-collapse filenames
+  // Group by directory and brace-collapse filenames to keep progress text short.
   const grouped: Record<string, string[]> = {};
   for (const m of filtered) {
     if (!isPathLike(m)) {
@@ -70,6 +74,7 @@ export function formatToolAggregate(
   return `${prefix}: ${formatMetaForDisplay(toolName, meta, options?.markdown)}`;
 }
 
+/** Formats the prefix for a single tool event. */
 export function formatToolPrefix(toolName?: string, meta?: string) {
   const extra = meta?.trim() ? shortenMeta(meta) : undefined;
   const display = resolveToolDisplay({ name: toolName, meta: extra });

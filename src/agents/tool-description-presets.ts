@@ -1,3 +1,6 @@
+// Compact built-in summaries shown in tool inventories and model-facing tool
+// descriptions when a longer contextual description is assembled elsewhere.
+
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
@@ -12,20 +15,18 @@ export const MODULE_ATTESTATIONS = {
   describeSessionStatusTool: "live",
   describeUpdatePlanTool: "live",
 } as const;
+export const EXEC_TOOL_DISPLAY_SUMMARY = "Run shell now.";
+export const PROCESS_TOOL_DISPLAY_SUMMARY = "Inspect/control exec sessions.";
+export const CRON_TOOL_DISPLAY_SUMMARY = "Schedule reminders, cron, wake events.";
+export const SESSIONS_LIST_TOOL_DISPLAY_SUMMARY = "List visible sessions; filters/previews.";
+export const SESSIONS_HISTORY_TOOL_DISPLAY_SUMMARY = "Read sanitized session history.";
+export const SESSIONS_SEND_TOOL_DISPLAY_SUMMARY = "Message session or configured agent.";
+export const SESSIONS_SPAWN_TOOL_DISPLAY_SUMMARY = "Spawn subagent or ACP session.";
+export const SESSIONS_SPAWN_SUBAGENT_TOOL_DISPLAY_SUMMARY = "Spawn subagent session.";
+export const SESSION_STATUS_TOOL_DISPLAY_SUMMARY = "Show session status/model/usage.";
+export const UPDATE_PLAN_TOOL_DISPLAY_SUMMARY = "Track short work plan.";
 
-export const EXEC_TOOL_DISPLAY_SUMMARY = "Run shell commands that start now.";
-export const PROCESS_TOOL_DISPLAY_SUMMARY = "Inspect and control running exec sessions.";
-export const CRON_TOOL_DISPLAY_SUMMARY = "Schedule cron jobs, reminders, and wake events.";
-export const SESSIONS_LIST_TOOL_DISPLAY_SUMMARY =
-  "List visible sessions with mailbox filters and optional previews.";
-export const SESSIONS_HISTORY_TOOL_DISPLAY_SUMMARY =
-  "Read sanitized message history for a visible session.";
-export const SESSIONS_SEND_TOOL_DISPLAY_SUMMARY = "Send a message to another visible session.";
-export const SESSIONS_SPAWN_TOOL_DISPLAY_SUMMARY = "Spawn sub-agent or ACP sessions.";
-export const SESSIONS_SPAWN_SUBAGENT_TOOL_DISPLAY_SUMMARY = "Spawn sub-agent sessions.";
-export const SESSION_STATUS_TOOL_DISPLAY_SUMMARY = "Show session status, usage, and model state.";
-export const UPDATE_PLAN_TOOL_DISPLAY_SUMMARY = "Track a short structured work plan.";
-
+/** Describes the sessions_list tool for model-facing instructions. */
 export function describeSessionsListTool(): string {
   return [
     "List visible sessions with optional filters for kind, label, agentId, search, recent activity, derived titles, and last-message previews.",
@@ -33,6 +34,7 @@ export function describeSessionsListTool(): string {
   ].join(" ");
 }
 
+/** Describes the sessions_history tool for model-facing instructions. */
 export function describeSessionsHistoryTool(): string {
   return [
     "Fetch sanitized message history for a visible session.",
@@ -40,6 +42,7 @@ export function describeSessionsHistoryTool(): string {
   ].join(" ");
 }
 
+/** Describes the sessions_send tool for model-facing instructions. */
 export function describeSessionsSendTool(): string {
   return [
     "Send a message into another visible session by sessionKey or label.",
@@ -48,6 +51,7 @@ export function describeSessionsSendTool(): string {
   ].join(" ");
 }
 
+/** Describes the sessions_spawn tool for model-facing instructions. */
 export function describeSessionsSpawnTool(options?: {
   acpAvailable?: boolean;
   threadAvailable?: boolean;
@@ -78,6 +82,7 @@ export function describeSessionsSpawnTool(options?: {
   ].join(" ");
 }
 
+/** Describes the session_status tool for model-facing instructions. */
 export function describeSessionStatusTool(): string {
   return [
     "Show a /status-equivalent session status card for the current or another visible session, including usage, time, cost when available, and linked background task context.",
@@ -87,6 +92,7 @@ export function describeSessionStatusTool(): string {
   ].join(" ");
 }
 
+/** Describes the update_plan tool for model-facing instructions. */
 export function describeUpdatePlanTool(): string {
   return [
     "Update the current structured work plan for this run.",

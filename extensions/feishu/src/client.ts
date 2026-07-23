@@ -1,3 +1,6 @@
+// Feishu plugin module implements client behavior.
+import type { Agent } from "node:https";
+import { createRequire } from "node:module";
 import * as Lark from "@larksuiteoapi/node-sdk";
 import { HttpsProxyAgent } from "https-proxy-agent";
 import { matchesNoProxy, resolveEnvHttpProxyUrl } from "../../../src/infra/net/proxy-env.js";

@@ -1,4 +1,5 @@
-import { normalizeOptionalString } from "../shared/string-coerce.js";
+// Directive tag helpers parse inline directive tags from user text.
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 
 export type InlineDirectiveParseResult = {
   text: string;

@@ -1,3 +1,4 @@
+// Discord tests cover thread bindings.shared state plugin behavior.
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   __testing as threadBindingsTesting,

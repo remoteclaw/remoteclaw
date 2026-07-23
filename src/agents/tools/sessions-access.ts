@@ -1,14 +1,11 @@
+/**
+ * Session visibility and access helpers for session tools.
+ *
+ * Adds RemoteClaw session-key alias normalization and sandbox requester scoping over SDK visibility contracts.
+ */
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
-import {
-  createAgentToAgentPolicy,
-  createSessionVisibilityChecker,
-  createSessionVisibilityGuard,
-  listSpawnedSessionKeys,
-  resolveEffectiveSessionToolsVisibility,
-  resolveSandboxSessionToolsVisibility,
-  resolveSessionToolsVisibility,
-} from "../../plugin-sdk/session-visibility.js";
+import { resolveSandboxSessionToolsVisibility } from "../../plugin-sdk/session-visibility.js";
 import { isSubagentSessionKey } from "../../routing/session-key.js";
 import { resolveInternalSessionKey, resolveMainSessionAlias } from "./sessions-resolution.js";
 
@@ -30,6 +27,7 @@ export {
   resolveSessionToolsVisibility,
 } from "../../plugin-sdk/session-visibility.js";
 
+/** Resolves the requester context used to filter sandboxed session-tool access. */
 export function resolveSandboxedSessionToolContext(params: {
   cfg: RemoteClawConfig;
   agentSessionKey?: string;
@@ -58,6 +56,7 @@ export function resolveSandboxedSessionToolContext(params: {
     visibility === "spawned" &&
     Boolean(requesterInternalKey) &&
     !isSubagentSessionKey(requesterInternalKey);
+  // Main sessions can see all sessions; sandboxed non-subagent callers stay scoped to spawned rows.
   return {
     mainKey,
     alias,

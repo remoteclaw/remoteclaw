@@ -1,3 +1,7 @@
+/**
+ * ACPX process ownership checks and cleanup. The reaper only terminates
+ * RemoteClaw-owned wrapper trees after validating paths, packages, and lease ids.
+ */
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import {
@@ -17,24 +21,28 @@ const ACP_PACKAGE_MARKERS = [
   "/acpx/dist/",
 ];
 
+/** Minimal process-table row used by ACPX cleanup. */
 export type AcpxProcessInfo = {
   pid: number;
   ppid: number;
   command: string;
 };
 
+/** Injectable process-listing and termination hooks for tests. */
 export type AcpxProcessCleanupDeps = {
   listProcesses?: () => Promise<AcpxProcessInfo[]>;
   killProcess?: (pid: number, signal: NodeJS.Signals) => void;
   sleep?: (ms: number) => Promise<void>;
 };
 
+/** Result from cleaning up a single ACPX process tree. */
 export type AcpxProcessCleanupResult = {
   inspectedPids: number[];
   terminatedPids: number[];
   skippedReason?: "missing-root" | "not-remoteclaw-owned" | "unverified-root";
 };
 
+/** Result from startup orphan reaping. */
 export type AcpxStartupReapResult = {
   inspectedPids: number[];
   terminatedPids: number[];
@@ -57,6 +65,22 @@ function commandWrapperBelongsToRoot(command: string, wrapperRoot: string | unde
   const normalizedRoot = normalizePathLike(wrapperRoot).replace(/\/+$/, "");
   return Array.from(GENERATED_WRAPPER_BASENAMES).some((basename) =>
     normalizedCommand.includes(`${normalizedRoot}/${basename}`),
+  );
+}
+
+/** Check whether a command references an RemoteClaw-generated ACPX wrapper path. */
+export function isRemoteClawLeaseAwareAcpxProcessCommand(params: {
+  command: string | undefined;
+  wrapperRoot?: string;
+}): boolean {
+  const command = params.command?.trim();
+  if (!command) {
+    return false;
+  }
+  const normalized = normalizePathLike(command);
+  return (
+    commandMentionsGeneratedWrapper(normalized) &&
+    commandWrapperBelongsToRoot(normalized, params.wrapperRoot)
   );
 }
 
@@ -141,6 +165,7 @@ function liveCommandMatchesLeaseIdentity(params: {
   );
 }
 
+/** Check whether a command is owned by RemoteClaw ACPX runtime packages or wrappers. */
 export function isRemoteClawOwnedAcpxProcessCommand(params: {
   command: string | undefined;
   wrapperRoot?: string;
@@ -175,6 +200,7 @@ function parseProcessList(stdout: string): AcpxProcessInfo[] {
   return processes;
 }
 
+/** List host processes in the compact shape needed by ACPX cleanup. */
 export async function listPlatformProcesses(): Promise<AcpxProcessInfo[]> {
   if (process.platform === "win32") {
     return [];
@@ -269,6 +295,7 @@ async function terminatePids(
   return terminated;
 }
 
+/** Terminate one validated RemoteClaw-owned ACPX wrapper process tree. */
 export async function cleanupRemoteClawOwnedAcpxProcessTree(params: {
   rootPid?: number;
   rootCommand?: string;
@@ -353,6 +380,7 @@ export async function cleanupRemoteClawOwnedAcpxProcessTree(params: {
   };
 }
 
+/** Reap orphaned RemoteClaw-owned ACPX wrapper trees during runtime startup. */
 export async function reapStaleRemoteClawOwnedAcpxOrphans(params: {
   wrapperRoot: string;
   deps?: AcpxProcessCleanupDeps;

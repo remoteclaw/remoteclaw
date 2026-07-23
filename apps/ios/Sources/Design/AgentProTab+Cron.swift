@@ -29,7 +29,7 @@ extension AgentProTab {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     var cronNextRunLabel: String {
@@ -57,7 +57,7 @@ extension AgentProTab {
                     }
                 }
             }
-            .padding(.horizontal, OpenClawProMetric.pagePadding)
+            .padding(.horizontal, RemoteClawProMetric.pagePadding)
         }
     }
 
@@ -80,7 +80,7 @@ extension AgentProTab {
         return HStack(alignment: .top, spacing: 12) {
             ProIconBadge(
                 systemName: job.enabled ? "clock.arrow.circlepath" : "pause.circle",
-                color: job.enabled ? OpenClawBrand.accent : .secondary)
+                color: job.enabled ? RemoteClawBrand.accent : .secondary)
             VStack(alignment: .leading, spacing: 4) {
                 Text(job.name)
                     .font(.subheadline.weight(.semibold))
@@ -99,14 +99,14 @@ extension AgentProTab {
                     } label: {
                         Label("Run", systemImage: "play.fill")
                     }
-                    .disabled(busy || !self.gatewayConnected)
+                    .disabled(busy || !self.liveGatewayConnected)
 
                     Button {
                         Task { await self.setCronJob(job, enabled: !job.enabled) }
                     } label: {
                         Label(job.enabled ? "Pause" : "Enable", systemImage: job.enabled ? "pause.fill" : "checkmark")
                     }
-                    .disabled(busy || !self.gatewayConnected)
+                    .disabled(busy || !self.liveGatewayConnected)
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.mini)
@@ -119,7 +119,7 @@ extension AgentProTab {
             } else {
                 Text(self.cronJobState(job))
                     .font(.caption2.weight(.semibold))
-                    .foregroundStyle(job.enabled ? OpenClawBrand.accent : .secondary)
+                    .foregroundStyle(job.enabled ? RemoteClawBrand.accent : .secondary)
                     .lineLimit(1)
             }
         }
@@ -149,7 +149,7 @@ extension AgentProTab {
         success: String,
         action: () async throws -> Void) async
     {
-        guard self.gatewayConnected else { return }
+        guard self.liveGatewayConnected else { return }
         self.cronActionBusyIDs.insert(job.id)
         self.cronActionStatusText = nil
         defer { self.cronActionBusyIDs.remove(job.id) }

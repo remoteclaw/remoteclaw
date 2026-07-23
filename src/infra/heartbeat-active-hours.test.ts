@@ -1,3 +1,4 @@
+// Covers heartbeat active-hours evaluation.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { isWithinActiveHours } from "./heartbeat-active-hours.js";

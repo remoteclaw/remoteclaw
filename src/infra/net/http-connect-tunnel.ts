@@ -1,3 +1,5 @@
+// HTTP CONNECT tunnel support opens TLS target sockets through HTTP(S) forward
+// proxies for APNs and similar clients.
 import * as net from "node:net";
 import * as tls from "node:tls";
 import type { ManagedProxyTlsOptions } from "./proxy/proxy-tls.js";
@@ -83,6 +85,8 @@ function readProxyConnectResponse(
   responseBuffer: ConnectResponseBuffer,
   chunk: ConnectResponseBuffer,
 ): ProxyConnectReadResult {
+  // CONNECT response data can include the first bytes of the target TLS stream;
+  // preserve them with unshift once the tunnel is established.
   const nextBuffer = Buffer.concat([responseBuffer, chunk]);
   const headerEnd = nextBuffer.indexOf("\r\n\r\n");
   if (headerEnd === -1) {

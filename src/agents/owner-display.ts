@@ -1,3 +1,8 @@
+/**
+ * Owner display settings for prompt rendering.
+ *
+ * Hash mode uses a dedicated prompt-display secret so auth material is never reused for owner redaction.
+ */
 import crypto from "node:crypto";
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";

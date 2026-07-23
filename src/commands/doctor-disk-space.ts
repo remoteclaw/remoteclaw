@@ -1,3 +1,4 @@
+/** Doctor contribution for low disk space around the RemoteClaw state directory. */
 import os from "node:os";
 import { note } from "../../packages/terminal-core/src/note.js";
 import type { RemoteClawConfig } from "../config/config.js";

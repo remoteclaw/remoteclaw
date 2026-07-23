@@ -1,3 +1,4 @@
+// Hook status helpers summarize configured, installed, and plugin-provided hooks.
 import path from "node:path";
 import type { RemoteClawConfig } from "../config/config.js";
 import { evaluateEntryRequirementsForCurrentPlatform } from "../shared/entry-status.js";

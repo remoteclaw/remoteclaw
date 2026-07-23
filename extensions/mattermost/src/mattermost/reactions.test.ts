@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+// Mattermost tests cover reactions plugin behavior.
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   addMattermostReaction,
   removeMattermostReaction,

@@ -1,3 +1,4 @@
+// Telegram plugin module implements delivery.replies behavior.
 import { type Bot, GrammyError, InputFile } from "grammy";
 import { chunkMarkdownTextWithMode, type ChunkMode } from "../../../../src/auto-reply/chunk.js";
 import type { ReplyPayload } from "../../../../src/auto-reply/types.js";

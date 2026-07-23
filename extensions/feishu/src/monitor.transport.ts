@@ -1,4 +1,6 @@
-import * as http from "http";
+// Feishu plugin module implements monitor.transport behavior.
+import crypto from "node:crypto";
+import * as http from "node:http";
 import * as Lark from "@larksuiteoapi/node-sdk";
 import {
   applyBasicWebhookRequestGuards,

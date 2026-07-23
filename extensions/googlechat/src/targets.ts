@@ -1,3 +1,4 @@
+// Googlechat plugin module implements targets behavior.
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { ResolvedGoogleChatAccount } from "./accounts.js";
 import { findGoogleChatDirectMessage } from "./api.js";

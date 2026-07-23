@@ -1,3 +1,4 @@
+// Msteams plugin module implements messenger behavior.
 import {
   type ChunkMode,
   isSilentReplyText,

@@ -1,3 +1,4 @@
+// Resolves cleanup inputs from current RemoteClaw config and state paths.
 import {
   loadConfig,
   resolveConfigPath,
@@ -7,6 +8,7 @@ import {
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { buildCleanupPlan } from "./cleanup-utils.js";
 
+/** Build the cleanup plan for the current runtime config/state/credential paths on disk. */
 export function resolveCleanupPlanFromDisk(): {
   cfg: RemoteClawConfig;
   stateDir: string;

@@ -1,3 +1,6 @@
+/**
+ * Parses exec approval tool output and formats denial messages for users.
+ */
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 
 /**
@@ -12,7 +15,7 @@ export const MODULE_ATTESTATIONS = {
   formatExecDeniedUserMessage: "live",
 } as const;
 
-export type ExecApprovalResult =
+type ExecApprovalResult =
   | {
       kind: "denied";
       raw: string;

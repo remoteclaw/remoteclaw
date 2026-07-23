@@ -1,3 +1,4 @@
+// Covers model hygiene audit findings and provider routing risks.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { collectModelHygieneFindings } from "./audit-extra.sync.js";

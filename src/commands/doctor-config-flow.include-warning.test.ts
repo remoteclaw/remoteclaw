@@ -1,3 +1,4 @@
+// Doctor config-flow include-warning tests cover config include warnings during repair.
 import { describe, expect, it, vi } from "vitest";
 import { withTempHomeConfig } from "../config/test-helpers.js";
 import { note } from "../terminal/note.js";

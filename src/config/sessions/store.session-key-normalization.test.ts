@@ -1,3 +1,4 @@
+// Store session key tests cover session key normalization during disk writes.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";

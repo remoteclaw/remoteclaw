@@ -1,4 +1,11 @@
 /**
+ * Stable stringify helper.
+ * Serializes arbitrary values with deterministic key ordering and explicit
+ * handling for errors, binary data, bigint, non-finite numbers, and cycles.
+ */
+import { Buffer } from "node:buffer";
+
+/**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
  * attestations for the category definitions and the convention for
@@ -7,6 +14,8 @@
 export const MODULE_ATTESTATIONS = {
   stableStringify: "live",
 } as const;
+
+/** Deterministically stringifies unknown values for cache keys and diagnostics. */
 export function stableStringify(value: unknown): string {
   return stringifyStableValue(value, new WeakSet());
 }

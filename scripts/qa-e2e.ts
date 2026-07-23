@@ -1,3 +1,4 @@
+// Qa E2E script supports RemoteClaw repository automation.
 import { pathToFileURL } from "node:url";
 
 export function enablePrivateQaScriptEnv(env: NodeJS.ProcessEnv = process.env) {

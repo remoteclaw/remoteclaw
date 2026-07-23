@@ -1,19 +1,32 @@
+/**
+ * Subagent run timeout math.
+ *
+ * Separates timer-safe delays from duration/deadline values because setTimeout has stricter bounds.
+ */
 import {
   asDateTimestampMs,
   finiteSecondsToTimerSafeMilliseconds,
 } from "../shared/number-coercion.js";
 import type { SubagentRunRecord } from "./subagent-registry.types.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   resolveSubagentRunTimerDelayMs: "live",
   resolveSubagentRunDurationMs: "live",
   resolveSubagentRunDeadlineMs: "live",
 } as const;
 
+/** Convert subagent timeout seconds to a timer-safe delay. */
 export function resolveSubagentRunTimerDelayMs(timeoutSeconds: unknown): number | undefined {
   return finiteSecondsToTimerSafeMilliseconds(timeoutSeconds, { floorSeconds: true });
 }
 
+/** Convert subagent timeout seconds to a finite millisecond duration. */
 export function resolveSubagentRunDurationMs(timeoutSeconds: unknown): number | undefined {
   if (
     typeof timeoutSeconds !== "number" ||
@@ -26,6 +39,7 @@ export function resolveSubagentRunDurationMs(timeoutSeconds: unknown): number | 
   return Number.isSafeInteger(durationMs) && durationMs > 0 ? durationMs : undefined;
 }
 
+/** Resolve the absolute timeout deadline for a subagent run. */
 export function resolveSubagentRunDeadlineMs(
   entry: Pick<SubagentRunRecord, "createdAt" | "startedAt" | "runTimeoutSeconds">,
   observedStartedAt?: number,

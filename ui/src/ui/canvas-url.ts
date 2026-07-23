@@ -1,3 +1,4 @@
+// Control UI module implements canvas url behavior.
 const A2UI_PATH = "/__remoteclaw__/a2ui";
 const CANVAS_HOST_PATH = "/__remoteclaw__/canvas";
 const CANVAS_CAPABILITY_PATH_PREFIX = "/__remoteclaw__/cap";

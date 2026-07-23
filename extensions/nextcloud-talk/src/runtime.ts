@@ -1,3 +1,4 @@
+// Nextcloud Talk plugin module implements runtime behavior.
 import { createPluginRuntimeStore } from "remoteclaw/plugin-sdk/runtime-store";
 import type { PluginRuntime } from "remoteclaw/plugin-sdk/runtime-store";
 

@@ -1,3 +1,4 @@
+// Discord tests cover thread bindingsiscord api plugin behavior.
 import { ChannelType } from "discord-api-types/v10";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";

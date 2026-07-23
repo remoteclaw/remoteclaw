@@ -1,3 +1,4 @@
+// Mattermost tests cover slash http plugin behavior.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { PassThrough } from "node:stream";
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/mattermost";

@@ -1,3 +1,4 @@
+// Route resolution tests cover resolving channel route targets from input.
 import { describe, expect, test, vi } from "vitest";
 import type { ChatType } from "../channels/chat-type.js";
 import type { RemoteClawConfig } from "../config/config.js";

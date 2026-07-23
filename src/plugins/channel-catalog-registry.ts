@@ -1,3 +1,4 @@
+// Maintains channel catalog entries advertised by plugins.
 import { normalizeOptionalString as resolveOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { PluginInstallRecord } from "../config/types.plugins.js";
 import { discoverRemoteClawPlugins, type PluginDiscoveryResult } from "./discovery.js";

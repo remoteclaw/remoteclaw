@@ -1,6 +1,8 @@
+// Model override provenance detects fallback-generated selections that resets should drop.
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { SessionEntry } from "./types.js";
 
+/** Detects model overrides created by automatic fallback provenance. */
 export function hasSessionAutoModelFallbackProvenance(
   entry:
     | Pick<

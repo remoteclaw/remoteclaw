@@ -1,3 +1,5 @@
+/** Collects text block payloads from provider-style structured content arrays. */
+
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module

@@ -1,3 +1,4 @@
+// Parses gateway process command lines for process discovery.
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";
 

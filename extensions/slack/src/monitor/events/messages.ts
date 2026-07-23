@@ -1,3 +1,4 @@
+// Slack plugin module implements messages behavior.
 import type { SlackEventMiddlewareArgs } from "@slack/bolt";
 import { danger } from "../../../../../src/globals.js";
 import { enqueueSystemEvent } from "../../../../../src/infra/system-events.js";

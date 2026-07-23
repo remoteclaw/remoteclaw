@@ -1,3 +1,4 @@
+// Covers APNs HTTP/2 session and proxy behavior.
 import type http2 from "node:http2";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HttpConnectTunnelParams } from "./net/http-connect-tunnel.js";

@@ -1,3 +1,4 @@
+// Covers diagnostic flag matching and normalization.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {

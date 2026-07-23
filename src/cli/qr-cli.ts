@@ -1,3 +1,4 @@
+// QR/setup-code CLI for mobile/device pairing with local or remote Gateway credentials.
 import type { Command } from "commander";
 import qrcode from "qrcode-terminal";
 import { loadConfig } from "../config/config.js";
@@ -42,6 +43,7 @@ function shouldResolveLocalGatewayPasswordSecret(
   cfg: ReturnType<typeof loadConfig>,
   env: NodeJS.ProcessEnv,
 ): boolean {
+  // Default/implicit password auth may require resolving a local SecretRef before encoding setup.
   if (trimToUndefined(env.REMOTECLAW_GATEWAY_PASSWORD)) {
     return false;
   }

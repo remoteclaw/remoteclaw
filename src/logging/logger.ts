@@ -1,3 +1,4 @@
+// Logger implementation writes structured log output with redaction and transports.
 import fs from "node:fs";
 import path from "node:path";
 import { Logger as TsLogger } from "tslog";

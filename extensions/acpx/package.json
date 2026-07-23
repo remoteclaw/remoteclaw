@@ -7,6 +7,6 @@
     "@agentclientprotocol/claude-agent-acp": "0.37.0",
     "@zed-industries/codex-acp": "0.15.0",
     "acpx": "0.10.0",
-    "zod": "4.4.3"
+    "zod": "^4.3.6"
   }
 }

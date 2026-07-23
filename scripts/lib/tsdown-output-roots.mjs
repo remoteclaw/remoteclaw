@@ -1,7 +1,6 @@
 const TSDOWN_PACKAGE_NAMES = [
   "agent-core",
   "gateway-client",
-  "gateway-protocol",
   "llm-core",
   "llm-runtime",
   "markdown-core",

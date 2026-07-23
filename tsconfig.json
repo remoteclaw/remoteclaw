@@ -23,8 +23,6 @@
       "remoteclaw/plugin-sdk/account-id": ["./src/plugin-sdk/account-id.ts"],
       "@remoteclaw/acp-core": ["./packages/acp-core/src/index.ts"],
       "@remoteclaw/acp-core/*": ["./packages/acp-core/src/*.ts"],
-      "@remoteclaw/gateway-protocol": ["./packages/gateway-protocol/src/index.ts"],
-      "@remoteclaw/gateway-protocol/*": ["./packages/gateway-protocol/src/*.ts"],
       "@remoteclaw/llm-core": ["./packages/llm-core/src/index.ts"],
       "@remoteclaw/llm-core/*": ["./packages/llm-core/src/*.ts"],
       "@remoteclaw/markdown-core": ["./packages/markdown-core/src/index.ts"],

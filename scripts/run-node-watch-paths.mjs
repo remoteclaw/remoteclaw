@@ -9,7 +9,6 @@ const RUN_NODE_PACKAGE_SOURCE_ROOTS = [
   // while pnpm dev/watch still runs the root dist entrypoint. Treat them like
   // src/ so edits restart the same process that consumes them.
   "packages/gateway-client/src",
-  "packages/gateway-protocol/src",
   "packages/markdown-core/src",
   "packages/media-core/src",
   "packages/media-generation-core/src",

@@ -446,6 +446,9 @@ describe("sms inbound webhook — authorization is default-deny", () => {
       runtime: allowed,
       account: baseAccount({ dmPolicy: "pairing", allowFrom: [] }),
       signature: "valid",
+      // Distinct MessageSid: this is a SECOND inbound message, not a redelivery
+      // of the one above, so it must not be swallowed by the replay dedup.
+      form: formBody({ MessageSid: "SM00000000000000000000000000000002" }),
     });
     expect(allowedResult.status).toBe(200);
     expect(allowed.dispatchReply).toHaveBeenCalledTimes(1);
@@ -566,6 +569,54 @@ describe("sms inbound webhook — delivery seam", () => {
     expect(logged).not.toContain(SENTINEL_TOKEN);
     // And nothing is echoed to the caller either.
     expect(result.body).not.toContain(SENTINEL_TOKEN);
+  });
+});
+
+describe("sms inbound webhook — MessageSid replay dedup", () => {
+  it("delivers a MessageSid ONCE: the replayed POST is ACKed but never re-delivered", async () => {
+    // Twilio signatures carry no timestamp or nonce, so this second request is
+    // byte-identical to the first and just as signature-valid (#3035).
+    const spies = createRuntime();
+    const form = formBody({ MessageSid: "SM000000000000000000000000000000aa" });
+
+    const first = await post({ runtime: spies, signature: "valid", form });
+    const replay = await post({ runtime: spies, signature: "valid", form });
+
+    expect(first.status).toBe(200);
+    // The replay is ACKed exactly like the original — it learns nothing from
+    // the response, and a legitimate Twilio retry is satisfied.
+    expect(replay.status).toBe(200);
+    expect(replay.body).toBe("<Response></Response>");
+
+    // The real delivery seam ran exactly once: the replay never reached the
+    // runtime, the session store, or the outbound SMS path.
+    expect(spies.dispatchReply).toHaveBeenCalledTimes(1);
+    expect(spies.finalizeInboundContext).toHaveBeenCalledTimes(1);
+    expect(spies.recordInboundSession).toHaveBeenCalledTimes(1);
+    expect(sendSmsTextChunks).toHaveBeenCalledTimes(1);
+  });
+
+  it("delivers BOTH when two POSTs carry different MessageSids", async () => {
+    // Identical body, different sid: the dedup must key on the sid alone and
+    // must not coalesce two genuinely distinct inbound messages.
+    const spies = createRuntime();
+
+    const first = await post({
+      runtime: spies,
+      signature: "valid",
+      form: formBody({ MessageSid: "SM000000000000000000000000000000ab" }),
+    });
+    const second = await post({
+      runtime: spies,
+      signature: "valid",
+      form: formBody({ MessageSid: "SM000000000000000000000000000000ac" }),
+    });
+
+    expect(first.status).toBe(200);
+    expect(second.status).toBe(200);
+    expect(spies.dispatchReply).toHaveBeenCalledTimes(2);
+    expect(spies.finalizeInboundContext).toHaveBeenCalledTimes(2);
+    expect(sendSmsTextChunks).toHaveBeenCalledTimes(2);
   });
 });
 

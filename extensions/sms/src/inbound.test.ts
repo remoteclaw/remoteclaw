@@ -157,6 +157,8 @@ type PostOptions = {
   method?: string;
   log?: { info?: unknown; warn?: unknown; error?: unknown; debug?: unknown };
   path?: string;
+  /** Token used to SIGN the request; defaults to the module-level AUTH_TOKEN. */
+  signingToken?: string;
 };
 
 async function post(options: PostOptions = {}): Promise<{ status: number; body: string }> {
@@ -187,7 +189,11 @@ async function post(options: PostOptions = {}): Promise<{ status: number; body: 
         headers["x-twilio-signature"] =
           options.signature === "invalid"
             ? "AAAAAAAAAAAAAAAAAAAAAAAAAAA="
-            : computeTwilioSignature({ url: PUBLIC_URL, authToken: AUTH_TOKEN, form });
+            : computeTwilioSignature({
+                url: PUBLIC_URL,
+                authToken: options.signingToken ?? AUTH_TOKEN,
+                form,
+              });
       }
       const response = await fetch(`${baseUrl}${options.path ?? "/webhooks/sms"}`, {
         method: options.method ?? "POST",
@@ -522,6 +528,44 @@ describe("sms inbound webhook — delivery seam", () => {
 
     expect(result.status).toBe(200);
     expect(error).toHaveBeenCalled();
+  });
+
+  it("never writes the account auth token into the catch-path log", async () => {
+    // The top-level catch is the one place that logs an arbitrary downstream
+    // failure, and it has the whole `account` (auth token included) in scope.
+    // Pin that the line it emits is built from the account id and the error
+    // only — a future "log the account for debugging" edit must fail here
+    // rather than spill a Twilio credential into the gateway log.
+    const SENTINEL_TOKEN = "sentinel-token-must-never-be-logged";
+    const spies = createRuntime();
+    // Fail a post-signature downstream seam so the catch is what runs.
+    spies.finalizeInboundContext.mockImplementation(() => {
+      throw new Error("downstream seam exploded");
+    });
+    const log = { error: vi.fn(), warn: vi.fn(), info: vi.fn(), debug: vi.fn() };
+
+    const result = await post({
+      runtime: spies,
+      account: baseAccount({ authToken: SENTINEL_TOKEN }),
+      signingToken: SENTINEL_TOKEN,
+      signature: "valid",
+      log,
+    });
+
+    // The request got far enough to hit the catch (signature verified against
+    // the sentinel token, so the token really was the live credential here).
+    expect(result.status).toBe(200);
+    expect(spies.finalizeInboundContext).toHaveBeenCalledTimes(1);
+    expect(log.error).toHaveBeenCalled();
+
+    const logged = [log.error, log.warn, log.info, log.debug]
+      .flatMap((fn) => fn.mock.calls)
+      .map((call) => String(call[0]))
+      .join("\n");
+    expect(logged).toContain("inbound webhook failed");
+    expect(logged).not.toContain(SENTINEL_TOKEN);
+    // And nothing is echoed to the caller either.
+    expect(result.body).not.toContain(SENTINEL_TOKEN);
   });
 });
 

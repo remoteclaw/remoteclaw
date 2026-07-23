@@ -627,3 +627,54 @@ describe("Twilio SMS helpers", () => {
     ).toBe("https://gateway.example.com:443/webhooks/sms");
   });
 });
+
+describe("Twilio SMS webhook signature URL is built from config, not the request", () => {
+  // Anti-forgery pin. Twilio signs the public URL *string*, so the scheme,
+  // host, and path of the URL we re-sign must come from operator config
+  // (`publicWebhookUrl`). Only the request's search string is ever borrowed,
+  // and only when the configured URL does not already pin one. If this ever
+  // starts reading `Host` / `X-Forwarded-Host`, an attacker who can set those
+  // headers picks the string we HMAC and the signature gate stops meaning
+  // anything.
+  it("takes scheme/host/path from publicWebhookUrl and ignores request headers", () => {
+    // Configured URL carries no query: the request's search string is appended.
+    expect(
+      resolveTwilioWebhookSignatureUrl({
+        req: { url: "/webhooks/sms?a=1&b=2" } as never,
+        publicWebhookUrl: "https://gateway.example.com/webhooks/sms",
+      }),
+    ).toBe("https://gateway.example.com/webhooks/sms?a=1&b=2");
+
+    // Configured URL already pins a query: it wins, request search ignored.
+    expect(
+      resolveTwilioWebhookSignatureUrl({
+        req: { url: "/webhooks/sms?a=1&b=2" } as never,
+        publicWebhookUrl: "https://gateway.example.com/webhooks/sms?tenant=support",
+      }),
+    ).toBe("https://gateway.example.com/webhooks/sms?tenant=support");
+
+    // A fragment stays last: the borrowed query is spliced in before it.
+    expect(
+      resolveTwilioWebhookSignatureUrl({
+        req: { url: "/webhooks/sms?a=1&b=2" } as never,
+        publicWebhookUrl: "https://gateway.example.com/webhooks/sms#section",
+      }),
+    ).toBe("https://gateway.example.com/webhooks/sms?a=1&b=2#section");
+
+    // Forged authority headers cannot move the signed URL onto another origin:
+    // the result is byte-identical to the same request carrying no headers.
+    const forged = resolveTwilioWebhookSignatureUrl({
+      req: {
+        url: "/webhooks/sms?a=1&b=2",
+        headers: {
+          host: "attacker.example.net",
+          "x-forwarded-host": "attacker.example.net",
+          "x-forwarded-proto": "http",
+        },
+      } as never,
+      publicWebhookUrl: "https://gateway.example.com/webhooks/sms",
+    });
+    expect(forged).toBe("https://gateway.example.com/webhooks/sms?a=1&b=2");
+    expect(forged).not.toContain("attacker.example.net");
+  });
+});

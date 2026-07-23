@@ -4,6 +4,7 @@ import type { RuntimeEnv } from "../runtime.js";
 
 const mocks = vi.hoisted(() => ({
   text: vi.fn(),
+  password: vi.fn(),
   select: vi.fn(),
   confirm: vi.fn(),
   resolveGatewayPort: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock("../config/config.js", async (importActual) => {
 
 vi.mock("./configure.shared.js", () => ({
   text: mocks.text,
+  password: mocks.password,
   select: mocks.select,
   confirm: mocks.confirm,
 }));
@@ -76,6 +78,7 @@ async function runGatewayPrompt(params: {
     return input.initialValue ?? input.options[0]?.value;
   });
   mocks.text.mockImplementation(async () => params.textQueue.shift());
+  mocks.password.mockImplementation(async () => params.textQueue.shift());
   mocks.randomToken.mockReturnValue(params.randomToken ?? "generated-token");
   mocks.confirm.mockResolvedValue(params.confirmResult ?? true);
   mocks.buildGatewayAuthConfig.mockImplementation((input) =>
@@ -114,6 +117,9 @@ describe("promptGatewayConfig", () => {
       authConfigFactory: ({ mode, token, password }) => ({ mode, token, password }),
     });
     expect(result.token).toBe("generated-token");
+    expect(mocks.password).toHaveBeenCalledWith(
+      expect.objectContaining({ message: "Gateway token (blank to generate)" }),
+    );
   });
 
   it("does not set password to literal 'undefined' when prompt returns undefined", async () => {
@@ -125,6 +131,12 @@ describe("promptGatewayConfig", () => {
     });
     expect(call.password).not.toBe("undefined");
     expect(call.password).toBe("");
+    expect(mocks.password).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: "Gateway password",
+        validate: expect.any(Function),
+      }),
+    );
   });
 
   it("prompts for trusted-proxy configuration when trusted-proxy mode selected", async () => {

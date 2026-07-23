@@ -223,8 +223,8 @@ This is the deterministic model-bound layer stack RemoteClaw can snapshot for th
     "roughTokens": 0
   },
   "dynamicToolsJson": {
-    "chars": 43930,
-    "roughTokens": 10983
+    "chars": 44933,
+    "roughTokens": 11234
   },
   "remoteClawDeveloperInstructions": {
     "chars": 1964,
@@ -235,8 +235,8 @@ This is the deterministic model-bound layer stack RemoteClaw can snapshot for th
     "roughTokens": 6544
   },
   "totalWithDynamicToolsJson": {
-    "chars": 70108,
-    "roughTokens": 17527
+    "chars": 71111,
+    "roughTokens": 17778
   },
   "userInputText": {
     "chars": 1129,

@@ -444,7 +444,12 @@ export function resolveAugmentedPluginNpmPackageJson(params) {
     remoteclaw: {
       ...plan.packageJson.remoteclaw,
       runtimeExtensions: plan.runtimeExtensions,
-      ...(plan.runtimeSetupEntry ? { runtimeSetupEntry: plan.runtimeSetupEntry } : {}),
+      ...(plan.runtimeSetupEntry
+        ? {
+            setupEntry: plan.runtimeSetupEntry,
+            runtimeSetupEntry: plan.runtimeSetupEntry,
+          }
+        : {}),
     },
   };
   if (shouldBundleDependencies(params.bundleDependencies, plan.packageJson)) {

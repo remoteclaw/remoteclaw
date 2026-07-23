@@ -189,7 +189,7 @@ function formatReport(fileReports) {
   return lines.join("\n");
 }
 
-function main() {
+async function main() {
   const [baseSha, headSha] = process.argv.slice(2);
   if (!baseSha || !headSha) {
     console.error("Usage: check-attestations-diff.mjs <base-sha> <head-sha>");

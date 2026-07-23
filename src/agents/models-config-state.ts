@@ -12,12 +12,19 @@ export const MODULE_ATTESTATIONS = {
 } as const;
 const MODELS_JSON_STATE_KEY = Symbol.for("remoteclaw.modelsJsonState");
 
+export type ModelsJsonReadyResult = {
+  agentDir: string;
+  wrote: boolean;
+};
+
+export type ModelsJsonReadyState = {
+  fingerprint: string;
+  result: ModelsJsonReadyResult;
+};
+
 type ModelsJsonState = {
   writeLocks: Map<string, Promise<void>>;
-  readyCache: Map<
-    string,
-    Promise<{ fingerprint: string; result: { agentDir: string; wrote: boolean } }>
-  >;
+  readyCache: Map<string, Promise<ModelsJsonReadyState>>;
 };
 
 export const MODELS_JSON_STATE = (() => {
@@ -27,10 +34,7 @@ export const MODELS_JSON_STATE = (() => {
   if (!globalState[MODELS_JSON_STATE_KEY]) {
     globalState[MODELS_JSON_STATE_KEY] = {
       writeLocks: new Map<string, Promise<void>>(),
-      readyCache: new Map<
-        string,
-        Promise<{ fingerprint: string; result: { agentDir: string; wrote: boolean } }>
-      >(),
+      readyCache: new Map<string, Promise<ModelsJsonReadyState>>(),
     };
   }
   return globalState[MODELS_JSON_STATE_KEY];

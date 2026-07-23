@@ -974,7 +974,7 @@ export type PluginHookRegistration<K extends PluginHookName = PluginHookName> = 
 
 // --- Migration provider types (`remoteclaw migrate` + plugin-sdk/migration.ts) ---
 // Restored from upstream OpenClaw's migration block. Fork adaptations vs upstream:
-//   - OpenClawConfig → RemoteClawConfig.
+//   - RemoteClawConfig → RemoteClawConfig.
 //   - MigrationProviderContext.runtime exposes a self-contained OPTIONAL config API
 //     (current/mutateConfigFile) instead of the fork's PluginRuntime, whose config was
 //     gutted to { loadConfig, writeConfigFile }. migration.ts guards both methods with

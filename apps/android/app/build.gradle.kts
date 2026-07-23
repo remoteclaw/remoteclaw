@@ -41,7 +41,7 @@ plugins {
 
 android {
   namespace = "org.remoteclaw.app"
-  compileSdk = 36
+  compileSdk = 37
 
   // Release signing is local-only; keep the keystore path and passwords out of the repo.
   signingConfigs {
@@ -65,8 +65,8 @@ android {
     applicationId = "org.remoteclaw.app"
     minSdk = 31
     targetSdk = 36
-    versionCode = 2026060501
-    versionName = "2026.6.5"
+    versionCode = 2026060801
+    versionName = "2026.6.8"
     ndk {
       // Support all major ABIs — native libs are tiny (~47 KB per ABI)
       abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")

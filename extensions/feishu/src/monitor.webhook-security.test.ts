@@ -141,9 +141,9 @@ async function withRunningWebhookMonitor(
   }
 }
 
-afterEach(() => {
+afterEach(async () => {
   clearFeishuWebhookRateLimitStateForTest();
-  stopFeishuMonitor();
+  await stopFeishuMonitor();
 });
 
 describe("Feishu webhook security hardening", () => {

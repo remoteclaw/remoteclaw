@@ -1,3 +1,8 @@
+/**
+ * Subagent requester store-key normalization.
+ *
+ * Converts raw requester session keys into the canonical registry key shape.
+ */
 import {
   resolveAgentIdFromSessionKey,
   resolveMainSessionKey,
@@ -19,6 +24,7 @@ type RequesterStoreKeyConfig = {
   agents?: { list?: Array<{ id?: string; default?: boolean }> };
 };
 
+/** Resolve the canonical store key for a subagent requester session. */
 export function resolveRequesterStoreKey(
   cfg: RequesterStoreKeyConfig | undefined,
   requesterSessionKey: string,

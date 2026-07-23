@@ -1,3 +1,4 @@
+// Generates setup codes used to pair external channels with RemoteClaw.
 import os from "node:os";
 import { resolveGatewayPort } from "../config/paths.js";
 import type { RemoteClawConfig } from "../config/types.js";

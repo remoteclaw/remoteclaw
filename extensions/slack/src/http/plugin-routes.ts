@@ -1,3 +1,4 @@
+// Slack plugin module implements plugin routes behavior.
 import { DEFAULT_ACCOUNT_ID } from "remoteclaw/plugin-sdk/account-id";
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/channel-plugin-common";
 import { normalizeSlackWebhookPath } from "./paths.js";

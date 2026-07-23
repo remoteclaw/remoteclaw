@@ -1,3 +1,4 @@
+// Telegram type declarations define plugin contracts.
 import type { Bot } from "grammy";
 import type { HistoryEntry } from "../../../src/auto-reply/reply/history.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";

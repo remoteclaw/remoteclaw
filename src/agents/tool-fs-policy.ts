@@ -1,4 +1,9 @@
-import type { RemoteClawConfig } from "../config/config.js";
+/**
+ * Tool filesystem policy resolver.
+ *
+ * Combines global and agent fs/tool policy into workspace-only and root-expansion decisions.
+ */
+import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { resolveAgentConfig } from "./agent-scope.js";
 
 /**

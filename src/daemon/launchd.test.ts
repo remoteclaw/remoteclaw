@@ -1,3 +1,4 @@
+// Launchd tests cover macOS service plist generation and command handling.
 import { PassThrough } from "node:stream";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {

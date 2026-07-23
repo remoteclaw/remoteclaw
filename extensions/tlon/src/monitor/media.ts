@@ -1,3 +1,4 @@
+// Tlon plugin module implements media behavior.
 import { randomUUID } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { mkdir } from "node:fs/promises";

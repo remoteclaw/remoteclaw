@@ -1,3 +1,4 @@
+// Shared types for applying auth-choice selections during onboarding and agent setup.
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import type { RuntimeEnv } from "../runtime.js";
 import type { WizardPrompter } from "../wizard/prompts.js";

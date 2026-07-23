@@ -1,3 +1,4 @@
+/** Cron service dependency, event, state, and public result types. */
 import type { CronConfig } from "../../config/types.cron.js";
 import type { HeartbeatRunResult, HeartbeatWakeRequest } from "../../infra/heartbeat-wake.js";
 import type {
@@ -121,6 +122,13 @@ export type CronServiceDeps = {
       delivery?: CronDeliveryTrace;
     } & CronRunOutcome &
       CronRunTelemetry
+  >;
+  runCommandJob?: (params: { job: CronJob; abortSignal?: AbortSignal }) => Promise<
+    {
+      delivered?: boolean;
+      deliveryAttempted?: boolean;
+      delivery?: CronDeliveryTrace;
+    } & CronRunOutcome
   >;
   cleanupTimedOutAgentRun?: (params: {
     job: CronJob;

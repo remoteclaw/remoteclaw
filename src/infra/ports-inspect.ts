@@ -1,3 +1,4 @@
+// Inspects gateway port listeners and connection state.
 import os from "node:os";
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import { runCommandWithTimeout } from "../process/exec.js";

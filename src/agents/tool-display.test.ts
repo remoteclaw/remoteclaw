@@ -1,3 +1,7 @@
+/**
+ * Regression coverage for compact tool display formatting.
+ * Ensures tool names, actions, and details stay readable and redacted.
+ */
 import { describe, expect, it } from "vitest";
 import { formatToolDetail, resolveToolDisplay } from "./tool-display.js";
 
@@ -86,6 +90,23 @@ describe("tool display details", () => {
     );
 
     expect(detail).toBe('for "RemoteClaw docs" (top 3)');
+  });
+
+  it("formats Parallel's native objective + search_queries shape", () => {
+    expect(
+      formatToolDetail(
+        resolveToolDisplay({
+          name: "web_search",
+          args: {
+            objective: "Find the RemoteClaw repository on GitHub",
+            search_queries: ["remoteclaw github", "remoteclaw repository"],
+            count: 5,
+          },
+        }),
+      ),
+    ).toBe(
+      'for "Find the RemoteClaw repository on GitHub", "remoteclaw github", "remoteclaw repository" (top 5)',
+    );
   });
 
   it("summarizes exec commands with context", () => {

@@ -1,10 +1,18 @@
+/**
+ * Environment-driven debug controls for model transport logging.
+ *
+ * Model adapters share these helpers so payload, SSE, and transport diagnostics
+ * interpret RemoteClaw debug environment variables consistently.
+ */
 import type { createSubsystemLogger } from "../logging/subsystem.js";
 
 type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 
 type ModelTransportDebugEnv = NodeJS.ProcessEnv;
 
+/** Payload debug detail levels accepted by `REMOTECLAW_DEBUG_MODEL_PAYLOAD`. */
 export type ModelPayloadDebugMode = "off" | "summary" | "tools" | "full-redacted";
+/** SSE debug detail levels accepted by `REMOTECLAW_DEBUG_SSE`. */
 export type ModelSseDebugMode = "off" | "events" | "peek";
 
 /**
@@ -35,6 +43,7 @@ function isTruthyEnv(value: unknown): boolean {
   );
 }
 
+/** Resolves model payload debug verbosity from `REMOTECLAW_DEBUG_MODEL_PAYLOAD`. */
 export function resolveModelPayloadDebugMode(
   env: ModelTransportDebugEnv = process.env,
 ): ModelPayloadDebugMode {
@@ -48,6 +57,7 @@ export function resolveModelPayloadDebugMode(
   return "off";
 }
 
+/** Resolves SSE stream debug verbosity from `REMOTECLAW_DEBUG_SSE`. */
 export function resolveModelSseDebugMode(
   env: ModelTransportDebugEnv = process.env,
 ): ModelSseDebugMode {
@@ -61,6 +71,7 @@ export function resolveModelSseDebugMode(
   return "off";
 }
 
+/** Returns whether any model transport debug channel is enabled. */
 export function isModelTransportDebugEnabled(env: ModelTransportDebugEnv = process.env): boolean {
   return (
     isTruthyEnv(env.REMOTECLAW_DEBUG_MODEL_TRANSPORT) ||
@@ -70,6 +81,7 @@ export function isModelTransportDebugEnabled(env: ModelTransportDebugEnv = proce
   );
 }
 
+/** Emits transport diagnostics at info level only when debug env explicitly enables them. */
 export function emitModelTransportDebug(log: SubsystemLogger, message: string): void {
   if (isModelTransportDebugEnabled()) {
     log.info(message);

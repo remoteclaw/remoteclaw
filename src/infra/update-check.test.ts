@@ -1,3 +1,4 @@
+// Covers update status, dependency status, and registry fetch helpers.
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";

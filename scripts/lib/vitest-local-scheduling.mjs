@@ -10,9 +10,19 @@ const LARGE_LOCAL_FULL_SUITE_VITEST_WORKERS = 2;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 
-function parsePositiveInt(value) {
-  const parsed = Number.parseInt(value ?? "", 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+function parsePositiveInt(value, label) {
+  const text = value?.trim();
+  if (!text) {
+    return null;
+  }
+  if (!/^\d+$/u.test(text)) {
+    throw new Error(`${label} must be a positive integer; got: ${value}`);
+  }
+  const parsed = Number(text);
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be a positive integer; got: ${value}`);
+  }
+  return parsed;
 }
 
 function isSystemThrottleDisabled(env) {
@@ -81,6 +91,9 @@ export function resolveLocalVitestScheduling(
 ) {
   const override = parsePositiveInt(
     env.REMOTECLAW_VITEST_MAX_WORKERS ?? env.REMOTECLAW_TEST_WORKERS,
+    env.REMOTECLAW_VITEST_MAX_WORKERS === undefined
+      ? "REMOTECLAW_TEST_WORKERS"
+      : "REMOTECLAW_VITEST_MAX_WORKERS",
   );
   if (override !== null) {
     const maxWorkers = clamp(override, 1, 16);

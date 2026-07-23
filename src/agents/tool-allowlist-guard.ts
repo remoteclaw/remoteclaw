@@ -1,5 +1,21 @@
+/**
+ * Explicit tool allowlist guard.
+ *
+ * Collects operator/user allowlist sources and explains when no callable tools remain.
+ */
 import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";
 import { normalizeToolList, normalizeToolName } from "./tool-policy.js";
+
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
+export const MODULE_ATTESTATIONS = {
+  collectExplicitToolAllowlistSources: "live",
+  buildEmptyExplicitToolAllowlistError: "live",
+} as const;
 
 type ExplicitToolAllowlistSource = {
   label: string;
@@ -7,11 +23,7 @@ type ExplicitToolAllowlistSource = {
   enforceWhenToolsDisabled?: boolean;
 };
 
-export const MODULE_ATTESTATIONS = {
-  collectExplicitToolAllowlistSources: "live",
-  buildEmptyExplicitToolAllowlistError: "live",
-} as const;
-
+/** Normalize explicit allowlist sources, dropping empty source entries. */
 export function collectExplicitToolAllowlistSources(
   sources: Array<{ label: string; allow?: string[]; enforceWhenToolsDisabled?: boolean }>,
 ): ExplicitToolAllowlistSource[] {
@@ -30,6 +42,7 @@ export function collectExplicitToolAllowlistSources(
   });
 }
 
+/** Build an actionable error when explicit allowlists remove every callable tool. */
 export function buildEmptyExplicitToolAllowlistError(params: {
   sources: ExplicitToolAllowlistSource[];
   callableToolNames: string[];

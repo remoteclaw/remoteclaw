@@ -1,3 +1,4 @@
+// Slack tests cover interactive replies plugin behavior.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../../src/config/config.js";
 import { isSlackInteractiveRepliesEnabled } from "./interactive-replies.js";

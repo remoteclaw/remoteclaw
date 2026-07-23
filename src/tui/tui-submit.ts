@@ -1,3 +1,4 @@
+// Handles TUI input submission and command dispatch.
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 
 export function createEditorSubmitHandler(params: {

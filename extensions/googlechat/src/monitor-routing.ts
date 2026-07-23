@@ -1,3 +1,4 @@
+// Googlechat plugin module implements monitor routing behavior.
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { createWebhookInFlightLimiter } from "remoteclaw/plugin-sdk/webhook-request-guards";
 import { registerWebhookTargetWithPluginRoute } from "remoteclaw/plugin-sdk/webhook-targets";

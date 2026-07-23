@@ -1,3 +1,5 @@
+// Gateway startup auth preparation.
+// Merges auth overrides, resolves secret refs, validates weak secrets, and generates fallbacks.
 import crypto from "node:crypto";
 import type {
   GatewayAuthConfig,

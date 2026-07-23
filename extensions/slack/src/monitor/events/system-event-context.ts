@@ -1,4 +1,5 @@
-import { logVerbose } from "../../../../../src/globals.js";
+// Slack plugin module implements system event context behavior.
+import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { authorizeSlackSystemEventSender } from "../auth.js";
 import { resolveSlackChannelLabel } from "../channel-config.js";
 import type { SlackMonitorContext } from "../context.js";

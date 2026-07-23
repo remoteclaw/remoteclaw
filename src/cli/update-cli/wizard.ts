@@ -1,3 +1,5 @@
+// Interactive updater entrypoint: resolves current install/channel state, prompts for
+// a target channel, then delegates the actual mutation to the non-interactive updater.
 import { confirm, isCancel } from "@clack/prompts";
 import { readConfigFileSnapshot } from "../../config/config.js";
 import {
@@ -12,6 +14,7 @@ import { theme } from "../../terminal/theme.js";
 import { parseTimeoutMsOrExit, type UpdateWizardOptions } from "./shared.js";
 import { updateCommand } from "./update-command.js";
 
+/** Run the TTY-only update wizard and preserve `updateCommand` as the single update executor. */
 export async function updateWizardCommand(opts: UpdateWizardOptions = {}): Promise<void> {
   if (!process.stdin.isTTY) {
     defaultRuntime.error(

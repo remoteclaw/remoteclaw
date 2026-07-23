@@ -1,3 +1,6 @@
+/**
+ * Resolves image sanitization limits for historical session messages.
+ */
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 /**
@@ -10,6 +13,7 @@ export const MODULE_ATTESTATIONS = {
   resolveImageSanitizationLimits: "live",
 } as const;
 
+// Image sanitization limits shared by tools and provider payload builders.
 export type ImageSanitizationLimits = {
   maxDimensionPx?: number;
   maxBytes?: number;
@@ -18,6 +22,7 @@ export type ImageSanitizationLimits = {
 export const DEFAULT_IMAGE_MAX_DIMENSION_PX = 1200;
 export const DEFAULT_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 
+/** Resolve configured image sanitization limits for agent payloads. */
 export function resolveImageSanitizationLimits(cfg?: RemoteClawConfig): ImageSanitizationLimits {
   const configured = cfg?.agents?.defaults?.imageMaxDimensionPx;
   if (typeof configured !== "number" || !Number.isFinite(configured)) {

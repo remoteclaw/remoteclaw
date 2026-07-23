@@ -1,3 +1,4 @@
+// Slack plugin module implements thread ts behavior.
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 const SLACK_THREAD_TS_PATTERN = /^\d+\.\d+$/;

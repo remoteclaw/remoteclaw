@@ -1,5 +1,7 @@
+/** Renders Linux systemd availability hints for gateway service commands. */
 import { formatCliCommand } from "../cli/command-format.js";
 
+/** Detects details that should get systemd availability repair hints. */
 export function isSystemdUnavailableDetail(detail?: string): boolean {
   if (!detail) {
     return false;
@@ -16,6 +18,7 @@ export function isSystemdUnavailableDetail(detail?: string): boolean {
 
 export function renderSystemdUnavailableHints(options: { wsl?: boolean } = {}): string[] {
   if (options.wsl) {
+    // WSL requires systemd opt-in at distro boot, not just a package install.
     return [
       "WSL2 needs systemd enabled: edit /etc/wsl.conf with [boot]\\nsystemd=true",
       "Then run: wsl --shutdown (from PowerShell) and reopen your distro.",

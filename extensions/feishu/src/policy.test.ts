@@ -1,3 +1,5 @@
+// Feishu tests cover policy plugin behavior.
+import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/core";
 import { describe, expect, it } from "vitest";
 import {
   isFeishuGroupAllowed,

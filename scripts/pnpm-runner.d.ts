@@ -1,3 +1,4 @@
+// Pnpm Runner.D script supports RemoteClaw repository automation.
 import type { ChildProcess, SpawnOptions } from "node:child_process";
 
 export type PnpmRunnerParams = {

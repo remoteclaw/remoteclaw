@@ -1,3 +1,4 @@
+// Channel route target tests cover target parsing and validation.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { collectChannelRouteTargets } from "./channel-route-targets.js";

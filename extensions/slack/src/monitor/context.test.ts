@@ -1,3 +1,4 @@
+// Slack tests cover context plugin behavior.
 import type { App } from "@slack/bolt";
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";

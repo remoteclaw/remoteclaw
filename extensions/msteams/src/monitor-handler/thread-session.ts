@@ -1,3 +1,4 @@
+// Msteams plugin module implements thread session behavior.
 import { resolveThreadSessionKeys } from "remoteclaw/plugin-sdk/routing";
 
 // Strip any trailing `:thread:<id>` segments from a session key. Thread ids are

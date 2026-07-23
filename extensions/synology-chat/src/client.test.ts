@@ -1,3 +1,4 @@
+// Synology Chat tests cover client plugin behavior.
 import { EventEmitter } from "node:events";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 

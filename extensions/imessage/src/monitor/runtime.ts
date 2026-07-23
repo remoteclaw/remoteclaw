@@ -1,5 +1,6 @@
-import { createNonExitingRuntime, type RuntimeEnv } from "../../../../src/runtime.js";
-import { normalizeStringEntries } from "../../../../src/shared/string-normalization.js";
+// Imessage plugin module implements runtime behavior.
+import { createNonExitingRuntime, type RuntimeEnv } from "remoteclaw/plugin-sdk/runtime-env";
+import { normalizeStringEntries } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { MonitorIMessageOpts } from "./types.js";
 
 export function resolveRuntime(opts: MonitorIMessageOpts): RuntimeEnv {

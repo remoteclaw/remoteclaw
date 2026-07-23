@@ -1,3 +1,4 @@
+// Feishu helper module supports config schema behavior.
 import { normalizeAccountId } from "remoteclaw/plugin-sdk/account-id";
 import { z } from "zod";
 export { z };

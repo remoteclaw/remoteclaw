@@ -17,7 +17,7 @@ tag, or full commit SHA as `ref`:
 ```bash
 gh workflow run full-release-validation.yml \
   --ref main \
-  -f ref=release/YYYY.M.D \
+  -f ref=release/YYYY.M.PATCH \
   -f provider=openai \
   -f mode=both \
   -f release_profile=stable
@@ -29,7 +29,7 @@ when validating an older release branch or tag.
 
 Package Acceptance normally builds the candidate tarball from the resolved
 `ref`, including full-SHA runs dispatched with `pnpm ci:full-release`. After a
-beta publish, pass `release_package_spec=remoteclaw@YYYY.M.D-beta.N` to reuse the
+beta publish, pass `release_package_spec=openclaw@YYYY.M.PATCH-beta.N` to reuse the
 shipped npm package across release checks, Package Acceptance, cross-OS,
 release-path Docker, and package Telegram. Use `package_acceptance_package_spec`
 only when Package Acceptance should intentionally prove a different package.
@@ -129,20 +129,20 @@ uses the broader OpenCode Go model shards instead.
 
 Use `rerun_group` to avoid repeating unrelated release boxes:
 
-| Handle              | Scope                                                                 |
-| ------------------- | --------------------------------------------------------------------- |
-| `all`               | All Full Release Validation stages.                                   |
-| `ci`                | Manual full CI child only.                                            |
-| `plugin-prerelease` | Plugin Prerelease child only.                                         |
-| `release-checks`    | All RemoteClaw Release Checks stages.                                 |
-| `install-smoke`     | Install Smoke through release checks.                                 |
-| `cross-os`          | Cross-OS release checks.                                              |
-| `live-e2e`          | Repo/live E2E and Docker release-path validation.                     |
-| `package`           | Package Acceptance.                                                   |
-| `qa`                | QA parity plus QA live lanes.                                         |
-| `qa-parity`         | QA parity lanes and report only.                                      |
-| `qa-live`           | QA live Matrix and Telegram only.                                     |
-| `npm-telegram`      | Published-package Telegram E2E; requires `npm_telegram_package_spec`. |
+| Handle              | Scope                                                                                           |
+| ------------------- | ----------------------------------------------------------------------------------------------- |
+| `all`               | All Full Release Validation stages.                                                             |
+| `ci`                | Manual full CI child only.                                                                      |
+| `plugin-prerelease` | Plugin Prerelease child only.                                                                   |
+| `release-checks`    | All OpenClaw Release Checks stages.                                                             |
+| `install-smoke`     | Install Smoke through release checks.                                                           |
+| `cross-os`          | Cross-OS release checks.                                                                        |
+| `live-e2e`          | Repo/live E2E and Docker release-path validation.                                               |
+| `package`           | Package Acceptance.                                                                             |
+| `qa`                | QA parity plus QA live lanes.                                                                   |
+| `qa-parity`         | QA parity lanes and report only.                                                                |
+| `qa-live`           | QA live Matrix/Telegram plus gated Discord, WhatsApp, and Slack lanes when enabled.             |
+| `npm-telegram`      | Published-package Telegram E2E; requires `release_package_spec` or `npm_telegram_package_spec`. |
 
 Use `live_suite_filter` with `rerun_group=live-e2e` when one live suite failed.
 Valid filter ids are defined in the reusable live/E2E workflow, including
@@ -151,6 +151,25 @@ Valid filter ids are defined in the reusable live/E2E workflow, including
 `live-gateway-minimax-docker`, `live-gateway-advisory-docker`,
 `live-cli-backend-docker`, `live-acp-bind-docker`, and
 `live-codex-harness-docker`.
+
+The `live-gateway-advisory-docker` handle is an aggregate rerun handle for its
+three provider shards, so it still fans out to all advisory Docker gateway jobs.
+
+Use `cross_os_suite_filter` with `rerun_group=cross-os` when one cross-OS lane
+failed. The filter accepts an OS id, a suite id, or an OS/suite pair, for
+example `windows/packaged-upgrade`, `windows`, or `packaged-fresh`. Cross-OS
+summaries include per-phase timings for packaged upgrade lanes, and long-running
+commands print heartbeat lines so a stuck Windows update is visible before the
+job timeout.
+
+QA release-check failures block normal release validation. Required OpenClaw
+dynamic tool drift in the standard tier also blocks the release-check verifier.
+Tideclaw alpha runs may still treat non-package-safety release-check lanes as
+advisory. When `live_suite_filter` explicitly requests a gated QA live lane such
+as Discord, WhatsApp, or Slack, the matching
+`OPENCLAW_RELEASE_QA_*_LIVE_CI_ENABLED` repo variable must be enabled; otherwise
+input capture fails instead of silently skipping the lane. Rerun `rerun_group=qa`,
+`qa-parity`, or `qa-live` when you need fresh QA evidence.
 
 ## Evidence to keep
 

@@ -1,3 +1,4 @@
+// Slack tests cover actionsownload file plugin behavior.
 import type { WebClient } from "@slack/web-api";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 

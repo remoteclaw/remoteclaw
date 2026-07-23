@@ -1,3 +1,4 @@
+// Matrix plugin module implements setup contract behavior.
 import { DEFAULT_ACCOUNT_ID, normalizeAccountId } from "remoteclaw/plugin-sdk/routing";
 
 export const matrixSingleAccountKeysToMove = [

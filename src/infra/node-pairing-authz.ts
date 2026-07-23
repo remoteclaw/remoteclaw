@@ -1,3 +1,4 @@
+// Maps node pairing command declarations to required operator scopes.
 import { NODE_SYSTEM_RUN_COMMANDS } from "./node-commands.js";
 
 export type NodeApprovalScope = "operator.pairing" | "operator.write" | "operator.admin";

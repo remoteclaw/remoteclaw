@@ -1,3 +1,4 @@
+// Control UI view renders nodes exec approvals screen content.
 import { html, nothing } from "lit";
 import type {
   ExecApprovalsAllowlistEntry,

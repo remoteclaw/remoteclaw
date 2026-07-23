@@ -1,3 +1,8 @@
+/**
+ * Subagent delivery state migration.
+ *
+ * Normalizes legacy flat registry rows into nested execution, completion, and delivery state.
+ */
 import type {
   PendingFinalDeliveryPayload,
   SubagentCompletionDeliveryState,
@@ -6,6 +11,12 @@ import type {
   SubagentRunRecord,
 } from "./subagent-registry.types.js";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   normalizeSubagentRunState: "live",
   ensureCompletionState: "live",
@@ -17,6 +28,7 @@ export const MODULE_ATTESTATIONS = {
   getDeliveryLastError: "live",
 } as const;
 
+/** Legacy flat fields accepted while restoring older subagent registry rows. */
 export type LegacySubagentRunRecord = SubagentRunRecord & {
   announceRetryCount?: number;
   lastAnnounceRetryAt?: number;
@@ -42,12 +54,25 @@ export type LegacySubagentRunRecord = SubagentRunRecord & {
   lastAnnounceDropReason?: SubagentCompletionDeliveryState["lastDropReason"];
 };
 
+// Delivery state used to name the steering lease "handoff"; normalize those
+// fields into the current steering names on restore.
+type LegacyDeliveryState = SubagentCompletionDeliveryState & {
+  handoffLeaseId?: string;
+  handoffLeasedAt?: number;
+  handoffInjectedAt?: number;
+};
+
+/** Normalizes legacy subagent run fields into nested execution/completion/delivery state. */
 export function normalizeSubagentRunState(entry: SubagentRunRecord): SubagentRunRecord {
   const legacy = entry as LegacySubagentRunRecord;
   entry.execution = mergeExecutionState(entry.execution, buildExecutionState(entry));
   entry.completion = mergeCompletionState(entry.completion, buildCompletionState(entry, legacy));
   entry.delivery = mergeDeliveryState(entry, entry.delivery, buildDeliveryState(entry, legacy));
-  // cleanupHandled is an in-process lock; after restart, unfinished cleanup must retry.
+  delete (entry.delivery as LegacyDeliveryState | undefined)?.handoffLeaseId;
+  delete (entry.delivery as LegacyDeliveryState | undefined)?.handoffLeasedAt;
+  delete (entry.delivery as LegacyDeliveryState | undefined)?.handoffInjectedAt;
+  // cleanupHandled is an in-process lock; after restart, unfinished cleanup must
+  // retry unless durable cleanup completion was recorded.
   if (
     entry.cleanupHandled === true &&
     typeof entry.cleanupCompletedAt !== "number" &&
@@ -80,6 +105,8 @@ export function normalizeSubagentRunState(entry: SubagentRunRecord): SubagentRun
   return entry;
 }
 
+// Current nested state wins, but restored legacy fields backfill missing values
+// so older registry rows keep their completion/delivery history.
 function mergeExecutionState(
   current: SubagentExecutionState | undefined,
   restored: SubagentExecutionState,
@@ -151,6 +178,7 @@ function buildExecutionState(entry: SubagentRunRecord): SubagentExecutionState {
   };
 }
 
+// Completion was historically stored in flat frozen-result fields.
 function buildCompletionState(
   entry: SubagentRunRecord,
   legacy: LegacySubagentRunRecord,
@@ -170,6 +198,8 @@ function buildCompletionState(
   };
 }
 
+// Delivery migration preserves terminal/suspended/pending semantics from the old
+// announce fields while defaulting live unended runs to not_required.
 function buildDeliveryState(
   entry: SubagentRunRecord,
   legacy: LegacySubagentRunRecord,
@@ -231,6 +261,7 @@ function buildDeliveryState(
   };
 }
 
+/** Ensures a run has a nested completion state object. */
 export function ensureCompletionState(entry: SubagentRunRecord): SubagentCompletionState {
   entry.completion ??= {
     required: entry.expectsCompletionMessage === true,
@@ -238,6 +269,7 @@ export function ensureCompletionState(entry: SubagentRunRecord): SubagentComplet
   return entry.completion;
 }
 
+/** Ensures a run has a nested delivery state object. */
 export function ensureDeliveryState(entry: SubagentRunRecord): SubagentCompletionDeliveryState {
   entry.delivery ??= {
     status: entry.expectsCompletionMessage === false ? "not_required" : "pending",
@@ -245,24 +277,29 @@ export function ensureDeliveryState(entry: SubagentRunRecord): SubagentCompletio
   return entry.delivery;
 }
 
+/** Resets delivery state to its initial status for the run's completion requirement. */
 export function clearDeliveryState(entry: SubagentRunRecord): void {
   entry.delivery = {
     status: entry.expectsCompletionMessage === false ? "not_required" : "pending",
   };
 }
 
+/** Returns true when delivery is suspended with a durable timestamp. */
 export function isDeliverySuspended(entry: SubagentRunRecord): boolean {
   return entry.delivery?.status === "suspended" && typeof entry.delivery.suspendedAt === "number";
 }
 
+/** Reads the current delivery attempt count. */
 export function getDeliveryAttemptCount(entry: SubagentRunRecord): number {
   return entry.delivery?.attemptCount ?? 0;
 }
 
+/** Reads the timestamp of the last delivery attempt. */
 export function getDeliveryLastAttemptAt(entry: SubagentRunRecord): number | undefined {
   return entry.delivery?.lastAttemptAt;
 }
 
+/** Reads the non-empty last delivery error. */
 export function getDeliveryLastError(entry: SubagentRunRecord): string | undefined {
   const error = entry.delivery?.lastError;
   return typeof error === "string" && error.trim() ? error : undefined;

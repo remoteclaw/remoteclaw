@@ -1,3 +1,4 @@
+// Msteams tests cover monitor.lifecycle plugin behavior.
 import { EventEmitter } from "node:events";
 import type { RemoteClawConfig, RuntimeEnv } from "remoteclaw/plugin-sdk/msteams";
 import { afterEach, describe, expect, it, vi } from "vitest";

@@ -1,3 +1,4 @@
+// Shared session chat type helpers expose cross-module chat type classification.
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 import { parseAgentSessionKey } from "./session-key-utils.js";
 

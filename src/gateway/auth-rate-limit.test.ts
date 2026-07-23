@@ -1,3 +1,5 @@
+// Auth rate-limit tests cover sliding-window, lockout, scope, loopback, and
+// cleanup behavior shared by gateway secret and device-token authentication.
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   AUTH_RATE_LIMIT_SCOPE_DEVICE_TOKEN,

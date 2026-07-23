@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+// Log file size cap tests cover truncation and rotation guards for log files.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

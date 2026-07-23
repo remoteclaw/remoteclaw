@@ -1,3 +1,4 @@
+// Agents delete tests cover config removal, workspace attestation cleanup, and binding updates.
 import fs from "node:fs/promises";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -158,7 +159,7 @@ describe("agents delete command", () => {
   });
 
   it("falls back to local deletion when the optional Gateway probe needs credentials", async () => {
-    await withStateDirEnv("openclaw-agents-delete-gateway-auth-", async ({ stateDir }) => {
+    await withStateDirEnv("remoteclaw-agents-delete-gateway-auth-", async ({ stateDir }) => {
       const now = Date.now();
       const cfg: RemoteClawConfig = {
         agents: {
@@ -183,7 +184,7 @@ describe("agents delete command", () => {
           {
             name: "GatewayCredentialsRequiredError",
             method: "agents.delete",
-            configPath: path.join(stateDir, "openclaw.json"),
+            configPath: path.join(stateDir, "remoteclaw.json"),
           },
         ),
       );
@@ -307,7 +308,7 @@ describe("agents delete command", () => {
   });
 
   it("skips workspace removal when another agent shares the same workspace (#70890)", async () => {
-    await withStateDirEnv("openclaw-agents-delete-shared-workspace-", async ({ stateDir }) => {
+    await withStateDirEnv("remoteclaw-agents-delete-shared-workspace-", async ({ stateDir }) => {
       const sharedWorkspace = path.join(stateDir, "workspace-shared");
       await fs.mkdir(sharedWorkspace, { recursive: true });
 
@@ -348,42 +349,47 @@ describe("agents delete command", () => {
   });
 
   it("skips workspace removal when another agent workspace overlaps a child path (#70890)", async () => {
-    await withStateDirEnv("openclaw-agents-delete-overlapping-workspace-", async ({ stateDir }) => {
-      const sharedWorkspace = path.join(stateDir, "workspace-shared");
-      const childWorkspace = path.join(sharedWorkspace, "ops-child");
-      await fs.mkdir(childWorkspace, { recursive: true });
+    await withStateDirEnv(
+      "remoteclaw-agents-delete-overlapping-workspace-",
+      async ({ stateDir }) => {
+        const sharedWorkspace = path.join(stateDir, "workspace-shared");
+        const childWorkspace = path.join(sharedWorkspace, "ops-child");
+        await fs.mkdir(childWorkspace, { recursive: true });
 
-      const now = Date.now();
-      const cfg: RemoteClawConfig = {
-        agents: {
-          list: [
-            { id: "main", workspace: sharedWorkspace },
-            { id: "ops", workspace: childWorkspace },
-          ],
-        },
-      } satisfies RemoteClawConfig;
-      await arrangeAgentsDeleteTest({
-        stateDir,
-        cfg,
-        deletedAgentId: "ops",
-        sessions: {
-          "agent:ops:main": { sessionId: "sess-ops-main", updatedAt: now + 1 },
-          "agent:main:main": { sessionId: "sess-main", updatedAt: now + 2 },
-        },
-      });
+        const now = Date.now();
+        const cfg: RemoteClawConfig = {
+          agents: {
+            list: [
+              { id: "main", workspace: sharedWorkspace },
+              { id: "ops", workspace: childWorkspace },
+            ],
+          },
+        } satisfies RemoteClawConfig;
+        await arrangeAgentsDeleteTest({
+          stateDir,
+          cfg,
+          deletedAgentId: "ops",
+          sessions: {
+            "agent:ops:main": { sessionId: "sess-ops-main", updatedAt: now + 1 },
+            "agent:main:main": { sessionId: "sess-main", updatedAt: now + 2 },
+          },
+        });
 
-      await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
+        await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
 
-      const output = readJsonLogs()[0];
-      expect(output?.workspaceRetained).toBe(true);
-      expect(output?.workspaceSharedWith).toEqual(["main"]);
-      const trashedPaths = fsSafeMocks.movePathToTrash.mock.calls.map(([targetPath]) => targetPath);
-      expect(trashedPaths).not.toContain(childWorkspace);
-    });
+        const output = readJsonLogs()[0];
+        expect(output?.workspaceRetained).toBe(true);
+        expect(output?.workspaceSharedWith).toEqual(["main"]);
+        const trashedPaths = fsSafeMocks.movePathToTrash.mock.calls.map(
+          ([targetPath]) => targetPath,
+        );
+        expect(trashedPaths).not.toContain(childWorkspace);
+      },
+    );
   });
 
   it("skips workspace removal when deleting a parent workspace that contains another agent workspace (#70890)", async () => {
-    await withStateDirEnv("openclaw-agents-delete-parent-workspace-", async ({ stateDir }) => {
+    await withStateDirEnv("remoteclaw-agents-delete-parent-workspace-", async ({ stateDir }) => {
       const sharedWorkspace = path.join(stateDir, "workspace-shared");
       const childWorkspace = path.join(sharedWorkspace, "main-child");
       await fs.mkdir(childWorkspace, { recursive: true });
@@ -420,7 +426,7 @@ describe("agents delete command", () => {
   it.runIf(process.platform !== "win32")(
     "skips workspace removal when another agent reaches the same directory through a symlink (#70890)",
     async () => {
-      await withStateDirEnv("openclaw-agents-delete-symlink-workspace-", async ({ stateDir }) => {
+      await withStateDirEnv("remoteclaw-agents-delete-symlink-workspace-", async ({ stateDir }) => {
         const realWorkspace = path.join(stateDir, "workspace-real");
         const aliasWorkspace = path.join(stateDir, "workspace-alias");
         await fs.mkdir(realWorkspace, { recursive: true });
@@ -459,7 +465,7 @@ describe("agents delete command", () => {
   );
 
   it("trashes workspace when no other agent shares it", async () => {
-    await withStateDirEnv("openclaw-agents-delete-unique-workspace-", async ({ stateDir }) => {
+    await withStateDirEnv("remoteclaw-agents-delete-unique-workspace-", async ({ stateDir }) => {
       const opsWorkspace = path.join(stateDir, "workspace-ops");
       const mainWorkspace = path.join(stateDir, "workspace-main");
       await fs.mkdir(opsWorkspace, { recursive: true });

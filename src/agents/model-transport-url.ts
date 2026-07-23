@@ -1,4 +1,10 @@
 /**
+ * Debug formatting helpers for model transport endpoints.
+ * Keeps logs useful without exposing credentials, request params, or fragments.
+ */
+/** Return a sanitized URL suitable for logs and diagnostics. */
+
+/**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
  * attestations for the category definitions and the convention for
@@ -8,7 +14,6 @@ export const MODULE_ATTESTATIONS = {
   formatModelTransportDebugUrl: "live",
   formatModelTransportDebugBaseUrl: "live",
 } as const;
-
 export function formatModelTransportDebugUrl(rawUrl: string): string {
   try {
     const parsed = new URL(rawUrl);
@@ -22,6 +27,7 @@ export function formatModelTransportDebugUrl(rawUrl: string): string {
   }
 }
 
+/** Format a configured base URL for debug output, or the implicit default. */
 export function formatModelTransportDebugBaseUrl(rawUrl: string | undefined): string {
   return rawUrl ? formatModelTransportDebugUrl(rawUrl) : "default";
 }

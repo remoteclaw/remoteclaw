@@ -1,3 +1,4 @@
+// Status, health, sessions, commitments, and task/flow command registration.
 import type { Command } from "commander";
 import { healthCommand } from "../../commands/health.js";
 import { sessionsCleanupCommand } from "../../commands/sessions-cleanup.js";
@@ -40,6 +41,7 @@ async function runWithVerboseAndTimeout(
   });
 }
 
+/** Register status/health plus persistent session/task inspection command groups. */
 export function registerStatusHealthSessionsCommands(program: Command) {
   program
     .command("status")

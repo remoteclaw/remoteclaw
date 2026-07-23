@@ -1,3 +1,4 @@
+// Config path helpers resolve plugin-visible state and config file locations from RemoteClaw config.
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 /** Resolve the config path prefix for a channel account, falling back to the root channel section. */

@@ -1,3 +1,4 @@
+// Synology Chat plugin module implements runtime behavior.
 import { createPluginRuntimeStore, type PluginRuntime } from "remoteclaw/plugin-sdk/runtime-store";
 
 const { setRuntime: setSynologyRuntime, getRuntime: getSynologyRuntime } =

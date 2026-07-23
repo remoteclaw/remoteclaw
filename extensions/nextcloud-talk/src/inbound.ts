@@ -1,3 +1,4 @@
+// Nextcloud Talk plugin module implements inbound behavior.
 import {
   GROUP_POLICY_BLOCKED_LABEL,
   createScopedPairingAccess,

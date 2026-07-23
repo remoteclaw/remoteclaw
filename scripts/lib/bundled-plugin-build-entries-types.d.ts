@@ -1,3 +1,4 @@
+// Bundled Plugin Build Entries Types.D script supports RemoteClaw repository automation.
 export type BundledPluginBuildEntry = {
   id: string;
   hasPackageJson: boolean;

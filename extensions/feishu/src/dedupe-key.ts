@@ -1,3 +1,4 @@
+// Feishu plugin module implements dedupe key behavior.
 import { asNullableRecord as readRecord } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { FeishuMessageEvent } from "./event-types.js";
 import { normalizeFeishuExternalKey } from "./external-keys.js";

@@ -1,9 +1,11 @@
+/** Applies workspace plugin allow/deny config before manifest records reach control-plane decisions. */
 import { normalizeOptionalLowercaseString } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import type { PluginManifestRecord } from "./manifest-registry.js";
 
 type PluginEntriesConfig = NonNullable<NonNullable<RemoteClawConfig["plugins"]>["entries"]>;
 
+/** Normalizes plugin ids used in config allow/deny/entry lists. */
 export function normalizePluginConfigId(id: unknown): string {
   return normalizeOptionalLowercaseString(id) ?? "";
 }
@@ -30,6 +32,7 @@ function findPluginConfigEntry(
   return undefined;
 }
 
+/** Resolves whether workspace plugin config allows one plugin manifest record. */
 export function isWorkspacePluginAllowedByConfig(params: {
   config: RemoteClawConfig | undefined;
   isImplicitlyAllowed?: (pluginId: string) => boolean;

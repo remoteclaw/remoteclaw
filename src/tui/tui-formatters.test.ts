@@ -1,3 +1,4 @@
+// Covers formatting helpers used by TUI status and message rendering.
 import { describe, expect, it } from "vitest";
 import {
   extractContentFromMessage,

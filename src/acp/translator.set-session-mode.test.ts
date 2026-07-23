@@ -1,3 +1,4 @@
+/** Tests ACP setSessionMode request translation and error propagation. */
 import type { SetSessionModeRequest } from "@agentclientprotocol/sdk";
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayClient } from "../gateway/client.js";

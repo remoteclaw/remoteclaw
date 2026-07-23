@@ -1,3 +1,5 @@
+// Gateway credentials tests cover config/env/secret-ref resolution for local and
+// remote gateway auth values.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {

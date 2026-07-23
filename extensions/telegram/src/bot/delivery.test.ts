@@ -1,3 +1,4 @@
+// Telegram tests cover delivery plugin behavior.
 import type { Bot } from "grammy";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../../../../src/runtime.js";

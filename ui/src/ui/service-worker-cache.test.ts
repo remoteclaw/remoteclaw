@@ -1,3 +1,4 @@
+// Control UI tests cover service worker cache behavior.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -70,7 +71,7 @@ describe("Control UI service worker cache versioning", () => {
     expect(mockDevSource).toContain(`${buildIdGlobal}: JSON.stringify(`);
 
     // The env overrides vite reads must carry the fork prefix; a sync re-applying upstream's
-    // file flips these to OPENCLAW_* and the documented knobs go silently dead.
+    // file flips these to REMOTECLAW_* and the documented knobs go silently dead.
     for (const envName of [
       "REMOTECLAW_CONTROL_UI_BUILD_ID",
       "REMOTECLAW_VERSION",

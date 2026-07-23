@@ -1,3 +1,4 @@
+// Covers direct-message policy audit findings for channels.
 import { describe, expect, it } from "vitest";
 import type { ChannelPlugin } from "../channels/plugins/types.js";
 import type { RemoteClawConfig } from "../config/config.js";

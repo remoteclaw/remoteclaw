@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Synchronizes GitHub label colors to the RemoteClaw taxonomy policy.
 import { execFileSync } from "node:child_process";
 
 const REPO = "remoteclaw/remoteclaw";

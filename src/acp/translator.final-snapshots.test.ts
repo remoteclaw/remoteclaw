@@ -1,3 +1,4 @@
+/** Tests final Gateway snapshots are emitted before ACP prompt resolution. */
 import { createInMemorySessionStore } from "@remoteclaw/acp-core/session";
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayClient } from "../gateway/client.js";

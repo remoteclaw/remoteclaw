@@ -1,3 +1,4 @@
+// Verifies agent cleanup steps time out with bounded diagnostic logging.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   AGENT_CLEANUP_STEP_TIMEOUT_MS,
@@ -46,11 +47,11 @@ describe("agent cleanup timeout", () => {
     const result = runAgentCleanupStep({
       runId: "run-trajectory",
       sessionId: "session-trajectory",
-      step: "openclaw-trajectory-flush",
+      step: "remoteclaw-trajectory-flush",
       cleanup,
       log,
       env: {
-        OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
+        REMOTECLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
       },
     });
 
@@ -62,17 +63,18 @@ describe("agent cleanup timeout", () => {
 
     expect(cleanup).toHaveBeenCalledTimes(1);
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=openclaw-trajectory-flush timeoutMs=25000",
+      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=remoteclaw-trajectory-flush timeoutMs=25000",
     );
   });
 
   it("includes cleanup timeout details when the cleanup step exposes them", async () => {
+    // Cleanup steps can expose current queue state for timeout diagnostics.
     const cleanup = vi.fn(async () => new Promise<never>(() => {}));
 
     const result = runAgentCleanupStep({
       runId: "run-trajectory",
       sessionId: "session-trajectory",
-      step: "openclaw-trajectory-flush",
+      step: "remoteclaw-trajectory-flush",
       cleanup,
       log,
       timeoutMs: 5,
@@ -83,7 +85,7 @@ describe("agent cleanup timeout", () => {
     await expect(result).resolves.toBeUndefined();
 
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=openclaw-trajectory-flush timeoutMs=5 details=pendingWrites=2 queuedBytes=128 activeOperation=file-append",
+      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=remoteclaw-trajectory-flush timeoutMs=5 details=pendingWrites=2 queuedBytes=128 activeOperation=file-append",
     );
   });
 
@@ -121,7 +123,7 @@ describe("agent cleanup timeout", () => {
     const result = runAgentCleanupStep({
       runId: "run-trajectory",
       sessionId: "session-trajectory",
-      step: "openclaw-trajectory-flush",
+      step: "remoteclaw-trajectory-flush",
       cleanup,
       log,
       timeoutMs: 5,
@@ -134,11 +136,12 @@ describe("agent cleanup timeout", () => {
     await expect(result).resolves.toBeUndefined();
 
     expect(log.warn).toHaveBeenCalledWith(
-      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=openclaw-trajectory-flush timeoutMs=5 detailsError=details unavailable",
+      "agent cleanup timed out: runId=run-trajectory sessionId=session-trajectory step=remoteclaw-trajectory-flush timeoutMs=5 detailsError=details unavailable",
     );
   });
 
   it("bounds cleanup timeout detail errors before logging", async () => {
+    // Diagnostic failures must not produce unbounded logs or fail cleanup.
     const cleanup = vi.fn(async () => new Promise<never>(() => {}));
 
     const result = runAgentCleanupStep({
@@ -177,7 +180,7 @@ describe("agent cleanup timeout", () => {
       cleanup,
       log,
       env: {
-        OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS: "1500",
+        REMOTECLAW_AGENT_CLEANUP_TIMEOUT_MS: "1500",
       },
     });
 
@@ -192,11 +195,11 @@ describe("agent cleanup timeout", () => {
   it("prefers explicit cleanup timeout values over environment overrides", () => {
     expect(
       resolveAgentCleanupStepTimeoutMs({
-        step: "openclaw-trajectory-flush",
+        step: "remoteclaw-trajectory-flush",
         timeoutMs: 2_000,
         env: {
-          OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
-          OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS: "15000",
+          REMOTECLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
+          REMOTECLAW_AGENT_CLEANUP_TIMEOUT_MS: "15000",
         },
       }),
     ).toBe(2_000);
@@ -205,10 +208,10 @@ describe("agent cleanup timeout", () => {
   it("keeps explicit zero cleanup timeouts as a one millisecond timeout", () => {
     expect(
       resolveAgentCleanupStepTimeoutMs({
-        step: "openclaw-trajectory-flush",
+        step: "remoteclaw-trajectory-flush",
         timeoutMs: 0,
         env: {
-          OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
+          REMOTECLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "25000",
         },
       }),
     ).toBe(1);
@@ -217,19 +220,19 @@ describe("agent cleanup timeout", () => {
   it("ignores invalid cleanup timeout environment values", () => {
     expect(
       resolveAgentCleanupStepTimeoutMs({
-        step: "openclaw-trajectory-flush",
+        step: "remoteclaw-trajectory-flush",
         env: {
-          OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "0",
-          OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS: "not-a-number",
+          REMOTECLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "0",
+          REMOTECLAW_AGENT_CLEANUP_TIMEOUT_MS: "not-a-number",
         },
       }),
     ).toBe(AGENT_CLEANUP_STEP_TIMEOUT_MS);
     expect(
       resolveAgentCleanupStepTimeoutMs({
-        step: "openclaw-trajectory-flush",
+        step: "remoteclaw-trajectory-flush",
         env: {
-          OPENCLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "1e3",
-          OPENCLAW_AGENT_CLEANUP_TIMEOUT_MS: "0x10",
+          REMOTECLAW_TRAJECTORY_FLUSH_TIMEOUT_MS: "1e3",
+          REMOTECLAW_AGENT_CLEANUP_TIMEOUT_MS: "0x10",
         },
       }),
     ).toBe(AGENT_CLEANUP_STEP_TIMEOUT_MS);

@@ -1,3 +1,4 @@
+// Covers agent image-sanitization limit config normalization.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveImageSanitizationLimits } from "./image-sanitization.js";

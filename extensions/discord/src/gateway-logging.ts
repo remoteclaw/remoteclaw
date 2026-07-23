@@ -1,3 +1,4 @@
+// Discord plugin module implements gateway logging behavior.
 import type { EventEmitter } from "node:events";
 import { logVerbose } from "../../../src/globals.js";
 import type { RuntimeEnv } from "../../../src/runtime.js";

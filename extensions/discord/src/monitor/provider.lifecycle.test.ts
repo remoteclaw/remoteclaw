@@ -1,3 +1,4 @@
+// Discord tests cover provider.lifecycle plugin behavior.
 import { EventEmitter } from "node:events";
 import type { Client } from "@buape/carbon";
 import { beforeEach, describe, expect, it, vi } from "vitest";

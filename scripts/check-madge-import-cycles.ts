@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Check Madge Import Cycles script supports RemoteClaw repository automation.
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";

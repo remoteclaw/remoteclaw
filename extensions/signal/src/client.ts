@@ -1,3 +1,4 @@
+// Signal plugin module implements client behavior.
 import { Buffer } from "node:buffer";
 import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { resolveFetch } from "../../../src/infra/fetch.js";

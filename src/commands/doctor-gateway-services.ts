@@ -1,3 +1,4 @@
+/** Doctor repairs for installed gateway service config and duplicate legacy services. */
 import { execFile } from "node:child_process";
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -188,6 +189,12 @@ async function cleanupLegacyLinuxUserServices(
   return { removed, failed };
 }
 
+/**
+ * Audits and optionally rewrites the installed local gateway service configuration.
+ *
+ * The repair preserves managed env sources, avoids Nix/remote installs, and can stage service
+ * updates during updater repair mode instead of immediately installing them.
+ */
 export async function maybeRepairGatewayServiceConfig(
   cfg: RemoteClawConfig,
   mode: "local" | "remote",
@@ -240,6 +247,7 @@ export async function maybeRepairGatewayServiceConfig(
     });
   }
   const needsNodeRuntime = needsNodeRuntimeMigration(audit.issues);
+  // Bun-hosted services cannot run some repair paths; migrate through a concrete Node binary.
   const systemNodeInfo = needsNodeRuntime
     ? await resolveSystemNodeInfo({ env: process.env })
     : null;
@@ -371,6 +379,9 @@ export async function maybeRepairGatewayServiceConfig(
   }
 }
 
+/**
+ * Reports duplicate gateway-like services and removes legacy user services after confirmation.
+ */
 export async function maybeScanExtraGatewayServices(
   options: DoctorOptions,
   runtime: RuntimeEnv,

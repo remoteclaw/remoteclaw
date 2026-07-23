@@ -1,3 +1,4 @@
+// Covers SQLite WAL maintenance configuration.
 import type { DatabaseSync } from "node:sqlite";
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
 import {

@@ -1,3 +1,6 @@
+/**
+ * Gateway server lane configuration tests.
+ */
 import { afterEach, describe, expect, it } from "vitest";
 import { DEFAULT_CRON_MAX_CONCURRENT_RUNS } from "../config/cron-limits.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";

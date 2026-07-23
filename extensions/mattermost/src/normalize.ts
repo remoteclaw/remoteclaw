@@ -1,3 +1,4 @@
+// Mattermost helper module supports normalize behavior.
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 export function normalizeMattermostMessagingTarget(raw: string): string | undefined {

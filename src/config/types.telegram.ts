@@ -1,3 +1,4 @@
+// Defines Telegram channel configuration types.
 import type {
   BlockStreamingChunkConfig,
   BlockStreamingCoalesceConfig,

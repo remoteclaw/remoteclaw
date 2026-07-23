@@ -1,3 +1,4 @@
+// CLI utility tests cover shared command helpers, option parsing, and output formatting.
 import { Command } from "commander";
 import { describe, expect, it, vi } from "vitest";
 import { registerDnsCli } from "./dns-cli.js";
@@ -34,25 +35,25 @@ describe("waitForever", () => {
 
 describe("shouldSkipRespawnForArgv", () => {
   it.each([
-    { argv: ["node", "openclaw", "--help"] },
-    { argv: ["node", "openclaw", "-V"] },
-    { argv: ["node", "openclaw", "tui"] },
-    { argv: ["node", "openclaw", "terminal"] },
-    { argv: ["node", "openclaw", "chat"] },
-    { argv: ["node", "openclaw", "gateway"] },
-    { argv: ["node", "openclaw", "gateway", "--port", "14720", "--bind", "loopback"] },
-    { argv: ["node", "openclaw", "gateway", "run", "--port=14720", "--bind", "loopback"] },
+    { argv: ["node", "remoteclaw", "--help"] },
+    { argv: ["node", "remoteclaw", "-V"] },
+    { argv: ["node", "remoteclaw", "tui"] },
+    { argv: ["node", "remoteclaw", "terminal"] },
+    { argv: ["node", "remoteclaw", "chat"] },
+    { argv: ["node", "remoteclaw", "gateway"] },
+    { argv: ["node", "remoteclaw", "gateway", "--port", "14720", "--bind", "loopback"] },
+    { argv: ["node", "remoteclaw", "gateway", "run", "--port=14720", "--bind", "loopback"] },
     {
-      argv: ["node", "openclaw", "--profile", "server", "gateway", "run", "--allow-unconfigured"],
+      argv: ["node", "remoteclaw", "--profile", "server", "gateway", "run", "--allow-unconfigured"],
     },
   ] as const)("skips respawn for argv %j", ({ argv }) => {
     expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
   });
 
   it.each([
-    { argv: ["node", "openclaw", "status"] },
-    { argv: ["node", "openclaw", "gateway", "status"] },
-    { argv: ["node", "openclaw", "gateway", "call", "health"] },
+    { argv: ["node", "remoteclaw", "status"] },
+    { argv: ["node", "remoteclaw", "gateway", "status"] },
+    { argv: ["node", "remoteclaw", "gateway", "call", "health"] },
   ] as const)("keeps respawn path for argv %j", ({ argv }) => {
     expect(shouldSkipRespawnForArgv([...argv]), argv.join(" ")).toBe(false);
   });
@@ -60,18 +61,18 @@ describe("shouldSkipRespawnForArgv", () => {
 
 describe("shouldSkipStartupEnvironmentRespawnForArgv", () => {
   it.each([
-    { argv: ["node", "openclaw", "--help"] },
-    { argv: ["node", "openclaw", "gateway"] },
-    { argv: ["node", "openclaw", "gateway", "run", "--port=14720"] },
+    { argv: ["node", "remoteclaw", "--help"] },
+    { argv: ["node", "remoteclaw", "gateway"] },
+    { argv: ["node", "remoteclaw", "gateway", "run", "--port=14720"] },
   ] as const)("skips startup env respawn for argv %j", ({ argv }) => {
     expect(shouldSkipStartupEnvironmentRespawnForArgv([...argv]), argv.join(" ")).toBe(true);
   });
 
   it.each([
-    { argv: ["node", "openclaw", "tui"] },
-    { argv: ["node", "openclaw", "terminal"] },
-    { argv: ["node", "openclaw", "chat"] },
-    { argv: ["node", "openclaw", "status"] },
+    { argv: ["node", "remoteclaw", "tui"] },
+    { argv: ["node", "remoteclaw", "terminal"] },
+    { argv: ["node", "remoteclaw", "chat"] },
+    { argv: ["node", "remoteclaw", "status"] },
   ] as const)("allows startup env respawn for argv %j", ({ argv }) => {
     expect(shouldSkipStartupEnvironmentRespawnForArgv([...argv]), argv.join(" ")).toBe(false);
   });

@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+// Re-exports the RemoteClaw CLI entry point for package execution.
+// Package executable entrypoint that forwards to the CLI bootstrap.
 import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { getReplyFromConfig } from "./auto-reply/reply.js";

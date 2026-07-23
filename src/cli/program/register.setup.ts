@@ -1,3 +1,4 @@
+// Setup command registration: baseline setup by default, onboarding wizard when wizard flags appear.
 import type { Command } from "commander";
 import { onboardCommand } from "../../commands/onboard.js";
 import { setupCommand } from "../../commands/setup.js";
@@ -7,7 +8,8 @@ import { theme } from "../../terminal/theme.js";
 import { runCommandWithRuntime } from "../cli-utils.js";
 import { hasExplicitOptions } from "../command-options.js";
 
-export function registerSetupCommand(program: Command) {
+/** Register the `setup` command and route wizard-style invocations to onboarding. */
+export function registerSetupCommand(program: Command): void {
   program
     .command("setup")
     .description("Initialize ~/.remoteclaw/remoteclaw.json and the agent workspace")
@@ -37,6 +39,7 @@ export function registerSetupCommand(program: Command) {
           "remoteUrl",
           "remoteToken",
         ]);
+        // Any onboarding-only flag means the user intended the wizard path even without --wizard.
         if (opts.wizard || hasWizardFlags) {
           await onboardCommand(
             {

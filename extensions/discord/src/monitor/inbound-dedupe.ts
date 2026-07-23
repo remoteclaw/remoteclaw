@@ -1,3 +1,4 @@
+// Discord plugin module implements inbound dedupe behavior.
 import {
   createClaimableDedupe,
   type ClaimableDedupe,

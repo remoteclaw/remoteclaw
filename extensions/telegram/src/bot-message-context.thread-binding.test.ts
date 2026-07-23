@@ -1,3 +1,4 @@
+// Telegram tests cover bot message context.thread binding plugin behavior.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const hoisted = vi.hoisted(() => {

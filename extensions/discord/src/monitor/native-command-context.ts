@@ -1,6 +1,8 @@
-import type { CommandArgs } from "../../../../src/auto-reply/commands-registry.js";
-import { finalizeInboundContext } from "../../../../src/auto-reply/reply/inbound-context.js";
-import { type DiscordChannelConfigResolved, type DiscordGuildEntryResolved } from "./allow-list.js";
+// Discord plugin module implements native command context behavior.
+import type { CommandArgs } from "remoteclaw/plugin-sdk/command-auth-native";
+import { finalizeInboundContext } from "remoteclaw/plugin-sdk/reply-dispatch-runtime";
+import { resolveDiscordConversationIdentity } from "../conversation-identity.js";
+import type { DiscordChannelConfigResolved, DiscordGuildEntryResolved } from "./allow-list.js";
 import { buildDiscordInboundAccessContext } from "./inbound-context.js";
 
 type BuildDiscordNativeCommandContextParams = {

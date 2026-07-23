@@ -1,3 +1,4 @@
+// Feishu plugin module implements chat behavior.
 import type * as Lark from "@larksuiteoapi/node-sdk";
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk/feishu";
 import { formatErrorMessage } from "../../../src/infra/errors.js";

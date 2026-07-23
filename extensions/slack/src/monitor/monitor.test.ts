@@ -1,3 +1,4 @@
+// Slack tests cover monitor plugin behavior.
 import type { App } from "@slack/bolt";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";

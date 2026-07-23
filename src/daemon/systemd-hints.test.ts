@@ -1,3 +1,4 @@
+// Systemd hint tests cover Linux daemon setup guidance.
 import { describe, expect, it } from "vitest";
 import { isSystemdUnavailableDetail, renderSystemdUnavailableHints } from "./systemd-hints.js";
 

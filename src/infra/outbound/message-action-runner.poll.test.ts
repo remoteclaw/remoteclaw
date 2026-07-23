@@ -1,3 +1,5 @@
+// Covers message-action poll handling through plugin dispatch and core gateway
+// poll fallback.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   installMessageActionRunnerTestRegistry,

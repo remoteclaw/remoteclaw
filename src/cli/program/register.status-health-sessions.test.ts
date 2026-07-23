@@ -1,3 +1,4 @@
+// Register status/health/session tests cover status-related command registration.
 import { Command } from "commander";
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 

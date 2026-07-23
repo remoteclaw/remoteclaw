@@ -1,3 +1,8 @@
+/**
+ * Fast RemoteClaw tool-bundle mock.
+ *
+ * Provides lightweight built-in tool stubs for inventory-heavy tests.
+ */
 import { vi } from "vitest";
 import { stubTool } from "./fast-tool-stubs.js";
 
@@ -57,6 +62,8 @@ const createRemoteClawToolsMock = vi.fn(
   },
 );
 
+// Preserve action enums for tools whose tests assert schema/inventory behavior without paying the
+// cost of constructing the real tool bundle.
 vi.mock("../remoteclaw-tools.js", () => ({
   createRemoteClawTools: createRemoteClawToolsMock,
   testing: {

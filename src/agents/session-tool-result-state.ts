@@ -1,4 +1,10 @@
 /**
+ * Tracks pending tool-call ids while repairing sanitized transcript messages.
+ * The state object decides when dropped or reordered messages need synthetic
+ * tool results flushed.
+ */
+
+/**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
  * attestations for the category definitions and the convention for
@@ -7,7 +13,7 @@
 export const MODULE_ATTESTATIONS = {
   createPendingToolCallState: "live",
 } as const;
-export type PendingToolCall = { id: string; name?: string };
+type PendingToolCall = { id: string; name?: string };
 
 export type PendingToolCallState = {
   size: () => number;
@@ -22,6 +28,7 @@ export type PendingToolCallState = {
   shouldFlushBeforeNewToolCalls: (toolCallCount: number) => boolean;
 };
 
+/** Tracks pending tool calls so sanitized transcript repair can flush in order. */
 export function createPendingToolCallState(): PendingToolCallState {
   const pending = new Map<string, string | undefined>();
 

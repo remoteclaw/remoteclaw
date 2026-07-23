@@ -1,5 +1,19 @@
-const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+// Msteams plugin module implements sent message cache behavior.
+import { getOptionalMSTeamsRuntime } from "./runtime.js";
+
+const TTL_MS = 24 * 60 * 60 * 1000;
+const PERSISTENT_MAX_ENTRIES = 1000;
+const PERSISTENT_NAMESPACE = "msteams.sent-messages";
 const MSTEAMS_SENT_MESSAGES_KEY = Symbol.for("remoteclaw.msteamsSentMessages");
+
+type MSTeamsSentMessageRecord = {
+  sentAt: number;
+};
+
+type MSTeamsSentMessageStore = {
+  register(key: string, value: MSTeamsSentMessageRecord, opts?: { ttlMs?: number }): Promise<void>;
+  lookup(key: string): Promise<MSTeamsSentMessageRecord | undefined>;
+};
 
 let sentMessageCache: Map<string, Map<string, number>> | undefined;
 

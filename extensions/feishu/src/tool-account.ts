@@ -1,3 +1,4 @@
+// Feishu plugin module implements tool account behavior.
 import type * as Lark from "@larksuiteoapi/node-sdk";
 import type { RemoteClawPluginApi } from "remoteclaw/plugin-sdk";
 import { resolveFeishuAccount } from "./accounts.js";

@@ -1,3 +1,5 @@
+// Telegram plugin module implements fetch behavior.
+import { randomUUID } from "node:crypto";
 import * as dns from "node:dns";
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";
 import { Agent, EnvHttpProxyAgent, ProxyAgent, fetch as undiciFetch } from "undici";

@@ -1,3 +1,4 @@
+// Slack plugin module implements modal metadata behavior.
 import { normalizeOptionalString } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 
 type SlackModalPrivateMetadata = {

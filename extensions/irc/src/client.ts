@@ -1,3 +1,4 @@
+// Irc plugin module implements client behavior.
 import net from "node:net";
 import tls from "node:tls";
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/text-runtime";

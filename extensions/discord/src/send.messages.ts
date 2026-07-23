@@ -1,3 +1,4 @@
+// Discord plugin module implements send.messages behavior.
 import type { APIChannel, APIMessage } from "discord-api-types/v10";
 import { ChannelType, Routes } from "discord-api-types/v10";
 import { resolveDiscordRest } from "./send.shared.js";

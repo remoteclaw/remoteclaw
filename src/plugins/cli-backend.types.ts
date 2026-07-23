@@ -1,3 +1,4 @@
+/** Type contracts for plugin-owned CLI backend integrations. */
 import type { CliBackendConfig } from "../config/types.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 

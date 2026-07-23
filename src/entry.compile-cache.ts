@@ -1,3 +1,4 @@
+// Manages compile-cache respawn behavior for the CLI entrypoint.
 import { spawn, type ChildProcess } from "node:child_process";
 import { existsSync, readFileSync, statSync } from "node:fs";
 import { enableCompileCache, getCompileCacheDir } from "node:module";
@@ -30,7 +31,7 @@ function isNodeCompileCacheRequested(env: NodeJS.ProcessEnv | undefined): boolea
   return env?.NODE_COMPILE_CACHE !== undefined && !isNodeCompileCacheDisabled(env);
 }
 
-export function shouldEnableOpenClawCompileCache(params: {
+export function shouldEnableRemoteClawCompileCache(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): boolean {
@@ -63,7 +64,7 @@ function readPackageVersion(packageJsonPath: string): string {
   return "unknown";
 }
 
-export function resolveOpenClawCompileCacheDirectory(params: {
+export function resolveRemoteClawCompileCacheDirectory(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): string {
@@ -83,7 +84,7 @@ export function resolveOpenClawCompileCacheDirectory(params: {
       : path.join(os.tmpdir(), "node-compile-cache");
   return path.join(
     baseDirectory,
-    "openclaw",
+    "remoteclaw",
     version,
     sanitizeCompileCachePathSegment(installMarker),
   );
@@ -102,7 +103,7 @@ type RemoteClawCompileCacheRespawnRuntime = {
   writeError: (message: string) => void;
 };
 
-export function buildOpenClawCompileCacheRespawnPlan(params: {
+export function buildRemoteClawCompileCacheRespawnPlan(params: {
   currentFile: string;
   env?: NodeJS.ProcessEnv;
   execArgv?: string[];
@@ -115,7 +116,7 @@ export function buildOpenClawCompileCacheRespawnPlan(params: {
   if (!isSourceCheckoutInstallRoot(params.installRoot)) {
     return undefined;
   }
-  if (env.OPENCLAW_SOURCE_COMPILE_CACHE_RESPAWNED === "1") {
+  if (env.REMOTECLAW_SOURCE_COMPILE_CACHE_RESPAWNED === "1") {
     return undefined;
   }
   if (!params.compileCacheDir && !isNodeCompileCacheRequested(env)) {
@@ -124,7 +125,7 @@ export function buildOpenClawCompileCacheRespawnPlan(params: {
   const nextEnv: NodeJS.ProcessEnv = {
     ...env,
     NODE_DISABLE_COMPILE_CACHE: "1",
-    OPENCLAW_SOURCE_COMPILE_CACHE_RESPAWNED: "1",
+    REMOTECLAW_SOURCE_COMPILE_CACHE_RESPAWNED: "1",
   };
   delete nextEnv.NODE_COMPILE_CACHE;
   return {
@@ -138,11 +139,11 @@ export function buildOpenClawCompileCacheRespawnPlan(params: {
   };
 }
 
-export function respawnWithoutOpenClawCompileCacheIfNeeded(params: {
+export function respawnWithoutRemoteClawCompileCacheIfNeeded(params: {
   currentFile: string;
   installRoot: string;
 }): boolean {
-  const plan = buildOpenClawCompileCacheRespawnPlan({
+  const plan = buildRemoteClawCompileCacheRespawnPlan({
     currentFile: params.currentFile,
     installRoot: params.installRoot,
     compileCacheDir: getCompileCacheDir?.(),
@@ -150,11 +151,11 @@ export function respawnWithoutOpenClawCompileCacheIfNeeded(params: {
   if (!plan) {
     return false;
   }
-  runOpenClawCompileCacheRespawnPlan(plan);
+  runRemoteClawCompileCacheRespawnPlan(plan);
   return true;
 }
 
-export function runOpenClawCompileCacheRespawnPlan(
+export function runRemoteClawCompileCacheRespawnPlan(
   plan: RemoteClawCompileCacheRespawnPlan,
   runtime: RemoteClawCompileCacheRespawnRuntime = {
     spawn,
@@ -243,15 +244,15 @@ export function runOpenClawCompileCacheRespawnPlan(
   return child;
 }
 
-export function enableOpenClawCompileCache(params: {
+export function enableRemoteClawCompileCache(params: {
   env?: NodeJS.ProcessEnv;
   installRoot: string;
 }): void {
-  if (!shouldEnableOpenClawCompileCache(params)) {
+  if (!shouldEnableRemoteClawCompileCache(params)) {
     return;
   }
   try {
-    enableCompileCache(resolveOpenClawCompileCacheDirectory(params));
+    enableCompileCache(resolveRemoteClawCompileCacheDirectory(params));
   } catch {
     // Best-effort only; never block startup.
   }

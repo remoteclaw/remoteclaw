@@ -1,3 +1,4 @@
+// QR terminal tests cover text normalization and terminal render calls.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const { create, toString } = vi.hoisted(() => ({
@@ -26,17 +27,17 @@ describe("renderQrTerminal", () => {
   });
 
   it("delegates terminal rendering to qrcode", async () => {
-    await expect(renderQrTerminal("openclaw")).resolves.toBe("ASCII-QR");
-    expect(toString).toHaveBeenCalledWith("openclaw", {
+    await expect(renderQrTerminal("remoteclaw")).resolves.toBe("ASCII-QR");
+    expect(toString).toHaveBeenCalledWith("remoteclaw", {
       small: false,
       type: "terminal",
     });
   });
 
   it("renders compact QR output without qrcode terminal small mode", async () => {
-    const rendered = await renderQrTerminal("openclaw", { small: true });
+    const rendered = await renderQrTerminal("remoteclaw", { small: true });
     expect(rendered).toContain("▄");
-    expect(create).toHaveBeenCalledWith("openclaw");
+    expect(create).toHaveBeenCalledWith("remoteclaw");
     expect(toString).not.toHaveBeenCalled();
   });
 

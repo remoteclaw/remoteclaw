@@ -1,3 +1,4 @@
+// Slack plugin module implements actions behavior.
 import type { Block, KnownBlock, WebClient } from "@slack/web-api";
 import { z } from "zod";
 import { loadConfig } from "../../../src/config/config.js";

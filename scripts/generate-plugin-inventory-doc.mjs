@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Generates the plugin inventory documentation page.
 import fs from "node:fs";
 import path from "node:path";
 import process from "node:process";
@@ -24,13 +25,15 @@ const PLUGIN_DOC_ALIASES = new Map([
   ["duckduckgo", "/tools/duckduckgo-search"],
   ["exa", "/tools/exa-search"],
   ["firecrawl", "/tools/firecrawl"],
+  ["parallel", "/tools/parallel-search"],
   ["perplexity", "/tools/perplexity-search"],
   ["policy", "/cli/policy"],
   ["tavily", "/tools/tavily"],
   ["tokenjuice", "/tools/tokenjuice"],
 ]);
-const MANUAL_SECTION_START = "<!-- openclaw-plugin-reference:manual-start -->";
-const MANUAL_SECTION_END = "<!-- openclaw-plugin-reference:manual-end -->";
+const SKIPPED_REFERENCE_PAGE_IDS = new Set(["parallel"]);
+const MANUAL_SECTION_START = "<!-- remoteclaw-plugin-reference:manual-start -->";
+const MANUAL_SECTION_END = "<!-- remoteclaw-plugin-reference:manual-end -->";
 
 function readJson(relativePath) {
   return JSON.parse(fs.readFileSync(path.join(ROOT, relativePath), "utf8"));
@@ -71,6 +74,29 @@ function docLink({ label, href }) {
 
 function pluginReferencePath(id) {
   return `/plugins/reference/${id}`;
+}
+
+function hasGeneratedReferencePage(record) {
+  if (!SKIPPED_REFERENCE_PAGE_IDS.has(record.id)) {
+    return true;
+  }
+  if (PLUGIN_DOC_ALIASES.has(record.id)) {
+    return false;
+  }
+  throw new Error(`skipped plugin reference page ${record.id} needs a plugin doc alias`);
+}
+
+function pluginInventoryHref(record) {
+  if (hasGeneratedReferencePage(record)) {
+    return pluginReferencePath(record.id);
+  }
+  return PLUGIN_DOC_ALIASES.get(record.id) ?? null;
+}
+
+function pluginReferenceLabel(record) {
+  const label = escapeInventoryText(record.id);
+  const href = pluginInventoryHref(record);
+  return href ? docLink({ href, label }) : label;
 }
 
 function humanizeId(value) {
@@ -162,12 +188,12 @@ function resolveDescription({ manifest, packageJson }) {
   if (channels.length > 0) {
     const channelLabel = displayList(channels);
     const channelNoun = channelLabel.toLowerCase().includes("channel") ? "" : " channel";
-    return `Adds the ${channelLabel}${channelNoun} surface for sending and receiving OpenClaw messages.`;
+    return `Adds the ${channelLabel}${channelNoun} surface for sending and receiving RemoteClaw messages.`;
   }
 
   const providers = Array.isArray(manifest.providers) ? manifest.providers : [];
   if (providers.length > 0) {
-    return `Adds ${displayList(providers)} model provider support to OpenClaw.`;
+    return `Adds ${displayList(providers)} model provider support to RemoteClaw.`;
   }
 
   const contracts = Object.keys(manifest.contracts ?? {}).toSorted((left, right) =>
@@ -198,7 +224,7 @@ function resolveDescription({ manifest, packageJson }) {
   }
 
   const packageDescription = normalizePackageDescription(packageJson.description);
-  return packageDescription ? `${packageDescription}.` : "Provides an OpenClaw plugin.";
+  return packageDescription ? `${packageDescription}.` : "Provides an RemoteClaw plugin.";
 }
 
 function pushUniqueDocLink(values, value) {
@@ -214,7 +240,8 @@ function resolveDocs({ dirName, manifest, packageJson }) {
   const links = [];
   const pluginAlias = PLUGIN_DOC_ALIASES.get(manifest.id) ?? PLUGIN_DOC_ALIASES.get(dirName);
   if (pluginAlias) {
-    pushUniqueDocLink(links, { href: pluginAlias, label: manifest.id ?? dirName });
+    const pluginAliasLabel = manifest.id ?? dirName;
+    pushUniqueDocLink(links, { href: pluginAlias, label: pluginAliasLabel });
   }
 
   const channelDoc = normalizeDocPath(packageJson.remoteclaw?.channel?.docsPath);
@@ -296,7 +323,7 @@ function resolveInstallRoute(packageJson, status) {
     return "source checkout only";
   }
   if (status === "core") {
-    return "included in OpenClaw";
+    return "included in RemoteClaw";
   }
   const install = packageJson.remoteclaw?.install;
   const release = packageJson.remoteclaw?.release;
@@ -335,37 +362,21 @@ function resolveStatus({ dirName, packageJson, excludedDirs }) {
   return "source";
 }
 
-function escapeCell(value) {
-  return String(value).replaceAll("\n", " ").replaceAll("|", "\\|");
+function escapeInventoryText(value) {
+  return String(value).replaceAll("\n", " ").trim();
 }
 
-function renderTable(records) {
-  const rows = [
-    ["Plugin", "Description", "Distribution", "Surface"],
-    ...records.map((record) => [
-      docLink({ href: pluginReferencePath(record.id), label: escapeCell(record.id) }),
-      escapeCell(record.description),
-      `\`${escapeCell(record.packageName)}\`<br />${escapeCell(record.installRoute)}`,
-      escapeCell(record.surface),
-    ]),
-  ];
-  const widths = rows[0].map((_, index) => Math.max(...rows.map((row) => row[index].length), 3));
-  const lines = [];
-  lines.push(formatTableRow(rows[0], widths));
-  lines.push(
-    formatTableRow(
-      widths.map((width) => "-".repeat(width)),
-      widths,
-    ),
-  );
-  for (const row of rows.slice(1)) {
-    lines.push(formatTableRow(row, widths));
+function renderInventoryList(records) {
+  if (records.length === 0) {
+    return "_None._";
   }
-  return lines.join("\n");
-}
 
-function formatTableRow(row, widths) {
-  return `| ${row.map((cell, index) => cell.padEnd(widths[index])).join(" | ")} |`;
+  return records
+    .map(
+      (record) =>
+        `- **${pluginReferenceLabel(record)}** (\`${escapeInventoryText(record.packageName)}\`) - ${escapeInventoryText(record.installRoute)}. ${escapeInventoryText(record.description)}`,
+    )
+    .join("\n\n");
 }
 
 function renderRelatedDocs(record) {
@@ -442,10 +453,11 @@ ${record.surface}${manualBlock ? `\n\n${manualBlock}` : ""}${relatedDocs ? `\n\n
 }
 
 function renderReferenceIndex(records) {
+  const referenceCount = records.filter(hasGeneratedReferencePage).length;
   return `---
-summary: "Generated index of OpenClaw plugin reference pages"
+summary: "Generated index of RemoteClaw plugin reference pages"
 read_when:
-  - You need a reference page for a specific OpenClaw plugin
+  - You need a reference page for a specific RemoteClaw plugin
   - You are auditing plugin docs coverage
 title: "Plugin reference"
 ---
@@ -459,7 +471,8 @@ This page is generated from \`extensions/*/package.json\` and
 pnpm plugins:inventory:gen
 \`\`\`
 
-${renderTable(records)}
+Use [Plugin inventory](/plugins/plugin-inventory) to browse all ${referenceCount}
+generated plugin reference pages by distribution, package, and description.
 `;
 }
 
@@ -469,7 +482,7 @@ function collectPluginSourceEntries() {
     .readdirSync(EXTENSIONS_DIR)
     .toSorted((left, right) => left.localeCompare(right))) {
     const packagePath = path.join(EXTENSIONS_DIR, dirName, "package.json");
-    const manifestPath = path.join(EXTENSIONS_DIR, dirName, "openclaw.plugin.json");
+    const manifestPath = path.join(EXTENSIONS_DIR, dirName, "remoteclaw.plugin.json");
     if (!fs.existsSync(packagePath) || !fs.existsSync(manifestPath)) {
       continue;
     }
@@ -531,7 +544,7 @@ function collectPluginRecords() {
 
 function writeGeneratedDocs(records) {
   fs.mkdirSync(path.join(ROOT, REFERENCE_DIR), { recursive: true });
-  for (const record of records) {
+  for (const record of records.filter(hasGeneratedReferencePage)) {
     const relativePath = path.join(REFERENCE_DIR, `${record.id}.md`);
     const manualSections = readManualReferenceSections(relativePath);
     fs.writeFileSync(
@@ -546,7 +559,7 @@ function writeGeneratedDocs(records) {
 function readGeneratedDocs(records) {
   return [
     [REFERENCE_INDEX_PATH, renderReferenceIndex(records)],
-    ...records.map((record) => {
+    ...records.filter(hasGeneratedReferencePage).map((record) => {
       const relativePath = path.join(REFERENCE_DIR, `${record.id}.md`);
       return [relativePath, renderReferencePage(record, readManualReferenceSections(relativePath))];
     }),
@@ -562,7 +575,7 @@ function renderDocument() {
   };
 
   return `---
-summary: "Generated inventory of OpenClaw plugins shipped in core, published externally, or kept source-only"
+summary: "Generated inventory of RemoteClaw plugins shipped in core, published externally, or kept source-only"
 read_when:
   - You are deciding whether a plugin ships in the core npm package or installs separately
   - You are updating bundled plugin package metadata or release automation
@@ -581,8 +594,8 @@ pnpm plugins:inventory:gen
 
 ## Definitions
 
-- **Core npm package:** built into the \`openclaw\` npm package and available without a separate plugin install.
-- **Official external package:** OpenClaw-maintained plugin omitted from the core npm package, kept in this official inventory, and installed on demand through ClawHub and/or npm.
+- **Core npm package:** built into the \`remoteclaw\` npm package and available without a separate plugin install.
+- **Official external package:** RemoteClaw-maintained plugin omitted from the core npm package, kept in this official inventory, and installed on demand through ClawHub and/or npm.
 - **Source checkout only:** repo-local plugin omitted from published npm artifacts and not advertised as an installable package.
 
 Source checkouts are different from npm installs: after \`pnpm install\`, bundled
@@ -591,9 +604,9 @@ dependencies are available.
 
 ## Install a plugin
 
-Use the **Distribution** column to decide whether install is needed. Plugins that
-say \`included in OpenClaw\` are already present in the core package. Official
-external packages need one install, then a Gateway restart.
+Use the install route in each entry to decide whether install is needed. Plugins
+that say \`included in RemoteClaw\` are already present in the core package.
+Official external packages need one install, then a Gateway restart.
 
 For example, Discord is an official external package:
 
@@ -610,17 +623,25 @@ explicit source. After install, follow the plugin's setup doc, such as
 [Manage plugins](/plugins/manage-plugins) for update, uninstall, and publishing
 commands.
 
+Each entry lists the package, distribution route, and description.
+
 ## Core npm package
 
-${renderTable(groups.core)}
+${groups.core.length} plugins
+
+${renderInventoryList(groups.core)}
 
 ## Official external packages
 
-${renderTable(groups.external)}
+${groups.external.length} plugins
+
+${renderInventoryList(groups.external)}
 
 ## Source checkout only
 
-${renderTable(groups.source)}
+${groups.source.length} plugins
+
+${renderInventoryList(groups.source)}
 `;
 }
 

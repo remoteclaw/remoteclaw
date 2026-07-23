@@ -1,3 +1,4 @@
+// Msteams tests cover file consent plugin behavior.
 import { describe, expect, it, vi } from "vitest";
 import { uploadToConsentUrl } from "./file-consent.js";
 

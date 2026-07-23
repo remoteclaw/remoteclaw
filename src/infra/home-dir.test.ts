@@ -1,3 +1,4 @@
+// Tests RemoteClaw home directory resolution.
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {

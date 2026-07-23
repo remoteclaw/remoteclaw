@@ -1,3 +1,4 @@
+/** Tests Gateway final/error states to ACP prompt stopReason mapping. */
 import type { PromptRequest } from "@agentclientprotocol/sdk";
 import { describe, expect, it, vi } from "vitest";
 import type { GatewayClient } from "../gateway/client.js";

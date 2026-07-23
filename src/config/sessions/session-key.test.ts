@@ -1,3 +1,4 @@
+// Session key tests cover session key generation and normalization.
 import { describe, expect, it } from "vitest";
 import type { MsgContext } from "../../auto-reply/templating.js";
 import { resolveSessionKey } from "./session-key.js";

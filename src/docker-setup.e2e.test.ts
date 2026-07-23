@@ -1,3 +1,4 @@
+// E2E tests for Docker setup script behavior and generated commands.
 import { spawnSync } from "node:child_process";
 import { chmod, copyFile, mkdir, mkdtemp, readFile, rm, stat, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
@@ -282,6 +283,41 @@ describe("scripts/docker/setup.sh", () => {
       'run --rm --no-deps --entrypoint node remoteclaw-gateway dist/index.js config set --batch-json [{"path":"gateway.mode","value":"local"},{"path":"gateway.bind","value":"lan"},{"path":"gateway.controlUi.allowedOrigins","value":["http://localhost:18789","http://127.0.0.1:18789"]}]',
     );
     expect(log).not.toContain("run --rm remoteclaw-cli onboard --mode local --no-install-daemon");
+  });
+
+  it("allows ordinary spaces in host persistence paths and quotes generated mounts", async () => {
+    const activeSandbox = requireSandbox(sandbox);
+    await resetDockerLog(activeSandbox);
+    const configDir = join(activeSandbox.rootDir, "config with spaces");
+    const workspaceDir = join(activeSandbox.rootDir, "workspace with spaces");
+    const authProfileSecretDir = join(activeSandbox.rootDir, "auth secrets with spaces");
+    const homeVolumeDir = join(activeSandbox.rootDir, "home volume with spaces");
+    const extraMountSource = join(activeSandbox.rootDir, "extra data");
+
+    const result = runDockerSetup(activeSandbox, {
+      REMOTECLAW_CONFIG_DIR: configDir,
+      REMOTECLAW_WORKSPACE_DIR: workspaceDir,
+      REMOTECLAW_AUTH_PROFILE_SECRET_DIR: authProfileSecretDir,
+      REMOTECLAW_HOME_VOLUME: homeVolumeDir,
+      REMOTECLAW_EXTRA_MOUNTS: `${extraMountSource}:/mnt/extra data:ro`,
+    });
+
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain("cannot contain whitespace");
+    const envFile = await readFile(join(activeSandbox.rootDir, ".env"), "utf8");
+    expect(envFile).toContain(`REMOTECLAW_CONFIG_DIR=${configDir}`);
+    expect(envFile).toContain(`REMOTECLAW_WORKSPACE_DIR=${workspaceDir}`);
+    expect(envFile).toContain(`REMOTECLAW_AUTH_PROFILE_SECRET_DIR=${authProfileSecretDir}`);
+
+    const extraCompose = await readFile(
+      join(activeSandbox.rootDir, "docker-compose.extra.yml"),
+      "utf8",
+    );
+    expect(extraCompose).toContain(`"${homeVolumeDir}:/home/node"`);
+    expect(extraCompose).toContain(`"${configDir}:/home/node/.remoteclaw"`);
+    expect(extraCompose).toContain(`"${workspaceDir}:/home/node/.remoteclaw/workspace"`);
+    expect(extraCompose).toContain(`"${authProfileSecretDir}:/home/node/.config/remoteclaw"`);
+    expect(extraCompose).toContain(`"${extraMountSource}:/mnt/extra data:ro"`);
   });
 
   it("persists explicit Docker Bonjour opt-in overrides", async () => {
@@ -666,8 +702,15 @@ describe("scripts/docker/setup.sh", () => {
   it("keeps docker-compose gateway token env defaults aligned across services", async () => {
     const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
     expect(
-      compose.match(/REMOTECLAW_GATEWAY_TOKEN: \$\{REMOTECLAW_GATEWAY_TOKEN:-\}/g),
-    ).toHaveLength(2);
+      compose.split(
+        '"${REMOTECLAW_AUTH_PROFILE_SECRET_DIR:-${HOME:-/tmp}/.remoteclaw-auth-profile-secrets}:/home/node/.config/remoteclaw"',
+      ),
+    ).toHaveLength(3);
+  });
+
+  it("keeps docker-compose optional env files aligned across services", async () => {
+    const compose = await readFile(join(repoRoot, "docker-compose.yml"), "utf8");
+    expect(compose.match(/env_file:\n {6}- path: \.env\n {8}required: false/g)).toHaveLength(2);
   });
 
   it("keeps docker-compose timezone env defaults aligned across services", async () => {

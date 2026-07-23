@@ -1,3 +1,5 @@
+// Base session-key helper keeps outbound-only delivery aligned with route
+// resolution session-scope rules.
 import type { RemoteClawConfig } from "../../config/types.remoteclaw.js";
 import { buildAgentSessionKey, type RoutePeer } from "../../routing/resolve-route.js";
 

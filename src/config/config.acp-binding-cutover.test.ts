@@ -1,3 +1,4 @@
+// Regresses ACP binding cutover config compatibility behavior.
 import { describe, expect, it } from "vitest";
 import { RemoteClawSchema } from "./zod-schema.js";
 

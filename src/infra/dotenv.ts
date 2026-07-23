@@ -1,3 +1,4 @@
+// Loads dotenv files while blocking unsafe workspace env keys.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

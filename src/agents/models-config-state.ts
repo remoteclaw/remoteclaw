@@ -1,3 +1,6 @@
+// Process-wide models.json coordination state. Dynamic imports can load this
+// module multiple times, so Symbol.for keeps write locks and ready-cache shared.
+
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
@@ -7,7 +10,6 @@
 export const MODULE_ATTESTATIONS = {
   resetModelsJsonReadyCacheForTest: "live",
 } as const;
-
 const MODELS_JSON_STATE_KEY = Symbol.for("remoteclaw.modelsJsonState");
 
 type ModelsJsonState = {
@@ -34,6 +36,7 @@ export const MODELS_JSON_STATE = (() => {
   return globalState[MODELS_JSON_STATE_KEY];
 })();
 
+/** Clear models.json write/ready caches for tests. */
 export function resetModelsJsonReadyCacheForTest(): void {
   MODELS_JSON_STATE.writeLocks.clear();
   MODELS_JSON_STATE.readyCache.clear();

@@ -1,3 +1,4 @@
+// Diagnostic logger tests cover event emission, metrics, and support output.
 import fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { onDiagnosticEvent, resetDiagnosticEventsForTest } from "../infra/diagnostic-events.js";

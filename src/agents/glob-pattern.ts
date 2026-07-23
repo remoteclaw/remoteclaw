@@ -1,4 +1,8 @@
 /**
+ * Compiles and matches lightweight glob patterns used by agent policies.
+ */
+
+/**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
  * of each runtime export in this module. See CONTRIBUTING.md § Module
  * attestations for the category definitions and the convention for
@@ -9,7 +13,7 @@ export const MODULE_ATTESTATIONS = {
   compileGlobPatterns: "live",
   matchesAnyGlobPattern: "live",
 } as const;
-export type CompiledGlobPattern =
+type CompiledGlobPattern =
   | { kind: "all" }
   | { kind: "exact"; value: string }
   | { kind: "regex"; value: RegExp };

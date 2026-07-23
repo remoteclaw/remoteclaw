@@ -1,4 +1,5 @@
-import { normalizeLowercaseStringOrEmpty } from "./string-coerce.js";
+// Silent reply policy helpers decide when automated replies should be suppressed.
+import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 
 export type SilentReplyPolicy = "allow" | "disallow";
 export type SilentReplyConversationType = "direct" | "group" | "internal";

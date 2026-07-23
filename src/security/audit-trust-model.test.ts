@@ -1,3 +1,4 @@
+// Verifies trust-model audit findings and severity mapping.
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import {

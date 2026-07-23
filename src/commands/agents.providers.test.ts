@@ -1,3 +1,4 @@
+// Agents provider tests cover provider status index construction for configured agents.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { buildProviderStatusIndex } from "./agents.providers.js";

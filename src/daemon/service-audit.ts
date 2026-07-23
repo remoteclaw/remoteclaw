@@ -1,3 +1,4 @@
+/** Audits installed daemon service definitions for drift and repair candidates. */
 import fs from "node:fs/promises";
 import path from "node:path";
 import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
@@ -51,6 +52,7 @@ export const SERVICE_AUDIT_CODES = {
   systemdKillModeProcessOrNone: "systemd-kill-mode-process-or-none",
 } as const;
 
+/** Returns whether audit issues require migrating a daemon to a stable Node runtime. */
 export function needsNodeRuntimeMigration(issues: ServiceConfigIssue[]): boolean {
   return issues.some(
     (issue) =>
@@ -74,6 +76,8 @@ function parseSystemdUnit(content: string): {
   let restartSec: string | undefined;
   let killMode: string | undefined;
 
+  // Parse only unit keys relevant to service resilience; this is not a full
+  // systemd parser and intentionally ignores sections.
   for (const rawLine of content.split(/\r?\n/)) {
     const line = rawLine.trim();
     if (!line) {

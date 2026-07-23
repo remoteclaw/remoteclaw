@@ -1,4 +1,4 @@
-import crypto from "node:crypto";
+// Tests root logger formatting and file output behavior.
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";

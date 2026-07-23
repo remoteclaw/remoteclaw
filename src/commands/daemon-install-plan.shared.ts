@@ -1,3 +1,4 @@
+// Shared daemon install runtime/path helpers for service plan generation.
 import fs from "node:fs";
 import path from "node:path";
 import { resolvePreferredNodePath } from "../daemon/runtime-paths.js";
@@ -7,12 +8,14 @@ import {
 } from "./daemon-install-runtime-warning.js";
 import type { GatewayDaemonRuntime } from "./daemon-runtime.js";
 
+/** Detect source-checkout dev mode from the current CLI entrypoint. */
 export function resolveGatewayDevMode(argv: string[] = process.argv): boolean {
   const entry = argv[1];
   const normalizedEntry = entry?.replaceAll("\\", "/");
   return normalizedEntry?.includes("/src/") && normalizedEntry.endsWith(".ts");
 }
 
+/** Resolve dev-mode and Node path inputs for daemon service install planning. */
 export async function resolveDaemonInstallRuntimeInputs(params: {
   env: Record<string, string | undefined>;
   runtime: GatewayDaemonRuntime;
@@ -29,6 +32,7 @@ export async function resolveDaemonInstallRuntimeInputs(params: {
   return { devMode, nodePath };
 }
 
+/** Emit runtime warnings for daemon install command arguments. */
 export async function emitDaemonInstallRuntimeWarning(params: {
   env: Record<string, string | undefined>;
   runtime: GatewayDaemonRuntime;
@@ -45,6 +49,7 @@ export async function emitDaemonInstallRuntimeWarning(params: {
   });
 }
 
+/** Return the Node binary directory that should be added to daemon PATH. */
 export function resolveDaemonNodeBinDir(nodePath?: string): string[] | undefined {
   const trimmed = nodePath?.trim();
   if (!trimmed || !path.isAbsolute(trimmed)) {
@@ -88,6 +93,7 @@ function addUniquePathDir(dirs: string[], dir: string | undefined): void {
   dirs.push(dir);
 }
 
+/** Resolve the RemoteClaw CLI binary directory from argv/PATH for daemon PATH. */
 export function resolveDaemonRemoteClawBinDir(
   params: {
     argv?: string[];
@@ -135,6 +141,7 @@ export function resolveDaemonRemoteClawBinDir(
   return dirs.length > 0 ? dirs : undefined;
 }
 
+/** Merge Node and RemoteClaw binary directories for the daemon service PATH. */
 export function resolveDaemonServicePathDirs(params: {
   nodePath?: string;
   argv?: string[];

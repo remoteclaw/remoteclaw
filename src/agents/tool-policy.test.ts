@@ -1,4 +1,7 @@
-// Sandbox infrastructure removed (#68) — sandbox tool policy tests removed
+/**
+ * Regression coverage for core tool allow/deny policy helpers.
+ * Verifies sandbox policy resolution, explicit lists, and tool matching.
+ */
 import { describe, expect, it } from "vitest";
 import {
   expandToolGroups,

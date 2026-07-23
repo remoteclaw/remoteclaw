@@ -1,3 +1,4 @@
+// Integrates with the local Tailscale CLI for tailnet setup and sharing.
 import { existsSync } from "node:fs";
 import { formatCliCommand } from "../cli/command-format.js";
 import { promptYesNo } from "../cli/prompt.js";

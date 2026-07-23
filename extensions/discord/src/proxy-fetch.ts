@@ -1,3 +1,4 @@
+// Discord plugin module implements proxy fetch behavior.
 import { isIP } from "node:net";
 import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import { danger } from "../../../src/globals.js";

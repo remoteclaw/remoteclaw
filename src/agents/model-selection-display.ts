@@ -1,11 +1,21 @@
+/**
+ * Formats selected model references for UI/session display.
+ */
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   resolveModelDisplayRef: "live",
   resolveModelDisplayName: "live",
   resolveSessionInfoModelSelection: "live",
 } as const;
 
+/** Inputs used to choose the visible model ref/name for status surfaces. */
 type ModelDisplaySelectionParams = {
   runtimeProvider?: unknown;
   runtimeModel?: unknown;
@@ -14,6 +24,7 @@ type ModelDisplaySelectionParams = {
   fallbackModel?: unknown;
 };
 
+/** Resolves the most specific provider/model ref for display. */
 export function resolveModelDisplayRef(params: ModelDisplaySelectionParams): string | undefined {
   const runtimeModel = normalizeOptionalString(params.runtimeModel);
   const runtimeProvider = normalizeOptionalString(params.runtimeProvider);
@@ -49,6 +60,7 @@ export function resolveModelDisplayRef(params: ModelDisplaySelectionParams): str
   return fallbackModel || undefined;
 }
 
+/** Resolves the model name shown in compact status output. */
 export function resolveModelDisplayName(params: ModelDisplaySelectionParams): string {
   const modelRef = resolveModelDisplayRef(params);
   if (!modelRef) {
@@ -61,6 +73,7 @@ export function resolveModelDisplayName(params: ModelDisplaySelectionParams): st
   return modelRef;
 }
 
+/** Inputs used to resolve model/provider values for session info. */
 type SessionInfoModelSelectionParams = {
   currentProvider?: unknown;
   currentModel?: unknown;
@@ -72,6 +85,7 @@ type SessionInfoModelSelectionParams = {
   overrideModel?: unknown;
 };
 
+/** Resolves session-info model selection from entry, override, and fallback data. */
 export function resolveSessionInfoModelSelection(params: SessionInfoModelSelectionParams): {
   modelProvider?: string;
   model?: string;

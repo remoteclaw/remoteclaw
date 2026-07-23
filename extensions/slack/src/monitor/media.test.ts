@@ -1,3 +1,5 @@
+// Slack tests cover media plugin behavior.
+import type { WebClient } from "@slack/web-api";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { logVerbose } from "../../../../src/globals.js";
 import * as ssrf from "../../../../src/infra/net/ssrf.js";

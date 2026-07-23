@@ -1,3 +1,4 @@
+// Maintenance command registration: doctor, dashboard, reset, and uninstall.
 import type { Command } from "commander";
 import { dashboardCommand } from "../../commands/dashboard.js";
 import { doctorCommand } from "../../commands/doctor.js";
@@ -8,6 +9,7 @@ import { formatDocsLink } from "../../terminal/links.js";
 import { theme } from "../../terminal/theme.js";
 import { runCommandWithRuntime } from "../cli-utils.js";
 
+/** Register maintenance commands that inspect or mutate local RemoteClaw state. */
 export function registerMaintenanceCommands(program: Command) {
   program
     .command("doctor")

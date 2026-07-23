@@ -1,3 +1,6 @@
+// Matrix plugin module implements mentions behavior.
+import { normalizeLowercaseStringOrEmpty } from "remoteclaw/plugin-sdk/string-coerce-runtime";
+import { escapeRegExp } from "remoteclaw/plugin-sdk/text-utility-runtime";
 import { getMatrixRuntime } from "../../runtime.js";
 
 // Type for room message content with mentions

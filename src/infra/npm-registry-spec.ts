@@ -1,24 +1,33 @@
+// Parses npm registry specs into package, version, and tag references.
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
 
 const EXACT_SEMVER_VERSION_RE =
   /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-([0-9A-Za-z.-]+))?(?:\+([0-9A-Za-z.-]+))?$/;
 const REMOTECLAW_STABLE_CORRECTION_VERSION_RE =
-  /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<day>[1-9]\d?)-(?<correction>[1-9]\d*)$/;
-const REMOTECLAW_STABLE_VERSION_RE = /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<day>[1-9]\d?)$/;
+  /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<patch>[1-9]\d*)-(?<correction>[1-9]\d*)$/;
+const REMOTECLAW_STABLE_VERSION_RE = /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<patch>[1-9]\d*)$/;
 const REMOTECLAW_ALPHA_VERSION_RE =
-  /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<day>[1-9]\d?)-alpha\.(?<alpha>[1-9]\d*)$/;
+  /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<patch>[1-9]\d*)-alpha\.(?<alpha>[1-9]\d*)$/;
 const REMOTECLAW_BETA_VERSION_RE =
-  /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<day>[1-9]\d?)-beta\.(?<beta>[1-9]\d*)$/;
+  /^(?<year>\d{4})\.(?<month>[1-9]\d?)\.(?<patch>[1-9]\d*)-beta\.(?<beta>[1-9]\d*)$/;
 const DIST_TAG_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
+/** Parsed monthly patch RemoteClaw release version used for channel-aware ordering. */
 type RemoteClawReleaseVersion = {
   channel: "alpha" | "beta" | "stable";
-  dateTime: number;
+  year: number;
+  month: number;
+  patch: number;
   alphaNumber?: number;
   betaNumber?: number;
   correctionNumber?: number;
 };
 
+/**
+ * Parsed registry-only npm spec accepted by plugin install flows.
+ * Selectors are limited to exact versions and dist-tags; URL/git/file specs
+ * are rejected before they can execute on the gateway host.
+ */
 export type ParsedRegistryNpmSpec = {
   name: string;
   raw: string;
@@ -54,6 +63,8 @@ function parseRegistryNpmSpecInternal(
   const name = hasSelector ? spec.slice(0, at) : spec;
   const selector = hasSelector ? spec.slice(at + 1) : "";
 
+  // Accept only registry package names; file paths, aliases, and URL/git specs are intentionally
+  // rejected before this point because plugin installs run on the gateway host.
   const unscopedName = /^[a-z0-9][a-z0-9-._~]*$/;
   const scopedName = /^@[a-z0-9][a-z0-9-._~]*\/[a-z0-9][a-z0-9-._~]*$/;
   const isValidName = name.startsWith("@") ? scopedName.test(name) : unscopedName.test(name);
@@ -112,25 +123,30 @@ function parseRegistryNpmSpecInternal(
   };
 }
 
+/** Parses a registry-only npm package spec into package name and optional selector metadata. */
 export function parseRegistryNpmSpec(rawSpec: string): ParsedRegistryNpmSpec | null {
   const parsed = parseRegistryNpmSpecInternal(rawSpec);
   return parsed.ok ? parsed.parsed : null;
 }
 
+/** Returns whether a user-provided npm spec resolves to the official RemoteClaw npm scope. */
 export function isRemoteClawOrgNpmSpec(rawSpec: string | undefined): boolean {
   const parsed = rawSpec ? parseRegistryNpmSpec(rawSpec) : null;
   return parsed?.name.startsWith("@remoteclaw/") === true;
 }
 
+/** Validates a registry-only npm spec and returns a user-facing error when rejected. */
 export function validateRegistryNpmSpec(rawSpec: string): string | null {
   const parsed = parseRegistryNpmSpecInternal(rawSpec);
   return parsed.ok ? null : parsed.error;
 }
 
+/** Returns whether a value is an exact semver selector, with optional leading `v`. */
 export function isExactSemverVersion(value: string): boolean {
   return EXACT_SEMVER_VERSION_RE.test(value.trim());
 }
 
+/** Parses RemoteClaw's monthly patch stable/alpha/beta/correction version format. */
 function parseRemoteClawReleaseVersion(value: string): RemoteClawReleaseVersion | null {
   const trimmed = value.trim();
   const candidates = [
@@ -146,15 +162,14 @@ function parseRemoteClawReleaseVersion(value: string): RemoteClawReleaseVersion 
 
   const year = Number.parseInt(candidate.match.groups.year ?? "", 10);
   const month = Number.parseInt(candidate.match.groups.month ?? "", 10);
-  const day = Number.parseInt(candidate.match.groups.day ?? "", 10);
-  if (!Number.isInteger(year) || !Number.isInteger(month) || !Number.isInteger(day)) {
-    return null;
-  }
-  const date = new Date(Date.UTC(year, month - 1, day));
+  const patch = Number.parseInt(candidate.match.groups.patch ?? "", 10);
   if (
-    date.getUTCFullYear() !== year ||
-    date.getUTCMonth() !== month - 1 ||
-    date.getUTCDate() !== day
+    !Number.isInteger(year) ||
+    !Number.isInteger(month) ||
+    !Number.isInteger(patch) ||
+    month < 1 ||
+    month > 12 ||
+    patch < 1
   ) {
     return null;
   }
@@ -163,6 +178,8 @@ function parseRemoteClawReleaseVersion(value: string): RemoteClawReleaseVersion 
     candidate.channel === "stable" && candidate.match.groups.correction
       ? Number.parseInt(candidate.match.groups.correction, 10)
       : undefined;
+  // Stable correction releases share the stable channel rank; the optional
+  // correction number is compared later so base stable sorts before fixes.
   const alphaNumber =
     candidate.channel === "alpha"
       ? Number.parseInt(candidate.match.groups.alpha ?? "", 10)
@@ -174,26 +191,36 @@ function parseRemoteClawReleaseVersion(value: string): RemoteClawReleaseVersion 
 
   return {
     channel: candidate.channel,
-    dateTime: date.getTime(),
+    year,
+    month,
+    patch,
     correctionNumber,
     alphaNumber,
     betaNumber,
   };
 }
 
+/** Returns whether a version is an RemoteClaw monthly patch stable correction release. */
 export function isRemoteClawStableCorrectionVersion(value: string): boolean {
   const parsed = parseRemoteClawReleaseVersion(value);
   return parsed?.channel === "stable" && parsed.correctionNumber !== undefined;
 }
 
+/** Compares RemoteClaw monthly patch release versions across alpha, beta, stable, and corrections. */
 export function compareRemoteClawReleaseVersions(left: string, right: string): number | null {
   const parsedLeft = parseRemoteClawReleaseVersion(left);
   const parsedRight = parseRemoteClawReleaseVersion(right);
   if (!parsedLeft || !parsedRight) {
     return null;
   }
-  if (parsedLeft.dateTime !== parsedRight.dateTime) {
-    return parsedLeft.dateTime < parsedRight.dateTime ? -1 : 1;
+  if (parsedLeft.year !== parsedRight.year) {
+    return parsedLeft.year < parsedRight.year ? -1 : 1;
+  }
+  if (parsedLeft.month !== parsedRight.month) {
+    return parsedLeft.month < parsedRight.month ? -1 : 1;
+  }
+  if (parsedLeft.patch !== parsedRight.patch) {
+    return parsedLeft.patch < parsedRight.patch ? -1 : 1;
   }
   if (parsedLeft.channel !== parsedRight.channel) {
     const rank = { alpha: 0, beta: 1, stable: 2 };
@@ -208,12 +235,18 @@ export function compareRemoteClawReleaseVersions(left: string, right: string): n
   return Math.sign((parsedLeft.correctionNumber ?? 0) - (parsedRight.correctionNumber ?? 0));
 }
 
+/** Returns whether an exact semver value is a prerelease, excluding stable correction releases. */
 export function isPrereleaseSemverVersion(value: string): boolean {
   const trimmed = value.trim();
   const match = EXACT_SEMVER_VERSION_RE.exec(trimmed);
   return Boolean(match?.[4]) && !isRemoteClawStableCorrectionVersion(trimmed);
 }
 
+/**
+ * Enforces explicit opt-in before an npm spec may resolve to a prerelease.
+ * Bare specs and `latest` stay on stable releases unless the resolved version
+ * is an RemoteClaw stable correction.
+ */
 export function isPrereleaseResolutionAllowed(params: {
   spec: ParsedRegistryNpmSpec;
   resolvedVersion?: string;
@@ -221,6 +254,8 @@ export function isPrereleaseResolutionAllowed(params: {
   if (!params.resolvedVersion || !isPrereleaseSemverVersion(params.resolvedVersion)) {
     return true;
   }
+  // Bare specs and `latest` should not drift into beta/rc builds; prereleases require a tag or
+  // exact prerelease selector so automation remains stable.
   if (params.spec.selectorKind === "none") {
     return false;
   }
@@ -230,6 +265,7 @@ export function isPrereleaseResolutionAllowed(params: {
   return normalizeLowercaseStringOrEmpty(params.spec.selector) !== "latest";
 }
 
+/** Formats the install error shown when a registry spec resolves to a disallowed prerelease. */
 export function formatPrereleaseResolutionError(params: {
   spec: ParsedRegistryNpmSpec;
   resolvedVersion: string;

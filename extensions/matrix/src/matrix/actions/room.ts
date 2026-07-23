@@ -1,3 +1,4 @@
+// Matrix plugin module implements room behavior.
 import { resolveMatrixRoomId } from "../send.js";
 import { resolveActionClient } from "./client.js";
 import { EventType, type MatrixActionClientOpts } from "./types.js";

@@ -1,3 +1,4 @@
+// Telegram plugin module implements monitor behavior.
 import type { RunOptions } from "@grammyjs/runner";
 import { resolveAgentMaxConcurrent } from "../../../src/config/agent-limits.js";
 import type { RemoteClawConfig } from "../../../src/config/config.js";

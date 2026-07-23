@@ -1,3 +1,4 @@
+// Console logging helpers format and write messages to console streams.
 import util from "node:util";
 import type { RemoteClawConfig } from "../config/types.js";
 import { isVerbose } from "../globals.js";

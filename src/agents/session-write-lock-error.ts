@@ -1,6 +1,16 @@
-const SESSION_WRITE_LOCK_TIMEOUT_CODE = "REMOTECLAW_SESSION_WRITE_LOCK_TIMEOUT";
-const SESSION_WRITE_LOCK_STALE_CODE = "REMOTECLAW_SESSION_WRITE_LOCK_STALE";
+/**
+ * Session write-lock error types and guards.
+ *
+ * Session persistence uses stable error codes so callers can distinguish lock
+ * contention or stale lock cleanup from ordinary write failures.
+ */
 
+/**
+ * Runtime attestation (ADR 0005 H9). Declares the implementation status
+ * of each runtime export in this module. See CONTRIBUTING.md § Module
+ * attestations for the category definitions and the convention for
+ * updating these when sync or rebrand changes the surface.
+ */
 export const MODULE_ATTESTATIONS = {
   SessionWriteLockTimeoutError: "live",
   SessionWriteLockStaleError: "live",
@@ -8,7 +18,10 @@ export const MODULE_ATTESTATIONS = {
   isSessionWriteLockStaleError: "live",
   isSessionWriteLockAcquireError: "live",
 } as const;
+const SESSION_WRITE_LOCK_TIMEOUT_CODE = "REMOTECLAW_SESSION_WRITE_LOCK_TIMEOUT";
+const SESSION_WRITE_LOCK_STALE_CODE = "REMOTECLAW_SESSION_WRITE_LOCK_STALE";
 
+/** Error thrown when a session write lock cannot be acquired before timeout. */
 export class SessionWriteLockTimeoutError extends Error {
   readonly code = SESSION_WRITE_LOCK_TIMEOUT_CODE;
   readonly timeoutMs: number;
@@ -26,6 +39,7 @@ export class SessionWriteLockTimeoutError extends Error {
   }
 }
 
+/** Error thrown when an existing session write lock is stale and needs cleanup. */
 export class SessionWriteLockStaleError extends Error {
   readonly code = SESSION_WRITE_LOCK_STALE_CODE;
   readonly owner: string;
@@ -44,6 +58,7 @@ export class SessionWriteLockStaleError extends Error {
   }
 }
 
+/** Returns whether an error is a session write-lock timeout. */
 export function isSessionWriteLockTimeoutError(err: unknown): boolean {
   return (
     err instanceof SessionWriteLockTimeoutError ||
@@ -55,6 +70,7 @@ export function isSessionWriteLockTimeoutError(err: unknown): boolean {
   );
 }
 
+/** Returns whether an error is a stale session write-lock failure. */
 export function isSessionWriteLockStaleError(err: unknown): boolean {
   return (
     err instanceof SessionWriteLockStaleError ||
@@ -66,6 +82,7 @@ export function isSessionWriteLockStaleError(err: unknown): boolean {
   );
 }
 
+/** Returns whether an error is any session write-lock acquisition failure. */
 export function isSessionWriteLockAcquireError(err: unknown): boolean {
   return isSessionWriteLockTimeoutError(err) || isSessionWriteLockStaleError(err);
 }

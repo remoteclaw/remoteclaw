@@ -1,3 +1,8 @@
+/**
+ * Spawned run metadata helpers.
+ *
+ * Projects tool runtime context into persisted lineage, group routing, workspace, and inherited policy metadata.
+ */
 import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 import { normalizeAgentId, parseAgentSessionKey } from "../routing/session-key.js";
@@ -42,6 +47,7 @@ type NormalizedSpawnedRunMetadata = {
   workspaceDir?: string;
 };
 
+/** Normalize optional spawn metadata fields from persisted or tool-provided input. */
 export function normalizeSpawnedRunMetadata(
   value?: SpawnedRunMetadata | null,
 ): NormalizedSpawnedRunMetadata {
@@ -54,6 +60,7 @@ export function normalizeSpawnedRunMetadata(
   };
 }
 
+/** Project tool runtime context down to the persisted spawned-run metadata shape. */
 export function mapToolContextToSpawnedRunMetadata(
   value?: SpawnedToolContext | null,
 ): Pick<NormalizedSpawnedRunMetadata, "groupId" | "groupChannel" | "groupSpace" | "workspaceDir"> {
@@ -65,6 +72,7 @@ export function mapToolContextToSpawnedRunMetadata(
   };
 }
 
+/** Resolve which workspace a spawned run should inherit. */
 export function resolveSpawnedWorkspaceInheritance(params: {
   config: RemoteClawConfig;
   targetAgentId?: string;
@@ -84,6 +92,7 @@ export function resolveSpawnedWorkspaceInheritance(params: {
   return agentId ? resolveAgentWorkspaceDir(params.config, normalizeAgentId(agentId)) : undefined;
 }
 
+/** Return a spawned run's ingress workspace override only for child runs. */
 export function resolveIngressWorkspaceOverrideForSpawnedRun(
   metadata?: Pick<SpawnedRunMetadata, "spawnedBy" | "workspaceDir"> | null,
 ): string | undefined {

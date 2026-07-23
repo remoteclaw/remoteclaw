@@ -1,3 +1,5 @@
+// Gateway secret-input path helpers.
+// Lists config locations that may contain plaintext values or SecretRefs.
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
 /** Canonical Gateway config paths whose values may be plaintext or secret refs. */

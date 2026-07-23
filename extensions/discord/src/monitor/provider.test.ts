@@ -1,3 +1,4 @@
+// Discord tests cover provider plugin behavior.
 import { EventEmitter } from "node:events";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../../../src/config/config.js";

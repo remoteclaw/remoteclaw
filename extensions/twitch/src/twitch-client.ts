@@ -1,3 +1,4 @@
+// Twitch plugin module implements twitch client behavior.
 import { RefreshingAuthProvider, StaticAuthProvider } from "@twurple/auth";
 import { ChatClient, LogLevel } from "@twurple/chat";
 import type { RemoteClawConfig } from "remoteclaw/plugin-sdk/twitch";

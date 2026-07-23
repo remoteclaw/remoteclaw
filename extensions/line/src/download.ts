@@ -1,3 +1,4 @@
+// Line plugin module implements download behavior.
 import { messagingApi } from "@line/bot-sdk";
 import { saveMediaBuffer } from "remoteclaw/plugin-sdk/media-store";
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";

@@ -1,3 +1,4 @@
+// Inspects plugin registry shape for diagnostics and snapshots.
 import type { PluginRegistry } from "./registry.js";
 
 // RemoteClaw fork keeps cli-backend (CLI agents), generic providers, and

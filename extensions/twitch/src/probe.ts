@@ -1,3 +1,4 @@
+// Twitch plugin module implements probe behavior.
 import { StaticAuthProvider } from "@twurple/auth";
 import { ChatClient } from "@twurple/chat";
 import type { BaseProbeResult } from "remoteclaw/plugin-sdk/twitch";

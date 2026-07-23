@@ -1,3 +1,4 @@
+// Tlon helper module supports settings helpers behavior.
 import { uniqueStrings } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { PendingApproval, TlonSettingsStore } from "../settings.js";
 import { normalizeShip } from "../targets.js";

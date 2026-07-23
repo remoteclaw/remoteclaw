@@ -1,3 +1,6 @@
+/**
+ * Tests command authorization helpers and native command gating.
+ */
 import { describe, expect, it } from "vitest";
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveSenderCommandAuthorization } from "./command-auth.js";

@@ -1,3 +1,4 @@
+// Resolves plugin SDK distribution aliases for bundled runtime imports.
 import fs from "node:fs";
 import path from "node:path";
 

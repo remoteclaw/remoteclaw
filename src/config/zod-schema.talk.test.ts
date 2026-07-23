@@ -1,3 +1,4 @@
+// Covers talk schema parsing and validation behavior.
 import { describe, expect, it } from "vitest";
 import { RemoteClawSchema } from "./zod-schema.js";
 

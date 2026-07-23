@@ -1,3 +1,5 @@
+// Gateway server test helpers create isolated config/state dirs, start gateway
+// servers/clients, and provide common RPC/session fixtures.
 import fs from "node:fs/promises";
 import { type AddressInfo, createServer } from "node:net";
 import os from "node:os";

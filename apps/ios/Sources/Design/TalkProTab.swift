@@ -8,13 +8,16 @@ struct TalkProTab: View {
         TalkDefaults.speakerphoneEnabledByDefault
     @AppStorage("talk.background.enabled") private var talkBackgroundEnabled: Bool = false
     @State private var showPermissionPrompt = false
+    @State private var showTalkIssueDetails = false
     var openSettings: () -> Void
 
     private var state: TalkProState {
         TalkProState(
             gatewayConnected: self.gatewayConnected,
+            isDemoMode: self.appModel.isAppleReviewDemoModeEnabled,
             isEnabled: self.appModel.talkMode.isEnabled || self.talkEnabled,
             statusText: self.appModel.talkMode.statusText,
+            isConfigLoaded: self.appModel.talkMode.gatewayTalkConfigLoaded,
             isListening: self.appModel.talkMode.isListening,
             isSpeaking: self.appModel.talkMode.isSpeaking,
             isUserSpeechDetected: self.appModel.talkMode.isUserSpeechDetected,
@@ -28,6 +31,15 @@ struct TalkProTab: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
                         self.header
+                        if let fallbackIssue = self.fallbackIssue {
+                            TalkRuntimeIssueBanner(
+                                issue: fallbackIssue,
+                                onOpenSettings: self.openSettings,
+                                onShowDetails: {
+                                    self.showTalkIssueDetails = true
+                                })
+                                .padding(.horizontal, RemoteClawProMetric.pagePadding)
+                        }
                         self.voiceHeroCard
                         self.conversationCard
                         self.voiceModeCard
@@ -36,7 +48,6 @@ struct TalkProTab: View {
                     .padding(.top, 16)
                     .padding(.bottom, 18)
                 }
-                .safeAreaPadding(.bottom, OpenClawProMetric.bottomScrollInset)
             }
             .navigationBarHidden(true)
         }
@@ -59,14 +70,22 @@ struct TalkProTab: View {
                     }
             }
             .presentationDetents([.medium, .large])
-            .openClawSheetChrome()
+            .remoteClawSheetChrome()
+        }
+        .sheet(isPresented: self.$showTalkIssueDetails) {
+            if let fallbackIssue = self.fallbackIssue {
+                TalkRuntimeIssueDetailsSheet(
+                    issue: fallbackIssue,
+                    onOpenSettings: self.openSettings)
+                    .remoteClawSheetChrome()
+            }
         }
         .onAppear { self.alignPersistedTalkState() }
     }
 
     private var header: some View {
         HStack(alignment: .center, spacing: 11) {
-            OpenClawProMark(size: 31, shadowRadius: 9)
+            RemoteClawProMark(size: 31, shadowRadius: 9)
             VStack(alignment: .leading, spacing: 2) {
                 Text("Talk")
                     .font(.system(size: 27, weight: .bold, design: .rounded))
@@ -78,7 +97,7 @@ struct TalkProTab: View {
             Spacer(minLength: 8)
             self.statusChip
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     private var statusChip: some View {
@@ -138,7 +157,7 @@ struct TalkProTab: View {
                 .disabled(self.state.primaryAction == .waiting)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     private var conversationCard: some View {
@@ -148,7 +167,7 @@ struct TalkProTab: View {
                     .padding(.horizontal, 12)
                     .padding(.top, 11)
                     .padding(.bottom, 3)
-                self.infoRow(icon: "person.crop.circle.fill", title: "Agent", value: self.appModel.activeAgentName)
+                self.infoRow(icon: "person.crop.circle.fill", title: "Agent", value: self.appModel.chatAgentName)
                 Divider().padding(.leading, 54)
                 self.infoRow(
                     icon: "bubble.left.and.text.bubble.right.fill",
@@ -158,7 +177,7 @@ struct TalkProTab: View {
                 self.infoRow(icon: self.state.icon, title: "Runtime", value: self.appModel.talkMode.statusText)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     private var voiceModeCard: some View {
@@ -167,21 +186,33 @@ struct TalkProTab: View {
                 self.cardHeader(
                     title: "Voice mode",
                     value: "Settings ›",
-                    color: OpenClawBrand.accent,
+                    color: RemoteClawBrand.accent,
                     action: self.openSettings)
                     .padding(.horizontal, 12)
                     .padding(.top, 11)
                     .padding(.bottom, 3)
-                self.infoRow(icon: "waveform", title: "Mode", value: self.appModel.talkMode.gatewayTalkVoiceModeTitle)
+                self.infoRow(
+                    icon: "waveform",
+                    title: "Configured",
+                    value: self.appModel.talkMode.gatewayTalkVoiceModeTitle)
+                Divider().padding(.leading, 54)
+                self.infoRow(
+                    icon: "waveform",
+                    title: "Active now",
+                    value: self.activeModeText)
                 Divider().padding(.leading, 54)
                 self.infoRow(icon: "antenna.radiowaves.left.and.right", title: "Transport", value: self.transportText)
+                if let issueText = self.talkIssueText {
+                    Divider().padding(.leading, 54)
+                    self.infoRow(icon: "exclamationmark.triangle.fill", title: "Last issue", value: issueText)
+                }
                 Divider().padding(.leading, 54)
                 self.infoRow(icon: "key.fill", title: "Permission", value: self.permissionText)
                 Divider().padding(.leading, 54)
                 self.infoRow(icon: "globe", title: "Speech language", value: self.speechLocaleText)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     private var controlsCard: some View {
@@ -191,13 +222,9 @@ struct TalkProTab: View {
                     .padding(.horizontal, 12)
                     .padding(.top, 11)
                     .padding(.bottom, 3)
-                Toggle("Speakerphone", isOn: self.$talkSpeakerphoneEnabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                self.controlToggleRow("Speakerphone", isOn: self.talkSpeakerphoneBinding)
                 Divider().padding(.leading, 14)
-                Toggle("Background listening", isOn: self.$talkBackgroundEnabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
+                self.controlToggleRow("Background listening", isOn: self.$talkBackgroundEnabled)
                 Divider().padding(.leading, 14)
                 Button(action: self.openSettings) {
                     HStack {
@@ -214,7 +241,26 @@ struct TalkProTab: View {
                 .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
+    }
+
+    private func controlToggleRow(_ title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(title, isOn: isOn)
+            .contentShape(Rectangle())
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .overlay {
+                // Keep Toggle semantics for accessibility while making the full visual row tappable.
+                Button {
+                    isOn.wrappedValue.toggle()
+                } label: {
+                    Rectangle()
+                        .fill(.clear)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHidden(true)
+            }
     }
 
     private func cardHeader(
@@ -267,12 +313,18 @@ struct TalkProTab: View {
     }
 
     private var gatewayConnected: Bool {
-        GatewayStatusBuilder.build(appModel: self.appModel) == .connected
+        !self.appModel.isAppleReviewDemoModeEnabled &&
+            GatewayStatusBuilder.build(appModel: self.appModel) == .connected
+    }
+
+    private var fallbackIssue: TalkRuntimeIssue? {
+        guard self.gatewayConnected else { return nil }
+        return self.appModel.talkMode.gatewayTalkCurrentFallbackIssue
     }
 
     private var headerSubtitle: String {
         let mode = self.appModel.talkMode.gatewayTalkVoiceModeTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        let agent = self.appModel.activeAgentName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let agent = self.appModel.chatAgentName.trimmingCharacters(in: .whitespacesAndNewlines)
         if mode.isEmpty || mode == "Not loaded" { return agent.isEmpty ? "Realtime voice" : agent }
         if agent.isEmpty { return mode }
         return "\(agent) • \(mode)"
@@ -281,11 +333,15 @@ struct TalkProTab: View {
     private var heroSubtitle: String {
         if self.state
             .prefersPermissionCopy { return "Gateway approval is required before this phone can capture voice." }
+        if self.appModel.isAppleReviewDemoModeEnabled { return "Voice is disabled in Apple Review demo mode." }
         if !self.gatewayConnected { return "Connect to your gateway to start a voice conversation." }
+        if !self.appModel.talkMode.gatewayTalkConfigLoaded {
+            return "Open Voice settings after the gateway loads Talk configuration."
+        }
         let subtitle = (self.appModel.talkMode.gatewayTalkVoiceModeSubtitle ?? "")
             .trimmingCharacters(in: .whitespacesAndNewlines)
         if !subtitle.isEmpty { return subtitle }
-        return "Routes voice to \(self.appModel.activeAgentName)."
+        return "Routes voice to \(self.appModel.chatAgentName)."
     }
 
     private var transportText: String {
@@ -294,6 +350,21 @@ struct TalkProTab: View {
         if provider.isEmpty || provider == "Not loaded" { return transport.isEmpty ? "Not loaded" : transport }
         if transport.isEmpty || transport == "Not loaded" { return provider }
         return "\(provider) • \(transport)"
+    }
+
+    private var activeModeText: String {
+        let title = self.appModel.talkMode.gatewayTalkActiveModeTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        let subtitle = (self.appModel.talkMode.gatewayTalkActiveModeSubtitle ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if title.isEmpty { return "Not active" }
+        if subtitle.isEmpty { return title }
+        return "\(title) • \(subtitle)"
+    }
+
+    private var talkIssueText: String? {
+        let text = (self.appModel.talkMode.gatewayTalkLastIssueText ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.isEmpty ? nil : text
     }
 
     private var permissionText: String {
@@ -309,13 +380,26 @@ struct TalkProTab: View {
     }
 
     private func alignPersistedTalkState() {
-        if self.appModel.talkMode.gatewayTalkPermissionState.requiresTalkPermissionAction,
+        if self.appModel.isAppleReviewDemoModeEnabled,
            self.talkEnabled || self.appModel.talkMode.isEnabled
+        {
+            self.stopTalk()
+        } else if self.appModel.talkMode.gatewayTalkPermissionState.requiresTalkPermissionAction,
+                  self.talkEnabled || self.appModel.talkMode.isEnabled
         {
             self.stopTalk()
         } else if self.talkEnabled != self.appModel.talkMode.isEnabled {
             self.appModel.setTalkEnabled(self.talkEnabled)
         }
+    }
+
+    private var talkSpeakerphoneBinding: Binding<Bool> {
+        Binding(
+            get: { self.talkSpeakerphoneEnabled },
+            set: { enabled in
+                self.talkSpeakerphoneEnabled = enabled
+                self.appModel.setTalkSpeakerphoneEnabled(enabled)
+            })
     }
 
     private func handlePrimaryAction() {
@@ -335,7 +419,9 @@ struct TalkProTab: View {
     }
 
     private func startTalk() {
+        guard !self.appModel.isAppleReviewDemoModeEnabled else { return }
         self.talkEnabled = true
+        self.appModel.talkMode.updateMainSessionKey(self.appModel.chatSessionKey)
         self.appModel.setTalkEnabled(true)
     }
 
@@ -363,8 +449,10 @@ enum TalkProWaveformMode: Equatable {
 
 struct TalkProState: Equatable {
     let gatewayConnected: Bool
+    let isDemoMode: Bool
     let isEnabled: Bool
     let statusText: String
+    let isConfigLoaded: Bool
     let isListening: Bool
     let isSpeaking: Bool
     let isUserSpeechDetected: Bool
@@ -375,6 +463,7 @@ struct TalkProState: Equatable {
     }
 
     var title: String {
+        if self.isDemoMode { return "Demo mode only" }
         if !self.gatewayConnected { return "Gateway offline" }
         switch self.permissionState {
         case .missingScope, .requestFailed:
@@ -390,15 +479,17 @@ struct TalkProState: Equatable {
         default:
             break
         }
+        if !self.isConfigLoaded { return "Voice config unavailable" }
         if self.isSpeaking { return "Speaking" }
         if self.isListening { return "Listening" }
         if self.normalizedStatus.contains("connecting") { return "Connecting" }
-        if self.normalizedStatus.contains("thinking") { return "Asking OpenClaw" }
+        if self.normalizedStatus.contains("thinking") { return "Asking RemoteClaw" }
         if self.isEnabled { return "Ready to talk" }
         return "Talk is off"
     }
 
     var chipText: String {
+        if self.isDemoMode { return "Demo" }
         if !self.gatewayConnected { return "Offline" }
         switch self.permissionState {
         case .missingScope, .requestFailed:
@@ -412,6 +503,7 @@ struct TalkProState: Equatable {
         default:
             break
         }
+        if !self.isConfigLoaded { return "Config" }
         if self.isSpeaking { return "Speaking" }
         if self.isListening { return "Listening" }
         if self.isEnabled { return "Ready" }
@@ -419,6 +511,7 @@ struct TalkProState: Equatable {
     }
 
     var icon: String {
+        if self.isDemoMode { return "waveform.slash" }
         if !self.gatewayConnected { return "wifi.slash" }
         switch self.permissionState {
         case .missingScope, .requestFailed:
@@ -432,6 +525,7 @@ struct TalkProState: Equatable {
         default:
             break
         }
+        if !self.isConfigLoaded { return "exclamationmark.triangle.fill" }
         if self.isSpeaking { return "speaker.wave.2.fill" }
         if self.isListening { return "mic.fill" }
         if self.normalizedStatus.contains("thinking") { return "sparkles" }
@@ -440,18 +534,21 @@ struct TalkProState: Equatable {
     }
 
     var color: Color {
+        if self.isDemoMode { return .secondary }
         if !self.gatewayConnected { return .secondary }
         switch self.permissionState {
         case .requestFailed, .loadFailed:
-            return OpenClawBrand.danger
+            return RemoteClawBrand.danger
         case .missingScope, .requestingUpgrade, .upgradeRequested, .apiKeyMissing:
-            return OpenClawBrand.warn
+            return RemoteClawBrand.warn
         default:
-            return self.isEnabled ? OpenClawBrand.ok : OpenClawBrand.accentHot
+            if !self.isConfigLoaded { return RemoteClawBrand.warn }
+            return self.isEnabled ? RemoteClawBrand.ok : RemoteClawBrand.accentHot
         }
     }
 
     var primaryAction: TalkProPrimaryAction {
+        if self.isDemoMode { return .waiting }
         if !self.gatewayConnected { return .openSettings }
         switch self.permissionState {
         case .missingScope, .requestFailed:
@@ -471,7 +568,7 @@ struct TalkProState: Equatable {
         case .stop: "Stop Talk"
         case .enablePermission: "Enable Talk"
         case .openSettings: self.gatewayConnected ? "Open Voice Settings" : "Open Gateway Settings"
-        case .waiting: "Waiting for Approval"
+        case .waiting: self.isDemoMode ? "Demo Mode Only" : "Waiting for Approval"
         }
     }
 
@@ -481,19 +578,19 @@ struct TalkProState: Equatable {
         case .stop: "stop.fill"
         case .enablePermission: "key.fill"
         case .openSettings: "gearshape.fill"
-        case .waiting: "hourglass"
+        case .waiting: self.isDemoMode ? "lock.fill" : "hourglass"
         }
     }
 
     var primaryButtonFill: AnyShapeStyle {
         switch self.primaryAction {
         case .stop:
-            AnyShapeStyle(OpenClawBrand.danger)
+            AnyShapeStyle(RemoteClawBrand.danger)
         case .waiting:
-            AnyShapeStyle(OpenClawBrand.warn.opacity(0.72))
+            AnyShapeStyle(RemoteClawBrand.warn.opacity(0.72))
         default:
             AnyShapeStyle(LinearGradient(
-                colors: [self.color.opacity(0.95), OpenClawBrand.accent],
+                colors: [self.color.opacity(0.95), RemoteClawBrand.accent],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing))
         }
@@ -509,6 +606,7 @@ struct TalkProState: Equatable {
     }
 
     func waveformMode(micLevel: Double) -> TalkProWaveformMode {
+        if self.isDemoMode { return .still }
         if !self.gatewayConnected { return .still }
         switch self.permissionState {
         case .requestingUpgrade, .upgradeRequested:
@@ -518,6 +616,7 @@ struct TalkProState: Equatable {
         default:
             break
         }
+        if !self.isConfigLoaded { return .still }
         if self.isSpeaking { return .speaking }
         if self.isListening, self.isUserSpeechDetected { return .inputSpeech }
         if self.isListening { return .level(micLevel) }

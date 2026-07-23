@@ -1,3 +1,4 @@
+// Discord provider module implements model/runtime integration.
 import { logVerbose } from "remoteclaw/plugin-sdk/runtime-env";
 import { summarizeStringEntries } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import { formatThreadBindingDurationLabel } from "./thread-bindings.messages.js";

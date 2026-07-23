@@ -29,7 +29,7 @@ DOCKER_EXTRA_ENV_FILES=()
 DOCKER_AUTH_PRESTAGED=0
 
 remoteclaw_live_codex_harness_is_ci() {
-  [[ -n "${CI:-}" && "${CI:-}" != "false" ]] || [[ -n "${GITHUB_ACTIONS:-}" && "${GITHUB_ACTIONS:-}" != "false" ]]
+  remoteclaw_live_is_ci
 }
 
 remoteclaw_live_codex_harness_append_build_extension() {
@@ -106,21 +106,20 @@ else
   CACHE_HOME_DIR="$HOME/.cache/remoteclaw/docker-cache"
 fi
 
-mkdir -p "$CLI_TOOLS_DIR"
-mkdir -p "$CACHE_HOME_DIR"
-if remoteclaw_live_codex_harness_is_ci; then
-  chmod 0777 "$CLI_TOOLS_DIR" "$CACHE_HOME_DIR" || true
-fi
-if remoteclaw_live_codex_harness_is_ci; then
+remoteclaw_live_prepare_bind_dir_for_container_user "$CLI_TOOLS_DIR"
+remoteclaw_live_prepare_bind_dir_for_container_user "$CACHE_HOME_DIR"
+if remoteclaw_live_uses_managed_bind_dirs; then
   DOCKER_USER="$(id -u):$(id -g)"
   DOCKER_HOME_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/remoteclaw-docker-home.XXXXXX")"
   TEMP_DIRS+=("$DOCKER_HOME_DIR")
+  remoteclaw_live_prepare_bind_dir_for_container_user "$DOCKER_HOME_DIR"
   DOCKER_HOME_MOUNT=(-v "$DOCKER_HOME_DIR":/home/node)
 fi
 if [[ "$CODEX_HARNESS_AUTH_MODE" == "api-key" ]]; then
   if [[ -z "${DOCKER_HOME_DIR:-}" ]]; then
     DOCKER_HOME_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/remoteclaw-docker-home.XXXXXX")"
     TEMP_DIRS+=("$DOCKER_HOME_DIR")
+    remoteclaw_live_prepare_bind_dir_for_container_user "$DOCKER_HOME_DIR"
     DOCKER_HOME_MOUNT=(-v "$DOCKER_HOME_DIR":/home/node)
   fi
   CONFIG_DIR="$(mktemp -d "${RUNNER_TEMP:-/tmp}/remoteclaw-docker-config.XXXXXX")"
@@ -134,7 +133,11 @@ fi
 PROFILE_MOUNT=()
 PROFILE_STATUS="none"
 if [[ "$CODEX_HARNESS_AUTH_MODE" != "api-key" && -f "$PROFILE_FILE" && -r "$PROFILE_FILE" ]]; then
-  PROFILE_MOUNT=(-v "$PROFILE_FILE":/home/node/.profile:ro)
+  if [[ -n "${DOCKER_HOME_DIR:-}" ]]; then
+    remoteclaw_live_stage_profile_into_home "$DOCKER_HOME_DIR" "$PROFILE_FILE"
+  else
+    PROFILE_MOUNT=(-v "$PROFILE_FILE":/home/node/.profile:ro)
+  fi
   PROFILE_STATUS="$PROFILE_FILE"
 elif [[ "$CODEX_HARNESS_AUTH_MODE" == "api-key" ]]; then
   PROFILE_STATUS="api-key-env"
@@ -297,7 +300,7 @@ if ! "$NPM_CONFIG_PREFIX/bin/codex" exec \
     echo "ERROR: Codex auth cannot extract accountId from the available token; refresh REMOTECLAW_CODEX_AUTH_JSON or use REMOTECLAW_LIVE_CODEX_HARNESS_AUTH=api-key." >&2
     exit 1
   fi
-  cat "$codex_preflight_log" >&2
+  tail -c 262144 "$codex_preflight_log" >&2 || true
   exit 1
 fi
 node scripts/test-live.mjs -- ${REMOTECLAW_LIVE_CODEX_TEST_FILES:-src/gateway/gateway-codex-harness.live.test.ts}
@@ -310,6 +313,16 @@ remoteclaw_live_codex_harness_append_build_extension codex
 REMOTECLAW_SKIP_DOCKER_BUILD=0
 export REMOTECLAW_SKIP_DOCKER_BUILD
 REMOTECLAW_LIVE_DOCKER_REPO_ROOT="$ROOT_DIR" "$TRUSTED_HARNESS_DIR/scripts/test-live-build-docker.sh"
+if remoteclaw_live_uses_managed_bind_dirs; then
+  remoteclaw_live_chown_bind_dirs_for_container_user \
+    "$LIVE_IMAGE_NAME" \
+    "$DOCKER_USER" \
+    "$CLI_TOOLS_DIR" \
+    "$CACHE_HOME_DIR" \
+    "$CONFIG_DIR" \
+    "$WORKSPACE_DIR" \
+    "${DOCKER_HOME_DIR:-}"
+fi
 
 echo "==> Run Codex harness live test in Docker"
 echo "==> Model: ${REMOTECLAW_LIVE_CODEX_HARNESS_MODEL:-codex/gpt-5.5}"

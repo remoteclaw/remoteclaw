@@ -1,3 +1,4 @@
+// Tool-call shaped text helpers detect malformed text that resembles tool calls.
 import { asOptionalRecord } from "@remoteclaw/normalization-core/record-coerce";
 import { normalizeOptionalString as readTrimmedString } from "@remoteclaw/normalization-core/string-coerce";
 

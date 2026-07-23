@@ -8,9 +8,11 @@ title: "SMS"
 
 RemoteClaw can receive and send SMS through a Twilio phone number or Messaging Service. The Gateway registers an inbound webhook route, validates Twilio request signatures by default, and sends replies back through Twilio's Messages API.
 
+SMS defers sender-initiated self-enrollment — no pairing challenge is sent to an unknown number. Authorize senders by adding their number to `allowFrom` before they message.
+
 <CardGroup cols={3}>
-  <Card title="Pairing" icon="link" href="/channels/pairing">
-    Default DM policy for SMS is pairing.
+  <Card title="Sender access" icon="link" href="#access-control">
+    SMS senders are pre-approved through `allowFrom`. There is no self-enrollment.
   </Card>
   <Card title="Gateway security" icon="shield" href="/gateway/security">
     Review webhook exposure and sender access controls.
@@ -27,7 +29,7 @@ You need:
 - A Twilio account with an SMS-capable phone number, or a Twilio Messaging Service.
 - The Twilio Account SID and Auth Token.
 - A public HTTPS URL that reaches your RemoteClaw Gateway.
-- A sender policy choice: `pairing` for private use, `allowlist` for preapproved phone numbers, or `open` only for intentionally public SMS access.
+- The E.164 phone number of every sender you want to authorize. SMS has no self-enrollment step, so a sender that is not listed in `allowFrom` is dropped silently under every policy except `open`. Use `allowlist` for a private number, or `open` only for intentionally public SMS access.
 
 Use one Twilio number for both SMS and Voice Call if the number has both capabilities. Configure the SMS webhook and Voice webhook separately in Twilio; this page only covers the SMS webhook.
 
@@ -47,7 +49,7 @@ Use one Twilio number for both SMS and Voice Call if the number has both capabil
 
   <Step title="Configure the SMS channel">
 
-Save this as `sms.patch.json5` and change the placeholders:
+Save this as `sms.patch.json5` and change the placeholders. `allowFrom` holds the phone numbers you authorize to talk to the agent — put your own phone number there:
 
 ```json5
 {
@@ -58,7 +60,8 @@ Save this as `sms.patch.json5` and change the placeholders:
       authToken: "twilio-auth-token",
       fromNumber: "+15551234567",
       publicWebhookUrl: "https://gateway.example.com/webhooks/sms",
-      dmPolicy: "pairing",
+      dmPolicy: "allowlist",
+      allowFrom: ["+15557654321"],
     },
   },
 }
@@ -96,20 +99,15 @@ tailscale funnel status
 
   </Step>
 
-  <Step title="Start the Gateway and approve first sender">
+  <Step title="Start the Gateway and message from a pre-approved number">
+
+Confirm the sending number is already listed in `channels.sms.allowFrom` from the previous step. A number that is not listed is dropped silently, so authorize it before you test.
 
 ```bash
 remoteclaw gateway
 ```
 
-Send a text message to the Twilio number. The first message creates a pairing request. Approve it:
-
-```bash
-remoteclaw pairing list sms
-remoteclaw pairing approve sms <CODE>
-```
-
-    Pairing codes expire after 1 hour.
+Send a text message to the Twilio number **from the number you put in `allowFrom`**, and confirm the agent replies.
 
   </Step>
 </Steps>
@@ -129,7 +127,8 @@ Use config-file setup when you want the channel definition to travel with the Ga
       authToken: "twilio-auth-token",
       fromNumber: "+15551234567",
       publicWebhookUrl: "https://gateway.example.com/webhooks/sms",
-      dmPolicy: "pairing",
+      dmPolicy: "allowlist",
+      allowFrom: ["+15557654321"],
     },
   },
 }
@@ -144,6 +143,7 @@ export TWILIO_ACCOUNT_SID="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
 export TWILIO_AUTH_TOKEN="<twilio-auth-token>"
 export TWILIO_PHONE_NUMBER="+15551234567"
 export SMS_PUBLIC_WEBHOOK_URL="https://gateway.example.com/webhooks/sms"
+export SMS_ALLOWED_USERS="+15557654321"
 ```
 
 Then enable the channel in config:
@@ -153,11 +153,13 @@ Then enable the channel in config:
   channels: {
     sms: {
       enabled: true,
-      dmPolicy: "pairing",
+      dmPolicy: "allowlist",
     },
   },
 }
 ```
+
+`SMS_ALLOWED_USERS` is a comma-separated list of authorized senders. It is a fallback for the default account only: when `channels.sms.allowFrom` is present in config it wins, and named entries under `channels.sms.accounts` must set `allowFrom` in config.
 
 `TWILIO_SMS_FROM` is accepted as an alias for `TWILIO_PHONE_NUMBER`. Use `TWILIO_MESSAGING_SERVICE_SID` instead of a phone-number sender when Twilio should choose the sender from a Messaging Service.
 
@@ -175,6 +177,7 @@ Then enable the channel in config:
       fromNumber: "+15551234567",
       publicWebhookUrl: "https://gateway.example.com/webhooks/sms",
       dmPolicy: "pairing",
+      allowFrom: ["+15557654321"],
     },
   },
 }
@@ -184,7 +187,7 @@ The referenced environment variable or secret provider must be visible to the Ga
 
 ### Allowlist-only private number
 
-Use `allowlist` when only known phone numbers should be able to talk to the agent:
+This is the recommended onboarding pattern for a private assistant. Use `allowlist` when only known phone numbers should be able to talk to the agent, and add every authorized sender to `allowFrom` before they message:
 
 ```json5
 {
@@ -216,6 +219,7 @@ Use `messagingServiceSid` instead of `fromNumber` when Twilio should choose the 
       messagingServiceSid: "MGxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
       publicWebhookUrl: "https://gateway.example.com/webhooks/sms",
       dmPolicy: "pairing",
+      allowFrom: ["+15557654321"],
     },
   },
 }
@@ -246,12 +250,16 @@ Set `defaultTo` when automation or agent-initiated delivery should have a defaul
 
 `channels.sms.dmPolicy` controls direct SMS access:
 
-- `pairing` (default)
+- `pairing` (default — for SMS this authorizes from `allowFrom` only; see below)
 - `allowlist` (requires at least one sender in `allowFrom`)
 - `open` (requires `allowFrom` to include `"*"`)
 - `disabled`
 
 `allowFrom` entries should be E.164 phone numbers such as `+15551234567`. `sms:` prefixes are accepted and normalized. For a private assistant, prefer `dmPolicy: "allowlist"` with explicit phone numbers.
+
+Senders are pre-approved by the operator. SMS does not run a sender-initiated pairing exchange: an inbound message from an unlisted number never creates a pairing request, so there is no code for `remoteclaw pairing approve sms` to approve. `allowFrom` is what authorizes a sender, and it is honored under the default `pairing` policy exactly as it is under `allowlist` — the practical difference is that `allowlist` declares the intent explicitly.
+
+Under every policy except `open`, a message from a number that is not in `allowFrom` is dropped silently: the Gateway acknowledges Twilio, and nothing is sent back to the sender. That is deliberate — an SMS reply is billable to the operator, so an unauthorized sender must not be able to trigger any outbound message.
 
 ## Sending SMS
 
@@ -285,10 +293,9 @@ remoteclaw channels capabilities --channel sms
 remoteclaw channels status --channel sms --probe --json
 ```
 
-3. Send an SMS to the Twilio number from your phone.
-4. Run `remoteclaw pairing list sms`.
-5. Approve the pairing code with `remoteclaw pairing approve sms <CODE>`.
-6. Send another SMS and confirm the agent replies.
+3. Confirm the number you are about to text from is listed in `channels.sms.allowFrom` (or in `SMS_ALLOWED_USERS`).
+4. Send an SMS to the Twilio number from that pre-approved number.
+5. Confirm the agent replies.
 
 For outbound-only testing, use:
 
@@ -298,16 +305,28 @@ remoteclaw message send --channel sms --target sms:+15557654321 --message "Remot
 
 ### End-to-end test from macOS iMessage/SMS
 
-On a Mac that can send carrier SMS through Messages, you can use `imsg` to drive the sender side without touching your phone:
+On a Mac that can send carrier SMS through Messages, you can use `imsg` to drive the sender side without touching your phone.
+
+Add the Mac's sending number to `channels.sms.allowFrom` first — an unlisted sender is dropped silently, so an unauthorized run looks identical to a broken webhook:
+
+```json5
+{
+  channels: {
+    sms: {
+      dmPolicy: "allowlist",
+      allowFrom: ["+15557654321"],
+    },
+  },
+}
+```
+
+Then send:
 
 ```bash
-imsg send --to "+15551234567" --service sms --text "RemoteClaw SMS E2E $(date -u +%Y%m%dT%H%M%SZ)" --json
-remoteclaw pairing list sms
-remoteclaw pairing approve sms <CODE>
 imsg send --to "+15551234567" --service sms --text "reply exactly SMS pong" --json
 ```
 
-The first message should create a pairing request. The second message should receive the agent reply through Twilio.
+The message should receive the agent reply through Twilio.
 
 ## Webhook security
 
@@ -360,9 +379,28 @@ Each account should use a distinct `webhookPath`.
 
 Check that `publicWebhookUrl` exactly matches the URL configured in Twilio, including scheme, host, path, and query string. Twilio signs the public URL string, so proxy rewrites and alternate hostnames can break signature validation.
 
-### No pairing request appears
+### Messages are silently ignored (sender not approved)
 
-Check the Twilio number's **Messaging** webhook URL and method. It must point to the SMS webhook URL and use `POST`. Also confirm the Gateway is reachable from the public internet or through your tunnel.
+Start here. A message from a number that is **not** in `allowFrom` is dropped silently by design: the Gateway acknowledges Twilio, nothing reaches the agent, and no reply is sent. SMS does not auto-enroll senders, so there is no pairing request to look for and nothing to approve — the absence of a reply is the expected behavior, not a webhook fault.
+
+The fix is to authorize the number, not to debug the webhook:
+
+```json5
+{
+  channels: {
+    sms: {
+      dmPolicy: "allowlist",
+      allowFrom: ["+15557654321"],
+    },
+  },
+}
+```
+
+Confirm the number is in E.164 form and matches the sender exactly, then restart the Gateway. Check the Gateway log for a `dropped unauthorized inbound` line, which names the sender and the policy that rejected it.
+
+### Messages from an approved number don't arrive
+
+Once the sender is in `allowFrom` and its messages still produce nothing, the inbound webhook itself is the suspect. Check the Twilio number's **Messaging** webhook URL and method. It must point to the SMS webhook URL and use `POST`. Also confirm the Gateway is reachable from the public internet or through your tunnel.
 
 If the Twilio message log shows error `11200`, Twilio accepted the inbound SMS but could not reach your webhook. Check:
 
@@ -377,4 +415,4 @@ Confirm `accountSid`, `authToken`, and either `fromNumber` or `messagingServiceS
 
 ### Messages arrive but the agent does not answer
 
-Check `dmPolicy` and `allowFrom`. With the default `pairing` policy, the sender must be approved before normal agent turns are processed.
+Check `dmPolicy` and `allowFrom`. Every policy except `open` requires the sender to be listed in `allowFrom` before agent turns are processed, and an unlisted sender is dropped without a reply — see [Messages are silently ignored](#messages-are-silently-ignored-sender-not-approved).

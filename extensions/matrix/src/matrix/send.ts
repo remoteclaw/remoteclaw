@@ -8,6 +8,8 @@ import {
   buildReplyRelation,
   buildTextContent,
   buildThreadRelation,
+  enrichMatrixFormattedContent,
+  resolveMatrixMentionsForBody,
   resolveMatrixMsgType,
   resolveMatrixVoiceDecision,
 } from "./send/formatting.js";
@@ -32,6 +34,10 @@ const MATRIX_TEXT_LIMIT = 4000;
 const getCore = () => getMatrixRuntime();
 
 export type { MatrixSendOpts, MatrixSendResult } from "./send/types.js";
+// Re-exported for upstream parity — upstream's monitor handler pulls this off
+// the send module dynamically. This fork's monitor does not, so the only
+// in-tree caller today is `sendPollMatrix` below, via the direct import above.
+export { resolveMatrixMentionsForBody } from "./send/formatting.js";
 export { resolveMatrixRoomId } from "./send/targets.js";
 
 export async function sendMessageMatrix(
@@ -106,7 +112,8 @@ export async function sendMessageMatrix(
           ? await prepareImageInfo({ buffer: media.buffer, client })
           : undefined;
         const [firstChunk, ...rest] = chunks;
-        const body = useVoice ? "Voice message" : (firstChunk ?? media.fileName ?? "(file)");
+        const captionMarkdown = useVoice ? "" : (firstChunk ?? "");
+        const body = useVoice ? "Voice message" : captionMarkdown || media.fileName || "(file)";
         const content = buildMediaContent({
           msgtype,
           body,
@@ -120,6 +127,11 @@ export async function sendMessageMatrix(
           isVoice: useVoice,
           imageInfo,
         });
+        await enrichMatrixFormattedContent({
+          client,
+          content,
+          markdown: captionMarkdown,
+        });
         const eventId = await sendContent(content);
         lastMessageId = eventId ?? lastMessageId;
         const textChunks = useVoice ? chunks : rest;
@@ -130,6 +142,11 @@ export async function sendMessageMatrix(
             continue;
           }
           const followup = buildTextContent(text, followupRelation);
+          await enrichMatrixFormattedContent({
+            client,
+            content: followup,
+            markdown: text,
+          });
           const followupEventId = await sendContent(followup);
           lastMessageId = followupEventId ?? lastMessageId;
         }
@@ -140,6 +157,11 @@ export async function sendMessageMatrix(
             continue;
           }
           const content = buildTextContent(text, relation);
+          await enrichMatrixFormattedContent({
+            client,
+            content,
+            markdown: text,
+          });
           const eventId = await sendContent(content);
           lastMessageId = eventId ?? lastMessageId;
         }
@@ -178,10 +200,17 @@ export async function sendPollMatrix(
   try {
     const roomId = await resolveMatrixRoomId(client, to);
     const pollContent = buildPollStartContent(poll);
+    const fallbackText =
+      pollContent["m.text"] ?? pollContent["org.matrix.msc1767.text"] ?? poll.question ?? "";
+    const mentions = await resolveMatrixMentionsForBody({
+      client,
+      body: fallbackText,
+    });
     const threadId = normalizeThreadId(opts.threadId);
-    const pollPayload = threadId
+    const pollPayload: Record<string, unknown> = threadId
       ? { ...pollContent, "m.relates_to": buildThreadRelation(threadId) }
-      : pollContent;
+      : { ...pollContent };
+    pollPayload["m.mentions"] = mentions;
     // @vector-im/matrix-bot-sdk sendEvent returns eventId string directly
     const eventId = await client.sendEvent(roomId, M_POLL_START, pollPayload);
 

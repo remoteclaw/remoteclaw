@@ -66,22 +66,25 @@ const runtimeStub = {
 } as unknown as PluginRuntime;
 
 let sendMessageMatrix: typeof import("./send.js").sendMessageMatrix;
+let sendPollMatrix: typeof import("./send.js").sendPollMatrix;
 let resolveMediaMaxBytes: typeof import("./send/client.js").resolveMediaMaxBytes;
 
 const makeClient = () => {
   const sendMessage = vi.fn().mockResolvedValue("evt1");
   const uploadContent = vi.fn().mockResolvedValue("mxc://example/file");
+  const sendEvent = vi.fn().mockResolvedValue("evt1");
   const client = {
     sendMessage,
     uploadContent,
+    sendEvent,
     getUserId: vi.fn().mockResolvedValue("@bot:example.org"),
   } as unknown as import("@vector-im/matrix-bot-sdk").MatrixClient;
-  return { client, sendMessage, uploadContent };
+  return { client, sendMessage, uploadContent, sendEvent };
 };
 
 beforeAll(async () => {
   setMatrixRuntime(runtimeStub);
-  ({ sendMessageMatrix } = await import("./send.js"));
+  ({ sendMessageMatrix, sendPollMatrix } = await import("./send.js"));
   ({ resolveMediaMaxBytes } = await import("./send/client.js"));
 });
 
@@ -213,6 +216,114 @@ describe("sendMessageMatrix media", () => {
     expect(mediaContent.msgtype).toBe("m.audio");
     expect(mediaContent.body).toBe("voice caption");
     expect(mediaContent["org.matrix.msc3245.voice"]).toBeUndefined();
+  });
+});
+
+// These assertions are the integration guard for the mention wiring in send.ts.
+// Deleting any single `enrichMatrixFormattedContent` / `resolveMatrixMentionsForBody`
+// call site must fail at least one of them (#3045).
+describe("sendMessageMatrix mentions", () => {
+  type MentionedContent = {
+    format?: string;
+    formatted_body?: string;
+    "m.mentions"?: { room?: boolean; user_ids?: string[] };
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    runtimeLoadConfigMock.mockReset();
+    runtimeLoadConfigMock.mockReturnValue({});
+    mediaKindFromMimeMock.mockReturnValue("image");
+    isVoiceCompatibleAudioMock.mockReturnValue(false);
+    setMatrixRuntime(runtimeStub);
+  });
+
+  it("attaches m.mentions and a matrix.to pill to a plain text message", async () => {
+    const { client, sendMessage } = makeClient();
+
+    await sendMessageMatrix("room:!room:example", "ping @alice:example.org", { client });
+
+    const content = sendMessage.mock.calls[0]?.[1] as MentionedContent;
+    expect(content["m.mentions"]).toEqual({ user_ids: ["@alice:example.org"] });
+    expect(content.format).toBe("org.matrix.custom.html");
+    expect(content.formatted_body).toBe(
+      '<p>ping <a href="https://matrix.to/#/%40alice%3Aexample.org">@alice:example.org</a></p>',
+    );
+  });
+
+  it("does not mention the sending account itself", async () => {
+    const { client, sendMessage } = makeClient();
+
+    await sendMessageMatrix("room:!room:example", "ping @bot:example.org", { client });
+
+    const content = sendMessage.mock.calls[0]?.[1] as MentionedContent;
+    expect(content["m.mentions"]).toStrictEqual({});
+    expect(content.formatted_body).toBe("<p>ping @bot:example.org</p>");
+  });
+
+  it("attaches m.mentions to a media caption", async () => {
+    const { client, sendMessage } = makeClient();
+
+    await sendMessageMatrix("room:!room:example", "look @alice:example.org", {
+      client,
+      mediaUrl: "file:///tmp/photo.png",
+    });
+
+    const content = sendMessage.mock.calls[0]?.[1] as MentionedContent;
+    expect(content["m.mentions"]).toEqual({ user_ids: ["@alice:example.org"] });
+    expect(content.formatted_body).toContain(
+      '<a href="https://matrix.to/#/%40alice%3Aexample.org">@alice:example.org</a>',
+    );
+  });
+
+  it("attaches m.mentions to a media follow-up chunk", async () => {
+    const { client, sendMessage } = makeClient();
+    mediaKindFromMimeMock.mockReturnValue("audio");
+    isVoiceCompatibleAudioMock.mockReturnValue(true);
+    loadWebMediaMock.mockResolvedValueOnce({
+      buffer: Buffer.from("audio"),
+      fileName: "clip.mp3",
+      contentType: "audio/mpeg",
+      kind: "audio",
+    });
+
+    await sendMessageMatrix("room:!room:example", "transcript @alice:example.org", {
+      client,
+      mediaUrl: "file:///tmp/clip.mp3",
+      audioAsVoice: true,
+    });
+
+    expect(sendMessage).toHaveBeenCalledTimes(2);
+    const mediaContent = sendMessage.mock.calls[0]?.[1] as MentionedContent;
+    // The voice event body is generic, so it carries no caption and no mentions.
+    expect(mediaContent["m.mentions"]).toStrictEqual({});
+    const followup = sendMessage.mock.calls[1]?.[1] as MentionedContent;
+    expect(followup["m.mentions"]).toEqual({ user_ids: ["@alice:example.org"] });
+    expect(followup.formatted_body).toContain(
+      '<a href="https://matrix.to/#/%40alice%3Aexample.org">@alice:example.org</a>',
+    );
+  });
+
+  it("attaches m.mentions to a poll payload", async () => {
+    const { client, sendEvent } = makeClient();
+
+    await sendPollMatrix(
+      "room:!room:example",
+      { question: "ping @alice:example.org?", options: ["yes", "no"] },
+      { client },
+    );
+
+    const payload = sendEvent.mock.calls[0]?.[2] as MentionedContent;
+    expect(payload["m.mentions"]).toEqual({ user_ids: ["@alice:example.org"] });
+  });
+
+  it("flags room mentions on a plain text message", async () => {
+    const { client, sendMessage } = makeClient();
+
+    await sendMessageMatrix("room:!room:example", "heads up @room", { client });
+
+    const content = sendMessage.mock.calls[0]?.[1] as MentionedContent;
+    expect(content["m.mentions"]).toEqual({ room: true });
   });
 });
 

@@ -7,6 +7,7 @@ import type {
   TimedFileInfo,
   VideoFileInfo,
 } from "@vector-im/matrix-bot-sdk";
+import type { MatrixMentions } from "../format.js";
 
 // Message types
 export const MsgType = {
@@ -107,4 +108,6 @@ export type MediaKind = "image" | "audio" | "video" | "document" | "unknown";
 export type MatrixFormattedContent = MessageEventContent & {
   format?: string;
   formatted_body?: string;
+  /** Intentional mentions metadata (MSC3952 / spec `m.mentions`). */
+  "m.mentions"?: MatrixMentions;
 };

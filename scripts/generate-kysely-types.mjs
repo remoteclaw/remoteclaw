@@ -5,22 +5,15 @@ import fs from "node:fs";
 import process from "node:process";
 import { DatabaseSync } from "node:sqlite";
 
-const SCHEMAS = [
-  {
-    name: "remoteclaw-state",
-    schema: "src/state/remoteclaw-state-schema.sql",
-    outFile: "src/state/remoteclaw-state-db.generated.d.ts",
-    schemaOutFile: "src/state/remoteclaw-state-schema.generated.ts",
-    schemaExport: "REMOTECLAW_STATE_SCHEMA_SQL",
-  },
-  {
-    name: "remoteclaw-agent",
-    schema: "src/state/remoteclaw-agent-schema.sql",
-    outFile: "src/state/remoteclaw-agent-db.generated.d.ts",
-    schemaOutFile: "src/state/remoteclaw-agent-schema.generated.ts",
-    schemaExport: "REMOTECLAW_AGENT_SCHEMA_SQL",
-  },
-];
+// Gutted in RemoteClaw fork (#3046) — the remoteclaw-state / remoteclaw-agent schema targets
+// pointed at src/state/*.sql sources that never existed in this fork, so this generator threw
+// ENOENT on every run. The fork abandoned the never-adopted upstream session/message state-db
+// and owns persistence via src/infra/session-delivery-queue-storage.ts + state-migrations.ts.
+//
+// No schema source remains, so this generator is inert. The codegen machinery below is retained
+// deliberately (the abandon was scoped to removing the dead targets, not to deleting tooling);
+// removing this script outright is tracked as follow-up to #3046.
+const SCHEMAS = [];
 
 const verify = process.argv.includes("--verify") || process.argv.includes("--check");
 

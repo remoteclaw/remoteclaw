@@ -74,7 +74,8 @@ export type VolatileFilterPlan = {
  *   - `{stateDir}/agents/<agentId>/sessions/**`/`*.{jsonl,log}`
  *   - `{stateDir}/cron/runs/**`/`*.{jsonl,log}`
  *   - `{stateDir}/logs/**`/`*.{jsonl,log}`
- *   - `{stateDir}/{delivery-queue,session-delivery-queue}/**`/`*.{json,delivered,tmp}`
+ *   - `{stateDir}/{delivery-queue,session-delivery-queue}/**`/`*.{json,delivered,tmp}`,
+ *     EXCEPT `delivery-queue/needs-review/**` — see below
  *   - `{stateDir}/**`/`*.{sock,pid,tmp}`
  */
 export function isVolatileBackupPath(absolutePath: string, plan: VolatileFilterPlan): boolean {
@@ -112,13 +113,24 @@ export function isVolatileBackupPath(absolutePath: string, plan: VolatileFilterP
         return true;
       }
 
-      for (const queueDir of ["delivery-queue", "session-delivery-queue"]) {
-        const queueRoot = path.posix.join(stateDirPosix, queueDir);
-        if (
-          isUnder(filePosix, queueRoot) &&
-          hasExtension(filePosix, [".json", ".delivered", ".tmp"])
-        ) {
-          return true;
+      // Deliveries awaiting manual reconciliation are the one part of the queue
+      // that is NOT volatile: they are terminal, unique, and the only record
+      // that a message's delivery outcome is undetermined. Losing them on a
+      // restore loses the operator's to-do list with no trace it existed.
+      // ("awaiting review", not "pending" — in the queue's own vocabulary a
+      // pending entry is one still queued to send, the opposite of this.)
+      const needsReviewRoot = path.posix.join(stateDirPosix, "delivery-queue", "needs-review");
+      const isAwaitingReview = isUnder(filePosix, needsReviewRoot);
+
+      if (!isAwaitingReview) {
+        for (const queueDir of ["delivery-queue", "session-delivery-queue"]) {
+          const queueRoot = path.posix.join(stateDirPosix, queueDir);
+          if (
+            isUnder(filePosix, queueRoot) &&
+            hasExtension(filePosix, [".json", ".delivered", ".tmp"])
+          ) {
+            return true;
+          }
         }
       }
 

@@ -39,7 +39,15 @@ import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { throwIfAborted } from "./abort.js";
-import { ackDelivery, enqueueDelivery, failDelivery } from "./delivery-queue.js";
+import { annotateDeliveredBeforeFailure } from "./delivered-before-failure.js";
+import {
+  ackDelivery,
+  enqueueDelivery,
+  failDelivery,
+  failPartialDelivery,
+  markDeliveryAttemptStarted,
+  withActiveDeliveryClaim,
+} from "./delivery-queue.js";
 import { describeDeliveryError } from "./describe-delivery-error.js";
 import type { OutboundIdentity } from "./identity.js";
 import type { NormalizedOutboundPayload } from "./payloads.js";
@@ -492,46 +500,135 @@ export async function deliverOutboundPayloads(
         mirror: params.mirror,
       }).catch(() => null); // Best-effort — don't block delivery if queue write fails.
 
-  // Wrap onError to detect partial failures under bestEffort mode.
+  // Wrap onError to detect per-payload failures under bestEffort mode.
   // When bestEffort is true, per-payload errors are caught and passed to onError
   // without throwing — so the outer try/catch never fires. We track whether any
-  // payload failed so we can call failDelivery instead of ackDelivery.
-  let hadPartialFailure = false;
-  const wrappedParams = params.onError
-    ? {
-        ...params,
-        onError: (err: unknown, payload: NormalizedOutboundPayload) => {
-          hadPartialFailure = true;
-          params.onError!(err, payload);
-        },
-      }
-    : params;
+  // payload failed so we can record a failure instead of acking.
+  //
+  // Wrapped unconditionally, not only when the caller passed an onError: whether
+  // a send failed is a property of the send, not of the caller's callback wiring.
+  // Gating on `params.onError` made a bestEffort caller that supplies no callback
+  // (server-node-events, server-restart-sentinel, the message command) ack an
+  // entry whose payloads all failed — silently dropping the message.
+  let hadPayloadFailure = false;
+  let firstPayloadError: string | undefined;
+  const wrappedParams = {
+    ...params,
+    onError: (err: unknown, payload: NormalizedOutboundPayload) => {
+      hadPayloadFailure = true;
+      // Keep the cause: "partial delivery failure (bestEffort)" alone tells an
+      // operator triaging the entry nothing about why it failed.
+      firstPayloadError ??= describeDeliveryError(err);
+      params.onError?.(err, payload);
+    },
+  };
 
-  try {
-    const results = await deliverOutboundPayloadsCore(wrappedParams);
-    if (queueId) {
-      if (hadPartialFailure) {
-        await failDelivery(queueId, "partial delivery failure (bestEffort)").catch(() => {});
-      } else {
-        await ackDelivery(queueId).catch(() => {}); // Best-effort cleanup.
-      }
+  // The core fills this as each payload lands, so the queue bookkeeping below
+  // can tell "nothing reached the recipient" (safe to replay whole) from "some
+  // of it did" (replaying duplicates what already arrived) — including when the
+  // core throws part-way and never returns its results. Chunked text makes this
+  // ordinary, not exotic: chunk 1 can land and chunk 2 throw.
+  const landed: OutboundDeliveryResult[] = [];
+
+  const recordQueueFailure = async (error: string): Promise<void> => {
+    if (!queueId) {
+      return;
     }
-    return results;
-  } catch (err) {
-    if (queueId) {
-      if (isAbortError(err)) {
-        await ackDelivery(queueId).catch(() => {});
-      } else {
-        await failDelivery(queueId, describeDeliveryError(err)).catch(() => {});
-      }
+    if (landed.length > 0) {
+      // Pass the count: it is the only record of how far the send got, and the
+      // operator who opens the quarantined entry otherwise sees the full payload
+      // list with no way to tell which part arrived.
+      await failPartialDelivery(queueId, error, undefined, landed.length).catch(() => {});
+    } else {
+      await failDelivery(queueId, error).catch(() => {});
     }
-    throw err;
+  };
+
+  const runDelivery = async (): Promise<OutboundDeliveryResult[]> => {
+    try {
+      const results = await deliverOutboundPayloadsCore(wrappedParams, landed);
+      if (queueId) {
+        if (hadPayloadFailure) {
+          await recordQueueFailure(
+            `partial delivery failure (bestEffort): ${firstPayloadError ?? "unknown error"}`,
+          );
+        } else {
+          await ackDelivery(queueId).catch(() => {}); // Best-effort cleanup.
+        }
+      }
+      return results;
+    } catch (err) {
+      if (queueId) {
+        // Acking discards the entry outright — no retry, no failed/, no
+        // needs-review — so it is only correct when the CALLER cancelled and
+        // nothing reached the recipient. `isAbortError` is name-based, and a
+        // transport timeout that aborts its own AbortController surfaces a
+        // DOMException named "AbortError" (BlueBubbles does exactly this): that
+        // is an unknown send outcome, not a cancellation, and acking it would
+        // silently drop the message. A caller-cancelled send that already
+        // landed part of its payloads is likewise not a clean discard.
+        const cancelledByCaller = isAbortError(err) && params.abortSignal?.aborted === true;
+        if (cancelledByCaller && landed.length === 0) {
+          await ackDelivery(queueId).catch(() => {});
+        } else {
+          await recordQueueFailure(describeDeliveryError(err));
+        }
+      }
+      // Tell whoever catches this how far the send got. Crash recovery calls
+      // this function with skipQueue set, so it owns its own queue bookkeeping
+      // and has no other way to tell a total failure (safe to replay whole)
+      // from a partial one (replaying duplicates what already arrived).
+      throw annotateDeliveredBeforeFailure(err, landed.length);
+    }
+  };
+
+  if (!queueId) {
+    return await runDelivery();
   }
+
+  // Hold a single-owner claim for the whole send, so a crash-recovery pass
+  // running concurrently cannot drive the same queue entry, and stamp the entry
+  // as "send in flight" so an interrupted send is quarantined rather than
+  // blind-replayed on the next startup (#2934).
+  const claim = await withActiveDeliveryClaim(queueId, async () => {
+    try {
+      await markDeliveryAttemptStarted(queueId);
+    } catch (err) {
+      // Degrade to the pre-marker replay behaviour rather than block the send —
+      // but say so, or an operator cannot tell that duplicate suppression is
+      // disarmed for this message.
+      log.warn(
+        "deliverOutboundPayloads: could not record the send-in-flight marker; if this process dies mid-send the message may be delivered twice",
+        { channel, to, queueId, error: describeDeliveryError(err) },
+      );
+    }
+    return await runDelivery();
+  });
+  if (claim.status === "claimed") {
+    return claim.value;
+  }
+  // Unreachable today, and the reason is narrow: there is no `await` between
+  // enqueueDelivery resolving above and the claim being taken, so no recovery
+  // pass can interleave and grab this freshly-minted id. Do not insert one.
+  // Throwing rather than returning [] keeps this loud if that ever changes —
+  // most callers ignore the result array, so an empty return would read as a
+  // successful send of a message that was never sent.
+  throw new Error(
+    `Delivery queue entry ${queueId} is already owned by another delivery worker — refusing to send it twice`,
+  );
 }
 
-/** Core delivery logic (extracted for queue wrapper). */
+/**
+ * Core delivery logic (extracted for queue wrapper).
+ *
+ * `results` is accepted from the caller — required, not defaulted — rather than
+ * created here, so the queue wrapper still sees which payloads landed when this
+ * function throws part-way. A default would silently let a future caller drop
+ * that wiring and lose the partial-send signal.
+ */
 async function deliverOutboundPayloadsCore(
   params: DeliverOutboundPayloadsCoreParams,
+  results: OutboundDeliveryResult[],
 ): Promise<OutboundDeliveryResult[]> {
   const { cfg, channel, to, payloads } = params;
   const accountId = params.accountId;
@@ -542,7 +639,6 @@ async function deliverOutboundPayloadsCore(
     cfg,
     params.session?.agentId ?? params.mirror?.agentId,
   );
-  const results: OutboundDeliveryResult[] = [];
   const handler = await createChannelHandler({
     cfg,
     channel,

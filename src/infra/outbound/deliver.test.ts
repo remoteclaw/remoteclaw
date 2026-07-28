@@ -12,6 +12,7 @@ import { withEnvAsync } from "../../test-utils/env.js";
 import { createIMessageTestPlugin } from "../../test-utils/imessage-test-plugin.js";
 import { createInternalHookEventPayload } from "../../test-utils/internal-hook-event-payload.js";
 import { resolvePreferredRemoteClawTmpDir } from "../tmp-remoteclaw-dir.js";
+import { readDeliveredBeforeFailure } from "./delivered-before-failure.js";
 
 const mocks = vi.hoisted(() => ({
   appendAssistantMessageToSessionTranscript: vi.fn(async () => ({ ok: true, sessionFile: "x" })),
@@ -30,6 +31,8 @@ const queueMocks = vi.hoisted(() => ({
   enqueueDelivery: vi.fn(async () => "mock-queue-id"),
   ackDelivery: vi.fn(async () => {}),
   failDelivery: vi.fn(async () => {}),
+  failPartialDelivery: vi.fn(async () => {}),
+  markDeliveryAttemptStarted: vi.fn(async () => {}),
   withActiveDeliveryClaim: vi.fn<
     (
       entryId: string,
@@ -61,6 +64,8 @@ vi.mock("./delivery-queue.js", () => ({
   enqueueDelivery: queueMocks.enqueueDelivery,
   ackDelivery: queueMocks.ackDelivery,
   failDelivery: queueMocks.failDelivery,
+  failPartialDelivery: queueMocks.failPartialDelivery,
+  markDeliveryAttemptStarted: queueMocks.markDeliveryAttemptStarted,
   withActiveDeliveryClaim: queueMocks.withActiveDeliveryClaim,
 }));
 vi.mock("../../logging/subsystem.js", () => ({
@@ -85,6 +90,17 @@ const telegramChunkConfig: RemoteClawConfig = {
 const whatsappChunkConfig: RemoteClawConfig = {
   channels: { whatsapp: { textChunkLimit: 4000 } },
 };
+
+/**
+ * A 4-character text payload under this config splits into exactly two platform
+ * sends, so the first can land and the second fail. That is the mechanism the
+ * partial-delivery queue tests depend on — spelled out here once instead of
+ * being re-derived from `textChunkLimit: 2` at every use.
+ */
+const whatsappSplitsIntoTwoChunksConfig: RemoteClawConfig = {
+  channels: { whatsapp: { textChunkLimit: 2 } },
+};
+const TWO_CHUNK_TEXT = "abcd";
 
 type DeliverOutboundArgs = Parameters<typeof deliverOutboundPayloads>[0];
 type DeliverOutboundPayload = DeliverOutboundArgs["payloads"][number];
@@ -209,6 +225,10 @@ describe("deliverOutboundPayloads", () => {
     queueMocks.ackDelivery.mockResolvedValue(undefined);
     queueMocks.failDelivery.mockClear();
     queueMocks.failDelivery.mockResolvedValue(undefined);
+    queueMocks.failPartialDelivery.mockClear();
+    queueMocks.failPartialDelivery.mockResolvedValue(undefined);
+    queueMocks.markDeliveryAttemptStarted.mockClear();
+    queueMocks.markDeliveryAttemptStarted.mockResolvedValue(undefined);
     queueMocks.withActiveDeliveryClaim.mockClear();
     queueMocks.withActiveDeliveryClaim.mockImplementation(async (_entryId, fn) => ({
       status: "claimed",
@@ -800,17 +820,176 @@ describe("deliverOutboundPayloads", () => {
     );
   });
 
-  it("calls failDelivery instead of ackDelivery on bestEffort partial failure", async () => {
+  it("records a bestEffort partial failure as an unknown outcome, not a plain failure", async () => {
     const { onError } = await runBestEffortPartialFailureDelivery();
 
     // onError was called for the first payload's failure.
     expect(onError).toHaveBeenCalledTimes(1);
 
-    // Queue entry should NOT be acked — failDelivery should be called instead.
+    // Some payloads landed, so the entry must be neither acked nor marked
+    // plainly-failed: a plain failure is replayed whole, re-sending what
+    // already arrived. failPartialDelivery keeps it for reconciliation.
     expect(queueMocks.ackDelivery).not.toHaveBeenCalled();
+    expect(queueMocks.failDelivery).not.toHaveBeenCalled();
+    // The landed count is passed through: it is the only record of how far the
+    // send got, and the operator opening the quarantined entry has no other way
+    // to tell which part arrived. The cause travels with it — "partial delivery
+    // failure" alone says nothing about why.
+    expect(queueMocks.failPartialDelivery).toHaveBeenCalledWith(
+      "mock-queue-id",
+      expect.stringContaining("partial delivery failure (bestEffort):"),
+      undefined,
+      1,
+    );
+  });
+
+  it("records a bestEffort failure where NOTHING landed as a plain, replayable failure", async () => {
+    // "onError fired" is not "something landed". Quarantining a send that never
+    // reached the recipient turns a routine transient failure into a permanent
+    // manual-reconciliation item that is never delivered.
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("network blip"));
+    const onError = vi.fn();
+
+    const results = await deliverOutboundPayloads({
+      cfg: {},
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "a" }],
+      deps: { sendWhatsApp },
+      bestEffort: true,
+      onError,
+    });
+
+    expect(results).toEqual([]);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(queueMocks.failPartialDelivery).not.toHaveBeenCalled();
+    expect(queueMocks.failDelivery).toHaveBeenCalledWith("mock-queue-id", expect.any(String));
+    expect(queueMocks.ackDelivery).not.toHaveBeenCalled();
+  });
+
+  it("records a bestEffort failure even when the caller supplies no onError", async () => {
+    // Whether a send failed is a property of the send, not of the caller's
+    // callback wiring. Gating partial-failure detection on `params.onError`
+    // acked an entry whose payloads all failed, silently dropping the message —
+    // and several bestEffort callers pass no onError at all
+    // (server-node-events, server-restart-sentinel, the message command).
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("network blip"));
+
+    const results = await deliverOutboundPayloads({
+      cfg: {},
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "a" }],
+      deps: { sendWhatsApp },
+      bestEffort: true,
+    });
+
+    expect(results).toEqual([]);
+    expect(queueMocks.ackDelivery).not.toHaveBeenCalled();
+    expect(queueMocks.failDelivery).toHaveBeenCalledWith("mock-queue-id", expect.any(String));
+  });
+
+  it("still forwards to a caller-supplied onError while tracking the failure itself", async () => {
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("network blip"));
+    const onError = vi.fn();
+
+    await deliverOutboundPayloads({
+      cfg: {},
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "a" }],
+      deps: { sendWhatsApp },
+      bestEffort: true,
+      onError,
+    });
+
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(onError).toHaveBeenCalledWith(expect.any(Error), expect.anything());
+  });
+
+  it("annotates the rethrown error with how many payloads landed", async () => {
+    // Crash recovery calls this function with skipQueue set, so it does its own
+    // queue bookkeeping and the error is its only channel for "how far did the
+    // send get" — the difference between replaying whole and quarantining.
+    const sendWhatsApp = vi
+      .fn()
+      .mockResolvedValueOnce({ messageId: "w1", toJid: "jid" })
+      .mockRejectedValueOnce(new Error("rate limited"));
+
+    const err = await deliverOutboundPayloads({
+      cfg: whatsappSplitsIntoTwoChunksConfig,
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: TWO_CHUNK_TEXT }],
+      deps: { sendWhatsApp },
+      skipQueue: true,
+    }).catch((e: unknown) => e);
+
+    expect(readDeliveredBeforeFailure(err)).toBe(1);
+  });
+
+  it("annotates a total failure with a landed count of zero", async () => {
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("rate limited"));
+
+    const err = await deliverOutboundPayloads({
+      cfg: whatsappSplitsIntoTwoChunksConfig,
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: TWO_CHUNK_TEXT }],
+      deps: { sendWhatsApp },
+      skipQueue: true,
+    }).catch((e: unknown) => e);
+
+    expect(readDeliveredBeforeFailure(err)).toBe(0);
+  });
+
+  it("records a mid-chunk failure as an unknown outcome — earlier chunks already landed", async () => {
+    // The default (non-bestEffort) path: chunk 1 reaches the wire, chunk 2
+    // throws. Replaying the whole entry re-sends chunk 1 to the recipient.
+    const sendWhatsApp = vi
+      .fn()
+      .mockResolvedValueOnce({ messageId: "w1", toJid: "jid" })
+      .mockRejectedValueOnce(new Error("rate limited"));
+
+    await expect(
+      deliverOutboundPayloads({
+        cfg: whatsappSplitsIntoTwoChunksConfig,
+        channel: "whatsapp",
+        to: "+1555",
+        payloads: [{ text: TWO_CHUNK_TEXT }],
+        deps: { sendWhatsApp },
+      }),
+    ).rejects.toThrow("rate limited");
+
+    expect(sendWhatsApp).toHaveBeenCalledTimes(2);
+    expect(queueMocks.failDelivery).not.toHaveBeenCalled();
+    expect(queueMocks.failPartialDelivery).toHaveBeenCalledWith(
+      "mock-queue-id",
+      expect.stringContaining("rate limited"),
+      undefined,
+      1,
+    );
+  });
+
+  it("records a first-chunk failure as a plain, replayable failure", async () => {
+    // Nothing landed, so the entry must stay on the normal retry path rather
+    // than being quarantined for a human.
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("rate limited"));
+
+    await expect(
+      deliverOutboundPayloads({
+        cfg: whatsappSplitsIntoTwoChunksConfig,
+        channel: "whatsapp",
+        to: "+1555",
+        payloads: [{ text: TWO_CHUNK_TEXT }],
+        deps: { sendWhatsApp },
+      }),
+    ).rejects.toThrow("rate limited");
+
+    expect(queueMocks.failPartialDelivery).not.toHaveBeenCalled();
     expect(queueMocks.failDelivery).toHaveBeenCalledWith(
       "mock-queue-id",
-      "partial delivery failure (bestEffort)",
+      expect.stringContaining("rate limited"),
     );
   });
 
@@ -834,6 +1013,134 @@ describe("deliverOutboundPayloads", () => {
     expect(queueMocks.ackDelivery).toHaveBeenCalledWith("mock-queue-id");
     expect(queueMocks.failDelivery).not.toHaveBeenCalled();
     expect(sendWhatsApp).not.toHaveBeenCalled();
+  });
+
+  it("does NOT ack an abort that landed part of the message", async () => {
+    // Acking discards the entry outright — no retry, no failed/, no
+    // needs-review. A cancellation that already put chunk 1 on the recipient's
+    // device is not a clean discard: erasing it loses the only record that a
+    // partial message went out.
+    const abortController = new AbortController();
+    const sendWhatsApp = vi.fn(async () => {
+      abortController.abort();
+      return { messageId: "w1", toJid: "jid" };
+    });
+
+    await expect(
+      deliverOutboundPayloads({
+        cfg: whatsappSplitsIntoTwoChunksConfig,
+        channel: "whatsapp",
+        to: "+1555",
+        payloads: [{ text: TWO_CHUNK_TEXT }],
+        deps: { sendWhatsApp },
+        abortSignal: abortController.signal,
+      }),
+    ).rejects.toThrow("Operation aborted");
+
+    expect(sendWhatsApp).toHaveBeenCalledTimes(1);
+    expect(queueMocks.ackDelivery).not.toHaveBeenCalled();
+    expect(queueMocks.failPartialDelivery).toHaveBeenCalledWith(
+      "mock-queue-id",
+      expect.any(String),
+      undefined,
+      1,
+    );
+  });
+
+  it("does NOT ack a transport error that merely calls itself AbortError", async () => {
+    // `isAbortError` is name-based. A client-side request timeout that aborts
+    // its own controller surfaces a DOMException named "AbortError" without the
+    // CALLER ever cancelling — BlueBubbles' fetch timeout does exactly this.
+    // That is an unknown send outcome (the server may have delivered it), not a
+    // cancellation, and acking it would silently drop the message.
+    const sendWhatsApp = vi
+      .fn()
+      .mockRejectedValue(new DOMException("This operation was aborted", "AbortError"));
+
+    await expect(
+      deliverOutboundPayloads({
+        cfg: {},
+        channel: "whatsapp",
+        to: "+1555",
+        payloads: [{ text: "a" }],
+        deps: { sendWhatsApp },
+      }),
+    ).rejects.toThrow("aborted");
+
+    expect(queueMocks.ackDelivery).not.toHaveBeenCalled();
+    expect(queueMocks.failDelivery).toHaveBeenCalledWith("mock-queue-id", expect.any(String));
+  });
+
+  it("marks the queue entry as send-in-flight before the platform send", async () => {
+    const order: string[] = [];
+    queueMocks.markDeliveryAttemptStarted.mockImplementation(async () => {
+      order.push("mark");
+    });
+    const sendWhatsApp = vi.fn(async () => {
+      order.push("send");
+      return { messageId: "w1", toJid: "jid" };
+    });
+
+    await deliverWhatsAppPayload({ sendWhatsApp, payload: { text: "hi" } });
+
+    // Ordering is the whole point: a marker written after the send would leave
+    // the crash window open for a duplicate replay.
+    expect(order).toEqual(["mark", "send"]);
+    expect(queueMocks.markDeliveryAttemptStarted).toHaveBeenCalledWith("mock-queue-id");
+    expect(queueMocks.withActiveDeliveryClaim).toHaveBeenCalledWith(
+      "mock-queue-id",
+      expect.any(Function),
+    );
+  });
+
+  it("delivers anyway when the send-in-flight marker cannot be written, but warns", async () => {
+    queueMocks.markDeliveryAttemptStarted.mockRejectedValue(new Error("disk full"));
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
+
+    const results = await deliverWhatsAppPayload({ sendWhatsApp, payload: { text: "hi" } });
+
+    expect(results).toHaveLength(1);
+    expect(sendWhatsApp).toHaveBeenCalledTimes(1);
+    expect(queueMocks.ackDelivery).toHaveBeenCalledWith("mock-queue-id");
+    // Silently disarming duplicate suppression is worse than the duplicate:
+    // the operator has to be able to see that the guard is off.
+    expect(logMocks.warn).toHaveBeenCalledWith(
+      expect.stringContaining("could not record the send-in-flight marker"),
+      expect.objectContaining({ channel: "whatsapp", queueId: "mock-queue-id" }),
+    );
+  });
+
+  it("fails loudly rather than reporting success when the entry is claimed elsewhere", async () => {
+    queueMocks.withActiveDeliveryClaim.mockResolvedValue({ status: "claimed-by-other-owner" });
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
+
+    // Returning [] here would read as a successful send to the several call sites
+    // that ignore the result array.
+    await expect(deliverWhatsAppPayload({ sendWhatsApp, payload: { text: "hi" } })).rejects.toThrow(
+      "already owned by another delivery worker",
+    );
+
+    expect(sendWhatsApp).not.toHaveBeenCalled();
+    expect(queueMocks.ackDelivery).not.toHaveBeenCalled();
+  });
+
+  it("does not enqueue, claim, or mark when skipQueue is set (recovery replay)", async () => {
+    const sendWhatsApp = vi.fn().mockResolvedValue({ messageId: "w1", toJid: "jid" });
+
+    const results = await deliverOutboundPayloads({
+      cfg: whatsappChunkConfig,
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "hi" }],
+      deps: { sendWhatsApp },
+      skipQueue: true,
+    });
+
+    expect(results).toHaveLength(1);
+    expect(queueMocks.enqueueDelivery).not.toHaveBeenCalled();
+    expect(queueMocks.withActiveDeliveryClaim).not.toHaveBeenCalled();
+    expect(queueMocks.markDeliveryAttemptStarted).not.toHaveBeenCalled();
+    expect(queueMocks.ackDelivery).not.toHaveBeenCalled();
   });
 
   it("passes normalized payload to onError", async () => {

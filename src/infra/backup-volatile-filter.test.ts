@@ -1,6 +1,7 @@
 // Tests volatile path filtering for backup operations.
 import { describe, expect, it } from "vitest";
 import { isVolatileBackupPath } from "./backup-volatile-filter.js";
+import { resolveNeedsReviewDir } from "./outbound/delivery-queue.js";
 
 const stateDir = "/opt/remoteclaw/state";
 const plan = { stateDirs: [stateDir] };
@@ -84,6 +85,22 @@ describe("isVolatileBackupPath", () => {
 
   it("does not treat non-json delivery-queue files as volatile", () => {
     expect(isVolatileBackupPath(`${stateDir}/delivery-queue/README.md`, plan)).toBe(false);
+  });
+
+  it("keeps delivery-queue needs-review entries out of the volatile set", () => {
+    // Quarantined deliveries are terminal and unique: they are the only record
+    // that a message's delivery outcome is undetermined, so losing them on a
+    // restore loses the operator's reconciliation queue with no trace.
+    //
+    // Path comes from resolveNeedsReviewDir rather than a literal so that
+    // renaming the quarantine directory fails this test instead of silently
+    // dropping the exemption and making quarantined entries volatile again.
+    expect(
+      isVolatileBackupPath(
+        `${resolveNeedsReviewDir(stateDir)}/3fac5e46-42dc-4230-a725-51c203830b4f.json`,
+        plan,
+      ),
+    ).toBe(false);
   });
 
   it("does not treat delivery-queue json outside stateDir as volatile", () => {

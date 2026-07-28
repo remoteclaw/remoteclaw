@@ -54,6 +54,7 @@ const requiredSubpathEntries = [
   "msteams",
   "acpx",
   "bluebubbles",
+  "clickclack",
   "copilot-proxy",
   "device-pair",
   "diagnostics-otel",

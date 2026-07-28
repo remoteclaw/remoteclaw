@@ -7,8 +7,17 @@ import type { AccessGroupConfig } from "../../config/types.access-groups.js";
 import type { ChatChannelId } from "../ids.js";
 import type { InboundImplicitMentionKind, InboundMentionFacts } from "../mention-gating.js";
 
-/** Channel identifier used in ingress diagnostics and config lookups. */
-export type ChannelIngressChannelId = ChatChannelId;
+/**
+ * Channel identifier used in ingress diagnostics and config lookups.
+ *
+ * Built-in chat channels are listed for autocomplete, but the ingress gate is
+ * also the contract plugin-provided channels wire into (the id only ever feeds
+ * string-keyed config, diagnostics, access-group, and pairing-store lookups —
+ * `normalizeChannelId` already accepts an arbitrary `string`). Keeping this
+ * pinned to `ChatChannelId` would force every plugin channel to cast at its
+ * ingress call site, which is the last place a cast belongs.
+ */
+export type ChannelIngressChannelId = ChatChannelId | (string & {});
 
 /** Redacted identifier category used by allowlist normalization and matching. */
 export type ChannelIngressIdentifierKind =

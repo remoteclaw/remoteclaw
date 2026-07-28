@@ -19,6 +19,9 @@ const allowedRawFetchCallsites = new Set([
   bundledPluginCallsite("browser", "src/browser/client-fetch.ts", 192),
   bundledPluginCallsite("chutes", "models.ts", 536),
   bundledPluginCallsite("chutes", "models.ts", 543),
+  // Self-hosted ClickClack deployment: `baseUrl` is operator-supplied local
+  // config, never a value taken from inbound traffic (#2861).
+  bundledPluginCallsite("clickclack", "src/http-client.ts", 52),
   bundledPluginCallsite("discord", "src/monitor/gateway-plugin.ts", 417),
   bundledPluginCallsite("discord", "src/monitor/gateway-plugin.ts", 483),
   bundledPluginCallsite("discord", "src/voice-message.ts", 298),

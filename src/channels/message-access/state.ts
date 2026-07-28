@@ -7,6 +7,7 @@ import {
   normalizeStringEntries,
   uniqueStrings,
 } from "@remoteclaw/normalization-core/string-normalization";
+import { readAccessGroupMembers } from "../access-group-members.js";
 import { parseAccessGroupAllowFromEntry } from "../allow-from.js";
 import type {
   AccessGroupMembershipFact,
@@ -119,8 +120,8 @@ function groupSenderEntries(params: {
     return [];
   }
   return normalizeStringEntries([
-    ...(group.members["*"] ?? []),
-    ...(group.members[params.input.channelId] ?? []),
+    ...readAccessGroupMembers(group.members, "*"),
+    ...readAccessGroupMembers(group.members, params.input.channelId),
   ]);
 }
 

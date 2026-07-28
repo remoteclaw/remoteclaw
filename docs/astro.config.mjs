@@ -248,6 +248,7 @@ export default defineConfig({
                 { slug: "channels/feishu" },
                 { slug: "channels/googlechat" },
                 { slug: "channels/mattermost" },
+                { slug: "channels/clickclack" },
                 { slug: "channels/signal" },
                 { slug: "channels/imessage" },
                 { slug: "channels/bluebubbles" },

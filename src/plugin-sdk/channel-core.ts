@@ -31,7 +31,16 @@ import type { ChannelPlugin } from "../channels/plugins/types.plugin.js";
 import { getChatChannelMeta, normalizeChatChannelId } from "../channels/registry.js";
 import type { RemoteClawConfig } from "../config/config.js";
 import type { ReplyToMode } from "../config/types.base.js";
+import { buildOutboundBaseSessionKey } from "../infra/outbound/base-session-key.js";
 import type { OutboundDeliveryResult } from "../infra/outbound/deliver.js";
+import type { OutboundSessionRoute } from "../infra/outbound/outbound-session.js";
+import { normalizeOutboundThreadId } from "../infra/outbound/thread-id.js";
+import type { RoutePeer } from "../routing/resolve-route.js";
+import { resolveThreadSessionKeys } from "../routing/session-key.js";
+import {
+  normalizeSessionKeyPreservingOpaquePeerIds,
+  parseThreadSessionSuffix,
+} from "../sessions/session-key-utils.js";
 
 function createInlineTextPairingAdapter(params: {
   idLabel: string;
@@ -306,6 +315,145 @@ export function createChatChannelPlugin<
     ...(params.threading ? { threading: resolveChatChannelThreading(params.threading) } : {}),
     ...(params.outbound ? { outbound: resolveChatChannelOutbound(params.outbound) } : {}),
   } as ChannelPlugin<TResolvedAccount, Probe, Audit>;
+}
+
+// --- Outbound session-route builders -------------------------------------
+//
+// Also carved from upstream `src/plugin-sdk/core.ts`: the two helpers a chat
+// channel's `messaging.resolveOutboundSessionRoute` hook composes. Every
+// dependency already exists in the fork (`buildOutboundBaseSessionKey`,
+// `resolveThreadSessionKeys`, `parseThreadSessionSuffix`,
+// `normalizeSessionKeyPreservingOpaquePeerIds`, `normalizeOutboundThreadId`);
+// only the two composing wrappers were missing.
+
+/**
+ * Builds the canonical outbound session route payload returned by a channel's
+ * `messaging.resolveOutboundSessionRoute` hook.
+ */
+export function buildChannelOutboundSessionRoute(params: {
+  cfg: RemoteClawConfig;
+  agentId: string;
+  channel: string;
+  accountId?: string | null;
+  peer: RoutePeer;
+  chatType: OutboundSessionRoute["chatType"];
+  from: string;
+  to: string;
+  threadId?: string | number;
+}): OutboundSessionRoute {
+  const baseSessionKey = buildOutboundBaseSessionKey({
+    cfg: params.cfg,
+    agentId: params.agentId,
+    channel: params.channel,
+    accountId: params.accountId,
+    peer: params.peer,
+  });
+  return {
+    sessionKey: baseSessionKey,
+    baseSessionKey,
+    peer: params.peer,
+    chatType: params.chatType,
+    from: params.from,
+    to: params.to,
+    ...(params.threadId !== undefined ? { threadId: params.threadId } : {}),
+  };
+}
+
+/** Candidate source used when choosing a thread id for outbound session routing. */
+export type ThreadAwareOutboundSessionRouteThreadSource =
+  | "replyToId"
+  | "threadId"
+  | "currentSession";
+
+/** Recovery context passed before reusing the current session's thread id. */
+export type ThreadAwareOutboundSessionRouteRecoveryContext = {
+  route: OutboundSessionRoute;
+  currentBaseSessionKey: string;
+  currentThreadId: string;
+};
+
+/** Recovers the current thread id when the current session shares this base route. */
+// Internal to the thread-aware route builder below. Upstream exports this, but
+// the fork keeps unconsumed surface unexported — the same posture the bundled
+// channel plugins document when they drop upstream fields they cannot back.
+function recoverCurrentThreadSessionId(params: {
+  route: OutboundSessionRoute;
+  currentSessionKey?: string | null;
+  canRecover?: (context: ThreadAwareOutboundSessionRouteRecoveryContext) => boolean;
+}): string | undefined {
+  const current = parseThreadSessionSuffix(params.currentSessionKey);
+  if (!current.baseSessionKey || !current.threadId) {
+    return undefined;
+  }
+  if (
+    normalizeSessionKeyPreservingOpaquePeerIds(current.baseSessionKey) !==
+    normalizeSessionKeyPreservingOpaquePeerIds(params.route.baseSessionKey)
+  ) {
+    return undefined;
+  }
+  const context = {
+    route: params.route,
+    currentBaseSessionKey: current.baseSessionKey,
+    currentThreadId: current.threadId,
+  };
+  if (params.canRecover && !params.canRecover(context)) {
+    return undefined;
+  }
+  return current.threadId;
+}
+
+function resolveThreadAwareOutboundCandidate(
+  threadId?: string | number | null,
+): { routeThreadId: string | number; sessionThreadId: string } | undefined {
+  const sessionThreadId = normalizeOutboundThreadId(threadId);
+  if (sessionThreadId === undefined) {
+    return undefined;
+  }
+  return {
+    routeThreadId: typeof threadId === "number" ? threadId : sessionThreadId,
+    sessionThreadId,
+  };
+}
+
+/** Adds thread-aware session keys and route thread ids to an outbound channel route. */
+export function buildThreadAwareOutboundSessionRoute(params: {
+  route: OutboundSessionRoute;
+  replyToId?: string | number | null;
+  threadId?: string | number | null;
+  currentSessionKey?: string | null;
+  precedence?: readonly ThreadAwareOutboundSessionRouteThreadSource[];
+  useSuffix?: boolean;
+  parentSessionKey?: string;
+  normalizeThreadId?: (threadId: string) => string;
+  canRecoverCurrentThread?: (context: ThreadAwareOutboundSessionRouteRecoveryContext) => boolean;
+}): OutboundSessionRoute {
+  const recoveredThreadId = recoverCurrentThreadSessionId({
+    route: params.route,
+    currentSessionKey: params.currentSessionKey,
+    canRecover: params.canRecoverCurrentThread,
+  });
+  const candidates: Record<
+    ThreadAwareOutboundSessionRouteThreadSource,
+    { routeThreadId: string | number; sessionThreadId: string } | undefined
+  > = {
+    replyToId: resolveThreadAwareOutboundCandidate(params.replyToId),
+    threadId: resolveThreadAwareOutboundCandidate(params.threadId),
+    currentSession: resolveThreadAwareOutboundCandidate(recoveredThreadId),
+  };
+  const precedence = params.precedence ?? ["replyToId", "threadId", "currentSession"];
+  const candidate = precedence.map((source) => candidates[source]).find(Boolean);
+  const threadKeys = resolveThreadSessionKeys({
+    baseSessionKey: params.route.baseSessionKey,
+    threadId: candidate?.sessionThreadId,
+    parentSessionKey: candidate ? params.parentSessionKey : undefined,
+    useSuffix: params.useSuffix,
+    normalizeThreadId: params.normalizeThreadId,
+  });
+  return {
+    ...params.route,
+    sessionKey: threadKeys.sessionKey,
+    ...(candidate !== undefined ? { threadId: candidate.routeThreadId } : {}),
+  };
 }
 
 // Shared base object for channel plugins that only need to override a few optional surfaces.

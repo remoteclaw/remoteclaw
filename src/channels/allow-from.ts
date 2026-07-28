@@ -1,5 +1,6 @@
 import type { AccessGroupsConfig } from "../config/types.access-groups.js";
 import { normalizeStringEntries } from "../shared/string-normalization.js";
+import { readAccessGroupMembers } from "./access-group-members.js";
 
 export const ACCESS_GROUP_ALLOW_FROM_PREFIX = "accessGroup:";
 
@@ -47,8 +48,10 @@ export function expandAccessGroupAllowFromEntries(params: {
     // `members["*"]` is the channel-scope key for entries SHARED across all channels — not an
     // allowlist wildcard. A wildcard only arises if the operator lists `"*"` as a member VALUE,
     // which is explicit and symmetric with a direct `allowFrom: ["*"]`.
-    const sharedMembers = group.members["*"] ?? [];
-    const channelMembers = params.channelId ? (group.members[params.channelId] ?? []) : [];
+    const sharedMembers = readAccessGroupMembers(group.members, "*");
+    const channelMembers = params.channelId
+      ? readAccessGroupMembers(group.members, params.channelId)
+      : [];
     expanded.push(...sharedMembers, ...channelMembers);
   }
   return expanded;

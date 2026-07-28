@@ -11,7 +11,9 @@ import {
   enqueueDelivery,
   failDelivery,
   failPartialDelivery,
+  failUnknownDelivery,
   hasUnknownSendOutcome,
+  InvalidQueueEntryIdError,
   loadPendingDeliveries,
   markDeliveryAttemptStarted,
   type QueuedDelivery,
@@ -163,6 +165,171 @@ describe("send-in-flight marker", () => {
   });
 });
 
+describe("failUnknownDelivery (#3051)", () => {
+  it("keeps the marker so the entry is quarantined, not replayed", async () => {
+    const id = await enqueueTestDelivery();
+    await markDeliveryAttemptStarted(id, stateDir);
+
+    await failUnknownDelivery(id, "socket hang up", stateDir);
+
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBe("unknown_after_send");
+    expect(hasUnknownSendOutcome(entry)).toBe(true);
+    expect(entry.retryCount).toBe(1);
+    expect(entry.lastError).toBe("socket hang up");
+  });
+
+  it("leaves deliveredBeforeFailure unset — the count is unknowable, not zero", async () => {
+    // Writing 0 would render to an operator as "confirmed nothing arrived",
+    // which is exactly the claim this outcome cannot make.
+    const id = await enqueueTestDelivery();
+
+    await failUnknownDelivery(id, "socket hang up", stateDir);
+
+    expect((await readEntry(id)).deliveredBeforeFailure).toBeUndefined();
+  });
+
+  it("is quarantined by recovery rather than re-sent", async () => {
+    const id = await enqueueTestDelivery();
+    await failUnknownDelivery(id, "socket hang up", stateDir);
+    const deliver = vi.fn<DeliverFn>(async () => undefined);
+
+    const { summary, log } = await runRecovery(deliver);
+
+    expect(deliver).not.toHaveBeenCalled();
+    expect(summary.needsReview).toBe(1);
+    expect(fs.existsSync(path.join(resolveNeedsReviewDir(stateDir), `${id}.json`))).toBe(true);
+    // No landed count was recorded, so the operator log must not imply one.
+    // Assert the line exists before asserting what it omits — a `find` that
+    // returns undefined would otherwise let a vanished log line read as a pass.
+    const incident = log.warn.mock.calls
+      .map(String)
+      .find((line) => line.includes(id) && line.includes("undetermined send outcome"));
+    expect(incident).toBeDefined();
+    expect(incident).not.toContain("confirmed sent");
+    expect(incident).not.toMatch(/\bdelivered\b/);
+  });
+});
+
+describe("entry id shape guard (#3051)", () => {
+  /** Write a raw entry file under an arbitrary filename, bypassing enqueue. */
+  async function plantRawEntry(fileStem: string, entry: Record<string, unknown>): Promise<void> {
+    const queueDir = path.join(stateDir, "delivery-queue");
+    await fs.promises.mkdir(queueDir, { recursive: true, mode: 0o700 });
+    await fs.promises.writeFile(
+      path.join(queueDir, `${fileStem}.json`),
+      JSON.stringify(entry, null, 2),
+    );
+  }
+
+  const plantedEntry = {
+    id: "not-a-uuid",
+    enqueuedAt: 1,
+    retryCount: 0,
+    channel: "whatsapp",
+    to: "+1555",
+    payloads: [{ text: "planted" }],
+    recoveryState: "send_attempt_started",
+  };
+
+  it("refuses to load an entry whose id is not a queue id", async () => {
+    await plantRawEntry("planted", plantedEntry);
+
+    expect(await loadPendingDeliveries(stateDir)).toEqual([]);
+  });
+
+  it("never lets a traversing id reach outside the queue directory", async () => {
+    // Staged so the escape is REACHABLE rather than merely malformed: the
+    // planted id resolves to a real file one level above the queue directory,
+    // so without the guard recovery re-reads it, rewrites it, and renames it —
+    // a queue operation mutating an arbitrary file outside its own directory.
+    //
+    // Reaching this already requires write access to the state dir, a trusted
+    // boundary, so it is defense in depth rather than a live exposure (#3051
+    // item 4). The point is that a malformed id fails closed BEFORE
+    // `needs-review/${id}.json` or any sibling path is built from it.
+    const outsideFile = path.join(stateDir, "escape-target.json");
+    await fs.promises.writeFile(
+      outsideFile,
+      JSON.stringify({ ...plantedEntry, id: "../escape-target" }, null, 2),
+    );
+    // The scan reads by FILENAME and takes the id from the JSON body, so a
+    // well-named file can carry a traversing id.
+    await plantRawEntry("00000000-0000-4000-8000-000000000000", {
+      ...plantedEntry,
+      id: "../escape-target",
+    });
+
+    const deliver = vi.fn<DeliverFn>(async () => undefined);
+    const { summary } = await runRecovery(deliver);
+
+    expect(deliver).not.toHaveBeenCalled();
+    expect(summary.needsReview).toBe(0);
+    expect(summary.quarantineFailed).toBe(0);
+    // The file above the queue directory is untouched, and nothing was moved
+    // into (or through) the quarantine directory on its behalf.
+    expect(fs.existsSync(outsideFile)).toBe(true);
+    expect(fs.existsSync(path.join(stateDir, "delivery-queue", "escape-target.json"))).toBe(false);
+    expect(fs.existsSync(resolveNeedsReviewDir(stateDir))).toBe(false);
+  });
+
+  it("skips one malformed entry without stalling recovery of the rest", async () => {
+    // Fail-closed must stay contained: a single planted entry cannot be allowed
+    // to become a denial of service on every other pending delivery.
+    await plantRawEntry("planted", plantedEntry);
+    const good = await enqueueTestDelivery();
+    const deliver = vi.fn<DeliverFn>(async () => undefined);
+
+    const { summary } = await runRecovery(deliver);
+
+    expect(deliver).toHaveBeenCalledTimes(1);
+    expect(summary.recovered).toBe(1);
+    expect(fs.existsSync(path.join(stateDir, "delivery-queue", `${good}.json`))).toBe(false);
+  });
+
+  it("reports the refused entry instead of dropping it silently", async () => {
+    // A rejected entry is never retried, never quarantined and never counted, so
+    // without a report the operator's only evidence is a .json that never leaves
+    // delivery-queue/. An unobservable fail-closed guard is indistinguishable
+    // from no guard at all.
+    await plantRawEntry("planted", plantedEntry);
+    const log = createLog();
+
+    await runRecovery(
+      vi.fn<DeliverFn>(async () => undefined),
+      log,
+    );
+
+    const reported = log.error.mock.calls.map(String).find((line) => line.includes("planted.json"));
+    expect(reported).toContain("will NOT be delivered or retried");
+    expect(reported).toContain("malformed id");
+  });
+
+  it("rejects a mutation of an entry whose id is malformed", async () => {
+    // updateQueueEntry is reached with the CALLER's id, so a well-formed
+    // filename can still hold a malformed id. Every mutation parses through the
+    // same guard, so quarantine/fail/mark all fail closed rather than persisting
+    // an id that a later path build would trust.
+    await plantRawEntry("planted", plantedEntry);
+
+    await expect(markDeliveryAttemptStarted("planted", stateDir)).rejects.toThrow(
+      InvalidQueueEntryIdError,
+    );
+    await expect(quarantineUnknownSend("planted", stateDir)).rejects.toThrow(
+      InvalidQueueEntryIdError,
+    );
+  });
+
+  it("accepts the ids enqueueDelivery actually mints", async () => {
+    // Guards against a pattern so strict it rejects real traffic.
+    const id = await enqueueTestDelivery();
+
+    const pending = await loadPendingDeliveries(stateDir);
+
+    expect(pending.map((entry) => entry.id)).toEqual([id]);
+  });
+});
+
 describe("quarantineUnknownSend", () => {
   it("moves the entry to needs-review/ stamped unknown_after_send", async () => {
     const id = await enqueueTestDelivery();
@@ -250,7 +417,9 @@ describe("recoverPendingDeliveries", () => {
     expect((await readEntry(id, resolveNeedsReviewDir(stateDir))).recoveryState).toBe(
       "unknown_after_send",
     );
-    expect(log.warn).toHaveBeenCalledWith(expect.stringContaining("outcome unknown"));
+    expect(log.warn).toHaveBeenCalledWith(
+      expect.stringContaining("may or may not have reached the recipient"),
+    );
     // The operator log must name where the entry went and when the send began.
     expect(log.warn).toHaveBeenCalledWith(expect.stringContaining(resolveNeedsReviewDir(stateDir)));
   });
@@ -604,9 +773,31 @@ describe("recoverPendingDeliveries", () => {
     // The incident record, not the remediation one that follows it.
     const incident = log.warn.mock.calls
       .map(String)
-      .find((line) => line.includes(id) && line.includes("interrupted mid-send"));
+      .find((line) => line.includes(id) && line.includes("undetermined send outcome"));
     expect(incident).toContain("2 message part(s) confirmed sent");
     expect(incident).not.toContain("of 1");
+  });
+
+  it("does not claim the send was 'interrupted' — a live ambiguous failure was not", async () => {
+    // The original wording was written for the process-crash case (#2934). A
+    // live-path quarantine (#3051) is the opposite shape: the send ran to
+    // completion and the platform's answer never came back. "Interrupted
+    // mid-send" sends an operator hunting for a crash that never happened.
+    const id = await enqueueTestDelivery();
+    await failUnknownDelivery(id, "socket hang up", stateDir);
+    const log = createLog();
+
+    await runRecovery(
+      vi.fn<DeliverFn>(async () => undefined),
+      log,
+    );
+
+    const incident = log.warn.mock.calls
+      .map(String)
+      .find((line) => line.includes(id) && line.includes("undetermined send outcome"));
+    expect(incident).toBeDefined();
+    expect(incident).not.toContain("interrupted mid-send");
+    expect(incident).toContain("may or may not have reached the recipient");
   });
 
   it("tells the operator to reset retryCount when un-quarantining a maxed-out entry", async () => {
@@ -629,7 +820,29 @@ describe("recoverPendingDeliveries", () => {
       .map(String)
       .find((line) => line.includes(id) && line.includes("To reconcile"));
     expect(remediation).toContain('"retryCount" to 0');
-    expect(remediation).toContain(`"retryCount" at 6 (max 5)`);
+    expect(remediation).toContain(`leaving it at 6 (max 5) files the entry under failed/`);
+  });
+
+  it("does not claim failed/ for an entry nowhere near the retry cap", async () => {
+    // A live ambiguous send failure quarantines at retryCount 1, where the
+    // unconditional "leaving retryCount at N files it under failed/ without
+    // sending" is simply false. A runbook an operator catches lying is a runbook
+    // they stop following.
+    const id = await enqueueTestDelivery();
+    await failUnknownDelivery(id, "socket hang up", stateDir);
+    const log = createLog();
+
+    await runRecovery(
+      vi.fn<DeliverFn>(async () => undefined),
+      log,
+    );
+
+    const remediation = log.warn.mock.calls
+      .map(String)
+      .find((line) => line.includes(id) && line.includes("To reconcile"));
+    expect(remediation).toContain('"retryCount" to 0');
+    expect(remediation).not.toContain("files the entry under failed/");
+    expect(remediation).toContain("4 attempt(s) left");
   });
 
   it("still routes a permanent error with nothing landed to failed/", async () => {

@@ -119,6 +119,15 @@ export function isVolatileBackupPath(absolutePath: string, plan: VolatileFilterP
       // restore loses the operator's to-do list with no trace it existed.
       // ("awaiting review", not "pending" — in the queue's own vocabulary a
       // pending entry is one still queued to send, the opposite of this.)
+      //
+      // Sensitivity note: these entries carry the undelivered message PAYLOAD
+      // and the recipient identifier, so this carve-out puts message content
+      // into every backup — and backups travel off-box with long retention,
+      // unlike the 0700 live state dir. That trade is deliberate and documented
+      // for operators in `docs/gateway/message-delivery.md` § Backups contain
+      // undelivered message content, which is also where the reconcile/prune
+      // expectation that keeps the exposure bounded lives. Narrowing this
+      // carve-out means re-reading that page, not just this comment.
       const needsReviewRoot = path.posix.join(stateDirPosix, "delivery-queue", "needs-review");
       const isAwaitingReview = isUnder(filePosix, needsReviewRoot);
 

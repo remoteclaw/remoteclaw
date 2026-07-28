@@ -45,6 +45,7 @@ import {
   enqueueDelivery,
   failDelivery,
   failPartialDelivery,
+  failUnknownDelivery,
   markDeliveryAttemptStarted,
   withActiveDeliveryClaim,
 } from "./delivery-queue.js";
@@ -53,6 +54,7 @@ import type { OutboundIdentity } from "./identity.js";
 import type { NormalizedOutboundPayload } from "./payloads.js";
 import { normalizeReplyPayloadsForDelivery } from "./payloads.js";
 import { isPlainTextSurface, sanitizeForPlainText } from "./sanitize-text.js";
+import { didSendDefinitelyNotLand } from "./send-outcome.js";
 import type { OutboundSessionContext } from "./session-context.js";
 import type { OutboundChannel } from "./targets.js";
 
@@ -512,16 +514,6 @@ export async function deliverOutboundPayloads(
   // entry whose payloads all failed — silently dropping the message.
   let hadPayloadFailure = false;
   let firstPayloadError: string | undefined;
-  const wrappedParams = {
-    ...params,
-    onError: (err: unknown, payload: NormalizedOutboundPayload) => {
-      hadPayloadFailure = true;
-      // Keep the cause: "partial delivery failure (bestEffort)" alone tells an
-      // operator triaging the entry nothing about why it failed.
-      firstPayloadError ??= describeDeliveryError(err);
-      params.onError?.(err, payload);
-    },
-  };
 
   // The core fills this as each payload lands, so the queue bookkeeping below
   // can tell "nothing reached the recipient" (safe to replay whole) from "some
@@ -530,7 +522,40 @@ export async function deliverOutboundPayloads(
   // ordinary, not exotic: chunk 1 can land and chunk 2 throw.
   const landed: OutboundDeliveryResult[] = [];
 
-  const recordQueueFailure = async (error: string): Promise<void> => {
+  // `landed` records sends that RESOLVED. This records that one was ENTERED.
+  // The two answer different questions, and the failure path needs both: a throw
+  // with nothing landed is safe to replay only if no send ever reached the
+  // transport (#3051 item 1). The core owns the writes; see `attemptPlatformSend`.
+  const sendProgress: PlatformSendProgress = { platformSendAttempted: false };
+
+  // Whether ANY payload under bestEffort failed in a way that might have landed.
+  // OR-accumulated rather than taken from the first error: a clean ECONNREFUSED
+  // on payload 1 would otherwise mask an ambiguous post-transmission timeout on
+  // payload 2, clearing the marker and replaying the payload that may have
+  // arrived. Classified at failure time, when `platformSendAttempted` reflects
+  // exactly the sends made before THAT payload's error.
+  let sawAmbiguousPayloadFailure = false;
+  const wrappedParams = {
+    ...params,
+    onError: (err: unknown, payload: NormalizedOutboundPayload) => {
+      hadPayloadFailure = true;
+      const described = describeDeliveryError(err);
+      sawAmbiguousPayloadFailure ||= !didSendDefinitelyNotLand({
+        platformSendAttempted: sendProgress.platformSendAttempted,
+        error: err,
+        describedError: described,
+      });
+      // Keep the cause: "partial delivery failure (bestEffort)" alone tells an
+      // operator triaging the entry nothing about why it failed.
+      firstPayloadError ??= described;
+      params.onError?.(err, payload);
+    },
+  };
+
+  const recordQueueFailure = async (
+    error: string,
+    definitelyDidNotLand: boolean,
+  ): Promise<void> => {
     if (!queueId) {
       return;
     }
@@ -539,18 +564,36 @@ export async function deliverOutboundPayloads(
       // operator who opens the quarantined entry otherwise sees the full payload
       // list with no way to tell which part arrived.
       await failPartialDelivery(queueId, error, undefined, landed.length).catch(() => {});
-    } else {
-      await failDelivery(queueId, error).catch(() => {});
+      return;
     }
+    if (definitelyDidNotLand) {
+      await failDelivery(queueId, error).catch(() => {});
+      return;
+    }
+    // A send reached the transport and then failed without reporting anything
+    // landed. That is not "nothing arrived" — it is "we cannot tell", and
+    // replaying it is how the recipient gets the message twice. Surface it for
+    // an operator instead of silently re-sending (#3051 item 1). This BOUNDS the
+    // duplicate window; it does not close it.
+    await failUnknownDelivery(queueId, error).catch(() => {});
+    // Say so at the moment of the decision. The entry only MOVES to
+    // `needs-review/` on the next gateway start, so without this line a message
+    // whose outcome is undetermined is invisible until then — on a long-running
+    // gateway, indefinitely. "Surfaced for review" has to mean surfaced now.
+    log.warn(
+      "deliverOutboundPayloads: send outcome is unknown — the message may or may not have been delivered. It will NOT be retried automatically; it is held for manual reconciliation and moves to delivery-queue/needs-review/ on the next gateway start",
+      { channel, to, queueId, error },
+    );
   };
 
   const runDelivery = async (): Promise<OutboundDeliveryResult[]> => {
     try {
-      const results = await deliverOutboundPayloadsCore(wrappedParams, landed);
+      const results = await deliverOutboundPayloadsCore(wrappedParams, landed, sendProgress);
       if (queueId) {
         if (hadPayloadFailure) {
           await recordQueueFailure(
             `partial delivery failure (bestEffort): ${firstPayloadError ?? "unknown error"}`,
+            !sawAmbiguousPayloadFailure,
           );
         } else {
           await ackDelivery(queueId).catch(() => {}); // Best-effort cleanup.
@@ -571,7 +614,15 @@ export async function deliverOutboundPayloads(
         if (cancelledByCaller && landed.length === 0) {
           await ackDelivery(queueId).catch(() => {});
         } else {
-          await recordQueueFailure(describeDeliveryError(err));
+          const described = describeDeliveryError(err);
+          await recordQueueFailure(
+            described,
+            didSendDefinitelyNotLand({
+              platformSendAttempted: sendProgress.platformSendAttempted,
+              error: err,
+              describedError: described,
+            }),
+          );
         }
       }
       // Tell whoever catches this how far the send got. Crash recovery calls
@@ -619,18 +670,40 @@ export async function deliverOutboundPayloads(
 }
 
 /**
+ * Whether any platform send call was entered, shared by reference with the queue
+ * wrapper so it survives this function throwing part-way.
+ */
+type PlatformSendProgress = { platformSendAttempted: boolean };
+
+/**
  * Core delivery logic (extracted for queue wrapper).
  *
- * `results` is accepted from the caller — required, not defaulted — rather than
- * created here, so the queue wrapper still sees which payloads landed when this
- * function throws part-way. A default would silently let a future caller drop
- * that wiring and lose the partial-send signal.
+ * `results` and `progress` are accepted from the caller — required, not
+ * defaulted — rather than created here, so the queue wrapper still sees which
+ * payloads landed and whether the transport was ever reached when this function
+ * throws part-way. A default would silently let a future caller drop that wiring
+ * and lose the signal.
  */
 async function deliverOutboundPayloadsCore(
   params: DeliverOutboundPayloadsCoreParams,
   results: OutboundDeliveryResult[],
+  progress: PlatformSendProgress,
 ): Promise<OutboundDeliveryResult[]> {
   const { cfg, channel, to, payloads } = params;
+
+  /**
+   * Every platform send goes through here, so "did anything reach the transport?"
+   * has exactly one place to be recorded. The flag is set BEFORE the await: the
+   * question is whether the request was issued, not whether it came back.
+   *
+   * A new send path that calls the handler directly instead of through this
+   * helper silently re-opens the ambiguous-error replay window (#3051 item 1) —
+   * its failures would look like "never left the process" and be replayed.
+   */
+  const attemptPlatformSend = async <T>(send: () => Promise<T>): Promise<T> => {
+    progress.platformSendAttempted = true;
+    return await send();
+  };
   const accountId = params.accountId;
   const deps = params.deps;
   const abortSignal = params.abortSignal;
@@ -682,7 +755,7 @@ async function deliverOutboundPayloadsCore(
   ) => {
     throwIfAborted(abortSignal);
     if (!handler.chunker || textLimit === undefined) {
-      results.push(await handler.sendText(text, overrides));
+      results.push(await attemptPlatformSend(() => handler.sendText(text, overrides)));
       return;
     }
     if (chunkMode === "newline") {
@@ -702,7 +775,7 @@ async function deliverOutboundPayloadsCore(
         }
         for (const chunk of chunks) {
           throwIfAborted(abortSignal);
-          results.push(await handler.sendText(chunk, overrides));
+          results.push(await attemptPlatformSend(() => handler.sendText(chunk, overrides)));
         }
       }
       return;
@@ -710,7 +783,7 @@ async function deliverOutboundPayloadsCore(
     const chunks = handler.chunker(text, textLimit);
     for (const chunk of chunks) {
       throwIfAborted(abortSignal);
-      results.push(await handler.sendText(chunk, overrides));
+      results.push(await attemptPlatformSend(() => handler.sendText(chunk, overrides)));
     }
   };
 
@@ -718,13 +791,15 @@ async function deliverOutboundPayloadsCore(
     throwIfAborted(abortSignal);
     return {
       channel: "signal" as const,
-      ...(await sendSignal(to, text, {
-        cfg,
-        maxBytes: signalMaxBytes,
-        accountId: accountId ?? undefined,
-        textMode: "plain",
-        textStyles: styles,
-      })),
+      ...(await attemptPlatformSend(() =>
+        sendSignal(to, text, {
+          cfg,
+          maxBytes: signalMaxBytes,
+          accountId: accountId ?? undefined,
+          textMode: "plain",
+          textStyles: styles,
+        }),
+      )),
     };
   };
 
@@ -755,15 +830,17 @@ async function deliverOutboundPayloadsCore(
     };
     return {
       channel: "signal" as const,
-      ...(await sendSignal(to, formatted.text, {
-        cfg,
-        mediaUrl,
-        maxBytes: signalMaxBytes,
-        accountId: accountId ?? undefined,
-        textMode: "plain",
-        textStyles: formatted.styles,
-        mediaLocalRoots,
-      })),
+      ...(await attemptPlatformSend(() =>
+        sendSignal(to, formatted.text, {
+          cfg,
+          mediaUrl,
+          maxBytes: signalMaxBytes,
+          accountId: accountId ?? undefined,
+          textMode: "plain",
+          textStyles: formatted.styles,
+          mediaLocalRoots,
+        }),
+      )),
     };
   };
   const normalizedPayloads = normalizePayloadsForChannelDelivery(
@@ -823,8 +900,14 @@ async function deliverOutboundPayloadsCore(
         replyToId: effectivePayload.replyToId ?? params.replyToId ?? undefined,
         threadId: params.threadId ?? undefined,
       };
-      if (handler.sendPayload && effectivePayload.channelData) {
-        const delivery = await handler.sendPayload(effectivePayload, sendOverrides);
+      // Bound to a local so the send closure keeps the optional-property
+      // narrowing from this branch. `createPluginHandler` builds every handler
+      // method as a closure, so there is no `this` to lose.
+      const sendPayload = handler.sendPayload;
+      if (sendPayload && effectivePayload.channelData) {
+        const delivery = await attemptPlatformSend(() =>
+          sendPayload(effectivePayload, sendOverrides),
+        );
         results.push(delivery);
         emitMessageSent({
           success: true,
@@ -886,7 +969,9 @@ async function deliverOutboundPayloadsCore(
           results.push(delivery);
           lastMessageId = delivery.messageId;
         } else {
-          const delivery = await handler.sendMedia(caption, url, sendOverrides);
+          const delivery = await attemptPlatformSend(() =>
+            handler.sendMedia(caption, url, sendOverrides),
+          );
           results.push(delivery);
           lastMessageId = delivery.messageId;
         }

@@ -127,6 +127,10 @@
       "types": "./dist/plugin-sdk/bluebubbles.d.ts",
       "default": "./dist/plugin-sdk/bluebubbles.js"
     },
+    "./plugin-sdk/clickclack": {
+      "types": "./dist/plugin-sdk/clickclack.d.ts",
+      "default": "./dist/plugin-sdk/clickclack.js"
+    },
     "./plugin-sdk/copilot-proxy": {
       "types": "./dist/plugin-sdk/copilot-proxy.d.ts",
       "default": "./dist/plugin-sdk/copilot-proxy.js"

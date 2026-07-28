@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 const bundledExtensionSubpathLoaders = [
   { id: "acpx", load: () => import("remoteclaw/plugin-sdk/acpx") },
   { id: "bluebubbles", load: () => import("remoteclaw/plugin-sdk/bluebubbles") },
+  { id: "clickclack", load: () => import("remoteclaw/plugin-sdk/clickclack") },
   { id: "copilot-proxy", load: () => import("remoteclaw/plugin-sdk/copilot-proxy") },
   { id: "device-pair", load: () => import("remoteclaw/plugin-sdk/device-pair") },
   { id: "diagnostics-otel", load: () => import("remoteclaw/plugin-sdk/diagnostics-otel") },

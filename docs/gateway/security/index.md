@@ -435,6 +435,21 @@ This is required for session continuity and (optionally) session memory indexing
 boundary and lock down permissions on `~/.remoteclaw` (see the audit section below). If you need
 stronger isolation between agents, run them under separate OS users or separate hosts.
 
+## Undelivered messages live on disk — and in backups
+
+Outbound messages whose delivery outcome could not be determined are quarantined to
+`~/.remoteclaw/delivery-queue/needs-review/*.json` for an operator to reconcile by hand. Those
+files contain the **full message payload and the recipient identifier**, in cleartext.
+
+Unlike the rest of the delivery queue, `needs-review/` is deliberately **not** filtered out of
+backups — it is the operator's only record that a message's outcome is undetermined, and dropping
+it on restore would erase that silently. The trade-off is that backups travel further than live
+state: off-box, and retained long after the entry was reconciled. Treat a backup of the state
+directory as carrying message content at full sensitivity, and reconcile/prune `needs-review/` on
+a schedule so entries do not accumulate into the backup chain.
+
+Details, including how to reconcile an entry: [Message delivery](/gateway/message-delivery).
+
 ## Node execution (system.run)
 
 If a macOS node is paired, the Gateway can invoke `system.run` on that node. This is **remote code execution** on the Mac:

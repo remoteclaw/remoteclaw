@@ -1,3 +1,38 @@
+/**
+ * Write-ahead delivery queue.
+ *
+ * ## Delivery semantics: at-least-once
+ *
+ * This queue provides **at-least-once** delivery. It does NOT provide
+ * exactly-once, and it cannot: the acknowledgement that a message reached a
+ * third-party chat platform travels back over the same unreliable link as the
+ * message, so there is no sequence of writes on this side that makes "sent" and
+ * "recorded as sent" a single atomic fact. That is the Two Generals problem, and
+ * it is not a gap to be closed by a better queue — it is a property of talking to
+ * a system we do not control.
+ *
+ * What follows from that:
+ *
+ * - A message may be delivered more than once. Consumers and platforms own
+ *   idempotency and de-duplication; this queue does not supply an idempotency key
+ *   to the platform, so nothing downstream can collapse a duplicate for us.
+ * - Every mechanism here NARROWS the duplicate window rather than eliminating it.
+ *   The `recoveryState` marker (#2934) removes the process-crash case: an entry
+ *   interrupted mid-send is quarantined instead of blind-replayed. The
+ *   send-outcome classifier (`send-outcome.ts`, #3051) removes the
+ *   ambiguous-transport case: a failure that might have landed is quarantined
+ *   rather than retried. Neither claims the window is closed — a duplicate is
+ *   still reachable, for example when the marker write itself is lost to a
+ *   power-loss before it is flushed to stable storage.
+ * - The residual window is BOUNDED and SURFACED, not eliminated. What survives
+ *   lands in `delivery-queue/needs-review/` for an operator, which is the
+ *   deliberate trade: for a messaging product a message that visibly needs a
+ *   human beats a message the recipient silently receives twice.
+ *
+ * Operator-facing description of the same contract, including the sensitivity of
+ * `needs-review/` in backups: `docs/gateway/message-delivery.md`.
+ */
+
 import fs from "node:fs";
 import path from "node:path";
 import type { ReplyPayload } from "../../auto-reply/types.js";
@@ -9,7 +44,10 @@ import {
   readDeliveredBeforeFailure,
 } from "./delivered-before-failure.js";
 import { describeDeliveryError } from "./describe-delivery-error.js";
+import { isPermanentDeliveryError } from "./send-outcome.js";
 import type { OutboundChannel } from "./targets.js";
+
+export { isPermanentDeliveryError } from "./send-outcome.js";
 
 const QUEUE_DIRNAME = "delivery-queue";
 const FAILED_DIRNAME = "failed";
@@ -157,6 +195,63 @@ async function writeQueueEntryAtomic(filePath: string, entry: QueuedDelivery): P
   await fs.promises.rename(tmp, filePath);
 }
 
+/**
+ * Shape of the ids {@link enqueueDelivery} mints via `generateSecureUuid()`
+ * (`node:crypto` `randomUUID`).
+ *
+ * A shape check, not a version check: the guard exists to keep an id from
+ * becoming an attacker-chosen path segment, and every RFC 4122 layout is equally
+ * safe as one. Anchored at both ends, so nothing containing a separator, a `..`,
+ * a NUL, or a trailing extension can match.
+ */
+const QUEUE_ENTRY_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Raised when an on-disk entry carries an id that is not a queue id. */
+export class InvalidQueueEntryIdError extends Error {
+  constructor(rawId: unknown) {
+    super(
+      `Delivery queue entry has a malformed id (${JSON.stringify(rawId)}) — refusing to use it as a filename`,
+    );
+    this.name = "InvalidQueueEntryIdError";
+  }
+}
+
+/**
+ * Parse one queue entry out of on-disk JSON.
+ *
+ * This is the ONLY place an entry id crosses from untrusted bytes into the
+ * process, and therefore the only place the id-shape guard has to live.
+ * {@link ackDelivery}, {@link moveToFailed} and {@link quarantineUnknownSend}
+ * each turn an id back into `<dir>/${id}.json` and validate nothing themselves —
+ * they inherit the guard because an id can only reach them from one of exactly
+ * two sources: {@link enqueueDelivery}'s freshly-minted `randomUUID`, or this
+ * function. Guarding the untrusted source gives all three one fail-closed check
+ * instead of three that can drift apart (#3051 item 4).
+ *
+ * Stated precisely because a future refactor will trust it: the invariant is
+ * "every parsed id passed the guard", NOT "these functions validate their
+ * argument". A new id source — anything that derives an id from a filename, a
+ * request, or an operator-supplied string — breaks it and must guard itself.
+ *
+ * Fails closed: a malformed id throws before any caller can build a path from it.
+ * That is contained, not fatal — {@link loadPendingDeliveries} already treats a
+ * per-entry throw as "skip this file", so one planted entry cannot stall recovery
+ * of the rest, and {@link recoverPendingDeliveries} logs and skips the entry it
+ * cannot re-read.
+ *
+ * Reaching this guard already requires write access to the state directory, which
+ * is a trusted boundary in this threat model. It is defense in depth for the case
+ * where that boundary has already failed — not the boundary itself.
+ */
+function parseQueuedDeliveryEntry(raw: string): QueuedDelivery {
+  const parsed = JSON.parse(raw) as QueuedDelivery;
+  const id: unknown = parsed?.id;
+  if (typeof id !== "string" || !QUEUE_ENTRY_ID_PATTERN.test(id)) {
+    throw new InvalidQueueEntryIdError(id);
+  }
+  return parsed;
+}
+
 /** Read-modify-write a pending queue entry. Throws ENOENT if it is already gone. */
 async function updateQueueEntry(
   id: string,
@@ -165,7 +260,7 @@ async function updateQueueEntry(
 ): Promise<void> {
   const filePath = path.join(resolveQueueDir(stateDir), `${id}.json`);
   const raw = await fs.promises.readFile(filePath, "utf-8");
-  const entry: QueuedDelivery = JSON.parse(raw);
+  const entry = parseQueuedDeliveryEntry(raw);
   await writeQueueEntryAtomic(filePath, mutate(entry));
 }
 
@@ -208,10 +303,13 @@ export async function enqueueDelivery(
 /**
  * Record that delivery for `id` has entered the send path.
  *
- * This is the write that closes the duplicate-delivery window: if the process
- * dies anywhere between here and the matching ack/fail, the entry is left on
- * disk carrying `send_attempt_started`, and {@link recoverPendingDeliveries}
- * quarantines it instead of re-sending a message that may already have landed.
+ * This is the write that narrows the duplicate-delivery window to the
+ * process-crash case: if the process dies anywhere between here and the matching
+ * ack/fail, the entry is left on disk carrying `send_attempt_started`, and
+ * {@link recoverPendingDeliveries} quarantines it instead of re-sending a message
+ * that may already have landed. It narrows that window rather than closing it —
+ * a marker still in the page cache when the machine loses power is lost with it.
+ * Delivery stays at-least-once; see § Delivery semantics at the top of this file.
  *
  * The marked window is deliberately wider than the wire call — it opens before
  * payload normalization and the `message_sending` hook, so a crash before
@@ -336,12 +434,11 @@ export async function ackDelivery(id: string, stateDir?: string): Promise<void> 
  * re-sends whatever already arrived. Chunked text makes that ordinary: one
  * chunk lands, the next throws.
  *
- * Known residual: "no payload observed to land" is not the same as "nothing
- * reached the platform". A request that times out or resets *after* hitting the
- * wire produces no result object, so it is recorded here and replayed — the
- * queue's long-standing at-least-once behaviour for ambiguous transport errors.
- * Closing that needs transport-level error classification and is out of scope
- * for the crash-window fix (#2934).
+ * "Nothing landed" is a stronger claim than "no payload was observed to land": a
+ * request that times out or resets *after* hitting the wire also produces no
+ * result object. Callers must not conflate the two — route the ambiguous case to
+ * {@link failUnknownDelivery} instead. `deliver.ts` makes that split with
+ * `didSendDefinitelyNotLand` (`send-outcome.ts`, #3051 item 1).
  */
 export async function failDelivery(id: string, error: string, stateDir?: string): Promise<void> {
   await updateQueueEntry(id, stateDir, (entry) => ({
@@ -351,6 +448,37 @@ export async function failDelivery(id: string, error: string, stateDir?: string)
     lastError: error,
     recoveryState: undefined,
     platformSendStartedAt: undefined,
+  }));
+}
+
+/**
+ * Update a queue entry after a send whose outcome could not be determined: a
+ * platform send was attempted, it failed, and nothing was observed to land — but
+ * the failure does not prove nothing arrived. A request that times out or resets
+ * after reaching the wire looks identical here to one that never left.
+ *
+ * Recording it as a plain failure would clear the in-flight marker and re-arm a
+ * replay of a message that may already be on the recipient's device. So the entry
+ * keeps the unknown-outcome marker and recovery quarantines it for a human
+ * (#3051 item 1).
+ *
+ * Sibling of {@link failPartialDelivery}, and the difference is only in what is
+ * claimed: that one knows how many parts landed, this one records that the count
+ * is unknowable. `deliveredBeforeFailure` is deliberately left unset rather than
+ * written as `0` — `0` would render to an operator as "confirmed nothing arrived",
+ * which is precisely the thing this outcome cannot confirm.
+ */
+export async function failUnknownDelivery(
+  id: string,
+  error: string,
+  stateDir?: string,
+): Promise<void> {
+  await updateQueueEntry(id, stateDir, (entry) => ({
+    ...entry,
+    retryCount: entry.retryCount + 1,
+    lastAttemptAt: Date.now(),
+    lastError: error,
+    recoveryState: "unknown_after_send",
   }));
 }
 
@@ -397,7 +525,7 @@ async function loadPendingDelivery(id: string, stateDir?: string): Promise<Queue
     }
     const raw = await fs.promises.readFile(jsonPath, "utf-8");
     // Normalize in memory only — the scan already persisted any migration.
-    return normalizeLegacyQueuedDeliveryEntry(JSON.parse(raw) as QueuedDelivery).entry;
+    return normalizeLegacyQueuedDeliveryEntry(parseQueuedDeliveryEntry(raw)).entry;
   } catch (err) {
     if (getErrnoCode(err) === "ENOENT") {
       return null;
@@ -406,8 +534,19 @@ async function loadPendingDelivery(id: string, stateDir?: string): Promise<Queue
   }
 }
 
-/** Load all pending delivery entries from the queue directory. */
-export async function loadPendingDeliveries(stateDir?: string): Promise<QueuedDelivery[]> {
+/**
+ * Load all pending delivery entries from the queue directory.
+ *
+ * `onSkipped` reports each entry the scan refused. Optional so existing callers
+ * are unaffected, but recovery passes one: an entry rejected here is silently
+ * dropped from every count, never retried and never quarantined, so without a
+ * report the only evidence is a `.json` that never leaves `delivery-queue/`. An
+ * unobservable fail-closed guard is indistinguishable from no guard at all.
+ */
+export async function loadPendingDeliveries(
+  stateDir?: string,
+  onSkipped?: (file: string, err: unknown) => void,
+): Promise<QueuedDelivery[]> {
   const queueDir = resolveQueueDir(stateDir);
   let files: string[];
   try {
@@ -440,14 +579,16 @@ export async function loadPendingDeliveries(stateDir?: string): Promise<QueuedDe
         continue;
       }
       const raw = await fs.promises.readFile(filePath, "utf-8");
-      const parsed = JSON.parse(raw) as QueuedDelivery;
+      const parsed = parseQueuedDeliveryEntry(raw);
       const { entry, migrated } = normalizeLegacyQueuedDeliveryEntry(parsed);
       if (migrated) {
         await writeQueueEntryAtomic(filePath, entry);
       }
       entries.push(entry);
-    } catch {
-      // Skip malformed or inaccessible entries.
+    } catch (err) {
+      // Skip malformed or inaccessible entries — one bad file must not stall
+      // recovery of the rest — but do not skip them quietly.
+      onSkipped?.(file, err);
     }
   }
   return entries;
@@ -609,6 +750,23 @@ function describeDeliveredBeforeFailure(entry: QueuedDelivery): string {
 }
 
 /**
+ * Explain why the reconcile runbook asks for a `retryCount` reset, truthfully
+ * for THIS entry.
+ *
+ * The consequence is not the same at every count: at or over the cap the entry
+ * is filed under `failed/` unsent, below it the accumulated count only shortens
+ * the remaining retries. Stating the cap outcome unconditionally was accurate
+ * while quarantine implied a long retry history, but a live ambiguous send
+ * failure quarantines at `retryCount: 1` — where that sentence is simply false,
+ * and a runbook an operator catches lying is a runbook they stop following.
+ */
+function describeRetryCountResetReason(entry: QueuedDelivery): string {
+  return entry.retryCount >= MAX_RETRIES
+    ? ` Resetting "retryCount" is required here: leaving it at ${entry.retryCount} (max ${MAX_RETRIES}) files the entry under failed/ without sending.`
+    : ` Leaving "retryCount" at ${entry.retryCount} (max ${MAX_RETRIES}) still sends, with ${MAX_RETRIES - entry.retryCount} attempt(s) left instead of a full set.`;
+}
+
+/**
  * On gateway startup, scan the delivery queue and retry any pending entries.
  * Uses exponential backoff and moves entries that exceed MAX_RETRIES to failed/.
  *
@@ -637,7 +795,11 @@ export async function recoverPendingDeliveries(opts: {
     );
   }
 
-  const pending = await loadPendingDeliveries(opts.stateDir);
+  const pending = await loadPendingDeliveries(opts.stateDir, (file, err) => {
+    opts.log.error(
+      `Delivery queue entry ${file} could not be read and will NOT be delivered or retried — it stays in ${resolveQueueDir(opts.stateDir)} until an operator removes it: ${String(err)}`,
+    );
+  });
   if (pending.length === 0) {
     return { ...createEmptyRecoverySummary(), awaitingReviewAtStart };
   }
@@ -710,10 +872,10 @@ export async function recoverPendingDeliveries(opts: {
         // Two records on purpose: what happened, then what to do about it. One
         // combined line buries the incident under a four-step runbook.
         opts.log.warn(
-          `Delivery ${current.id} to ${current.channel}:${current.to} was interrupted mid-send at ${formatSendStartedAt(current)}${describeDeliveredBeforeFailure(current)} — outcome unknown, refusing to replay. Moved to ${path.join(resolveNeedsReviewDir(opts.stateDir), `${current.id}.json`)}`,
+          `Delivery ${current.id} to ${current.channel}:${current.to} left an undetermined send outcome from ${formatSendStartedAt(current)}${describeDeliveredBeforeFailure(current)} — it may or may not have reached the recipient, refusing to replay. Moved to ${path.join(resolveNeedsReviewDir(opts.stateDir), `${current.id}.json`)}`,
         );
         opts.log.warn(
-          `To reconcile delivery ${current.id}: check the recipient's message history around that time, then delete the file if it arrived. To send it after all, move the file back into ${resolveQueueDir(opts.stateDir)}, set its "recoveryState" to null and its "retryCount" to 0, then restart the gateway — recovery only runs at startup, leaving "recoveryState" set only re-quarantines it, and leaving "retryCount" at ${current.retryCount} (max ${MAX_RETRIES}) files it under failed/ without sending.`,
+          `To reconcile delivery ${current.id}: check the recipient's message history around that time, then delete the file if it arrived. To send it after all, move the file back into ${resolveQueueDir(opts.stateDir)}, set its "recoveryState" to null and its "retryCount" to 0, then restart the gateway — recovery only runs at startup, and leaving "recoveryState" set only re-quarantines it.${describeRetryCountResetReason(current)}`,
         );
         summary.needsReview += 1;
         return;
@@ -868,22 +1030,3 @@ export async function recoverPendingDeliveries(opts: {
 }
 
 export { MAX_RETRIES };
-
-const PERMANENT_ERROR_PATTERNS: readonly RegExp[] = [
-  /no conversation reference found/i,
-  /chat not found/i,
-  /user not found/i,
-  /bot was blocked by the user/i,
-  /forbidden: bot was kicked/i,
-  /chat_id is empty/i,
-  /recipient is not a valid/i,
-  /outbound not configured for channel/i,
-  /ambiguous discord recipient/i,
-  // Slack: a required OAuth scope is missing from the app — cannot self-resolve
-  // without app reconfiguration, so retries only waste attempts (#2098).
-  /missing_scope/i,
-];
-
-export function isPermanentDeliveryError(error: string): boolean {
-  return PERMANENT_ERROR_PATTERNS.some((re) => re.test(error));
-}

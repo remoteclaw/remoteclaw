@@ -437,6 +437,7 @@ export default defineConfig({
                     { slug: "gateway/heartbeat" },
                     { slug: "gateway/doctor" },
                     { slug: "gateway/logging" },
+                    { slug: "gateway/message-delivery" },
                     { slug: "gateway/gateway-lock" },
                     { slug: "gateway/background-process" },
                     { slug: "gateway/multiple-gateways" },

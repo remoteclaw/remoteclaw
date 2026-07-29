@@ -40,10 +40,23 @@ Practical consequences:
   connection was refused, the name did not resolve, the platform rejected the
   chat outright, or the send never started) still retry normally.
 
-  A residual window remains. The clearest example: the in-flight marker is
-  written with an atomic rename but is not flushed to stable storage, so a power
-  loss can take the marker with it and a post-reboot recovery pass has nothing
-  left to refuse.
+  This applies to **both** senders: the live send, and the retry the recovery
+  pass makes on its own at startup. They classify a failure with the same
+  predicate, so an ambiguous one is quarantined whichever of the two hit it —
+  a recovery retry that times out after reaching the wire is held for review
+  rather than replayed on the next restart.
+
+  Residual windows remain:
+  - the in-flight marker is written with an atomic rename but is not flushed to
+    stable storage, so a power loss can take the marker with it and a
+    post-reboot recovery pass has nothing left to refuse;
+  - under `bestEffort` a sender reports per-payload failures instead of
+    throwing, and that report does not carry how far each payload got. When a
+    **recovery retry** fails that way with nothing landed, the entry is retried
+    rather than held — so a payload that did reach the recipient can arrive
+    twice. A retry that landed part of the message is still quarantined, and the
+    live send, which keeps the per-payload detail, still quarantines the
+    ambiguous case.
 
 ## The `needs-review` reconciliation queue
 

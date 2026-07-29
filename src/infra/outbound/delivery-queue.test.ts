@@ -961,6 +961,205 @@ describe("recoverPendingDeliveries", () => {
     expect(entry.deliveredBeforeFailure).toBe(1);
   });
 
+  // #3063: the bestEffort half of the #3061 symmetry above. This sender REPORTS
+  // per-payload failures and RESOLVES, so the annotated throw those tests rely
+  // on never happens — the sender annotates each per-payload error on its way
+  // into onError instead. Same classifier, same three arms, same partial-first
+  // ordering, so recovery and the live send dispose of an identical bestEffort
+  // failure identically.
+  it("quarantines a bestEffort retry that failed ambiguously with nothing landed (#3063)", async () => {
+    // The bug this closes: every payload failed after reaching the transport and
+    // none was observed to land. Before this the entry was replayed on the next
+    // restart while the live send quarantined the very same failure.
+    const id = await enqueueTestDelivery();
+    const ambiguous = vi.fn<DeliverFn>(async (params) => {
+      params.onError?.(
+        annotatePlatformSendAttempted(new Error("socket hang up"), true),
+        params.payloads[0],
+      );
+      return [];
+    });
+
+    const { summary } = await runRecovery(ambiguous);
+
+    expect(summary.failed).toBe(1);
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBe("unknown_after_send");
+    expect(hasUnknownSendOutcome(entry)).toBe(true);
+    // Unknowable, not zero: `0` reads to an operator as "confirmed nothing
+    // arrived", which is exactly what this outcome cannot confirm.
+    expect(entry.deliveredBeforeFailure).toBeUndefined();
+  });
+
+  it("does not replay an ambiguously-failed bestEffort retry on the next startup (#3063)", async () => {
+    // The disposition only matters if it survives the restart — the duplicate
+    // this closes is delivered by the NEXT recovery pass, not this one.
+    const id = await enqueueTestDelivery();
+    await runRecovery(
+      vi.fn<DeliverFn>(async (params) => {
+        params.onError?.(
+          annotatePlatformSendAttempted(new Error("socket hang up"), true),
+          params.payloads[0],
+        );
+        return [];
+      }),
+    );
+
+    const replay = vi.fn<DeliverFn>(async () => undefined);
+    const { summary } = await runRecovery(replay);
+
+    expect(replay).not.toHaveBeenCalled();
+    expect(summary.needsReview).toBe(1);
+    expect(fs.existsSync(path.join(resolveNeedsReviewDir(stateDir), `${id}.json`))).toBe(true);
+  });
+
+  it("still replays a bestEffort retry that failed before reaching the transport (#3063)", async () => {
+    // The blanket-quarantine mistake, guarded on this path too: a payload that
+    // failed normalization or a hook never reached the wire, so it must stay
+    // replayable exactly as the live send treats it. Quarantining it would route
+    // routine validation errors into the operator's manual queue.
+    const id = await enqueueTestDelivery();
+    const preSend = vi.fn<DeliverFn>(async (params) => {
+      params.onError?.(
+        annotatePlatformSendAttempted(new Error("no text fallback is available"), false),
+        params.payloads[0],
+      );
+      return [];
+    });
+
+    const { summary } = await runRecovery(preSend);
+
+    expect(summary.failed).toBe(1);
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBeUndefined();
+    expect(hasUnknownSendOutcome(entry)).toBe(false);
+    expect(entry.retryCount).toBe(1);
+  });
+
+  it("still replays a bestEffort retry whose connection was never established (#3063)", async () => {
+    // A send WAS attempted, so the flag alone would quarantine this. The errno
+    // arm is what keeps routine transient outages out of the reconciliation
+    // queue — recovery runs the whole predicate here, not just the new flag.
+    const id = await enqueueTestDelivery();
+    const refused = vi.fn<DeliverFn>(async (params) => {
+      params.onError?.(
+        annotatePlatformSendAttempted(
+          Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:443"), {
+            code: "ECONNREFUSED",
+          }),
+          true,
+        ),
+        params.payloads[0],
+      );
+      return [];
+    });
+
+    await runRecovery(refused);
+
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBeUndefined();
+    expect(hasUnknownSendOutcome(entry)).toBe(false);
+  });
+
+  it("quarantines when ANY bestEffort payload failed ambiguously (#3063)", async () => {
+    // Classifying from the first error alone lets a clean ECONNREFUSED on
+    // payload 1 mask an ambiguous post-transmission failure on payload 2 —
+    // replaying the payload that may have arrived. The live path OR-accumulates
+    // for this reason; so does this one.
+    const id = await enqueueTestDelivery();
+    const mixed = vi.fn<DeliverFn>(async (params) => {
+      params.onError?.(
+        annotatePlatformSendAttempted(
+          Object.assign(new Error("connect ECONNREFUSED"), { code: "ECONNREFUSED" }),
+          true,
+        ),
+        params.payloads[0],
+      );
+      params.onError?.(
+        annotatePlatformSendAttempted(new Error("socket hang up"), true),
+        params.payloads[0],
+      );
+      return [];
+    });
+
+    await runRecovery(mixed);
+
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBe("unknown_after_send");
+    expect(hasUnknownSendOutcome(entry)).toBe(true);
+    // The FIRST error is the one quoted to the operator, and it is the clean
+    // one — so the disposition cannot have been read off the message.
+    expect(entry.lastError).toContain("ECONNREFUSED");
+  });
+
+  it("keeps the partial-delivery disposition ahead of the bestEffort ambiguity check (#3063)", async () => {
+    // Both properties hold at once (a payload failed ambiguously AND one
+    // landed), and the landed count still has to win: it is the only record of
+    // which part arrived, and quarantining without it tells the operator less.
+    const id = await enqueueTestDelivery();
+    const partial = vi.fn<DeliverFn>(async (params) => {
+      params.onError?.(
+        annotatePlatformSendAttempted(new Error("socket hang up"), true),
+        params.payloads[0],
+      );
+      return [{ messageId: "m1" }];
+    });
+
+    await runRecovery(partial);
+
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBe("unknown_after_send");
+    expect(entry.deliveredBeforeFailure).toBe(1);
+  });
+
+  it("keeps an all-permanent bestEffort failure on failed/ (#3063)", async () => {
+    // The third arm. Every payload was rejected outright, so nothing arrived and
+    // nothing can be retried — needs-review is for undetermined outcomes, and
+    // burying a known one among them costs the operator a pointless check.
+    const id = await enqueueTestDelivery();
+    const permanent = vi.fn<DeliverFn>(async (params) => {
+      params.onError?.(
+        annotatePlatformSendAttempted(new Error("Bad Request: chat not found"), true),
+        params.payloads[0],
+      );
+      return [];
+    });
+
+    const { summary } = await runRecovery(permanent);
+
+    expect(summary.failed).toBe(1);
+    expect(fs.existsSync(path.join(stateDir, "delivery-queue", "failed", `${id}.json`))).toBe(true);
+    expect(fs.existsSync(path.join(stateDir, "delivery-queue", `${id}.json`))).toBe(false);
+  });
+
+  it("quarantines a bestEffort failure mixing a permanent rejection with an ambiguous payload (#3063)", async () => {
+    // The synthesized error quotes the FIRST payload's message, so a permanent
+    // one there would file the whole entry under failed/ — asserting
+    // "never arrived" about a later payload that may be on the recipient's
+    // device. The live path has no permanent branch and quarantines this mix.
+    const id = await enqueueTestDelivery();
+    const mixed = vi.fn<DeliverFn>(async (params) => {
+      params.onError?.(
+        annotatePlatformSendAttempted(new Error("Bad Request: chat not found"), true),
+        params.payloads[0],
+      );
+      params.onError?.(
+        annotatePlatformSendAttempted(new Error("socket hang up"), true),
+        params.payloads[0],
+      );
+      return [];
+    });
+
+    await runRecovery(mixed);
+
+    expect(fs.existsSync(path.join(stateDir, "delivery-queue", "failed", `${id}.json`))).toBe(
+      false,
+    );
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBe("unknown_after_send");
+    expect(hasUnknownSendOutcome(entry)).toBe(true);
+  });
+
   it("quarantines a partly-delivered entry even when the error is permanent", async () => {
     // "Permanent" answers whether retrying can work, not whether part of the
     // message is already on the recipient's device. Filing it under failed/

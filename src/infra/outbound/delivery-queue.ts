@@ -931,6 +931,16 @@ export async function recoverPendingDeliveries(opts: {
       // an entry whose payloads all failed and the message is silently dropped.
       let sawPayloadFailure = false;
       let firstPayloadError: string | undefined;
+      // Whether ANY payload failed in a way that might have landed. The live
+      // path's accumulator verbatim (`deliver.ts`), and OR-accumulated for the
+      // same reason: taking the verdict from the first error alone lets a clean
+      // ECONNREFUSED on payload 1 mask an ambiguous post-transmission timeout on
+      // payload 2, replaying the payload that may have arrived.
+      let sawAmbiguousPayloadFailure = false;
+      // The aggregate verdict for the synthesized bestEffort failure below, and
+      // only for it: a real throw out of the sender still classifies from its
+      // own annotations in the catch.
+      let bestEffortOutcome: { definitelyDidNotLand: boolean } | undefined;
       try {
         const sent = await opts.deliver({
           cfg: opts.cfg,
@@ -947,23 +957,40 @@ export async function recoverPendingDeliveries(opts: {
           skipQueue: true, // Prevent re-enqueueing during recovery
           onError: (err) => {
             sawPayloadFailure = true;
-            firstPayloadError ??= describeDeliveryError(err);
+            const described = describeDeliveryError(err);
+            // The live path's predicate on the live path's facts. Under
+            // `bestEffort` the sender REPORTS per-payload errors and resolves
+            // instead of throwing, so the annotated `throw` #3061 reads never
+            // fires here; the sender annotates each per-payload error on its way
+            // into this callback instead, and that is what crosses the resolve
+            // boundary (#3063).
+            //
+            // Unreported means the DeliverFn is not the outbound sender and
+            // cannot tell us — keep the historical replay-whole reading, the
+            // same default the landed count and the thrown-error branch below
+            // take. See § the `platformSendAttempted` default there.
+            sawAmbiguousPayloadFailure ||= !didSendDefinitelyNotLand({
+              platformSendAttempted: readPlatformSendAttempted(err) ?? false,
+              error: err,
+              describedError: described,
+            });
+            firstPayloadError ??= described;
           },
         });
         if (sawPayloadFailure) {
           // Route it exactly as a thrown failure would be: what already landed
-          // decides between "retry it whole" and "a human has to reconcile it".
+          // decides between "retry it whole" and "a human has to reconcile it",
+          // and among the nothing-landed ones the ambiguity verdict decides.
           //
-          // Deliberately NOT annotated with `platformSendAttempted`: under
-          // `bestEffort` the sender REPORTS per-payload errors and resolves
-          // instead of throwing, and how far each payload got does not cross
-          // that resolve boundary — this error is synthesized here, not caught
-          // from the sender. So with nothing landed the entry replays, where the
-          // live path (which still holds the per-payload detail) would quarantine
-          // an ambiguous one. Narrow, deliberate, and documented as a residual in
-          // `docs/gateway/message-delivery.md` § Delivery guarantee rather than
-          // papered over with a guess (#3060, #3061).
+          // The verdict travels BESIDE the synthesized error, not on it. This
+          // error is constructed here, so it carries none of the evidence
+          // `didSendDefinitelyNotLand` reads: no errno to inspect, and no
+          // permanent-rejection pattern (the branch below already filed that
+          // case under failed/). Re-deriving the verdict from it downstream
+          // would therefore answer "definitely did not land" for every
+          // bestEffort failure — the replay this exists to prevent.
           const landed = Array.isArray(sent) ? sent.length : 0;
+          bestEffortOutcome = { definitelyDidNotLand: !sawAmbiguousPayloadFailure };
           throw annotateDeliveredBeforeFailure(
             new Error(
               `bestEffort delivery reported a per-payload failure: ${firstPayloadError ?? "unknown error"}`,
@@ -1002,7 +1029,21 @@ export async function recoverPendingDeliveries(opts: {
           return;
         }
 
-        if (isPermanentDeliveryError(errMsg)) {
+        // A permanent rejection is the platform stating it did not accept the
+        // message, so failed/ ("never arrived") is an honest file for it — but
+        // only about the payload that was rejected. Under bestEffort the
+        // synthesized message above carries the FIRST payload's error while a
+        // LATER one may have failed ambiguously, and failed/ would then assert
+        // non-delivery for a payload that might already be on the recipient's
+        // device. The live path has no permanent branch at all and quarantines
+        // that mix; this keeps the two agreeing (#3063).
+        //
+        // A no-op for a thrown failure, deliberately: an error whose message
+        // matches a permanent pattern already answers `didSendDefinitelyNotLand`
+        // through that predicate's own third arm, so this only ever narrows the
+        // synthesized bestEffort case.
+        const permanentErrorCoversEveryPayload = bestEffortOutcome?.definitelyDidNotLand ?? true;
+        if (isPermanentDeliveryError(errMsg) && permanentErrorCoversEveryPayload) {
           opts.log.warn(
             `Delivery ${current.id} hit permanent error — moving to failed/: ${errMsg}`,
           );
@@ -1033,20 +1074,42 @@ export async function recoverPendingDeliveries(opts: {
         // was never established both still retry, so only the genuinely
         // undetermined subset is quarantined. Its third arm — an outright
         // platform rejection — is unreachable from here, since the permanent
-        // branch above already filed that case under failed/; it is kept anyway,
-        // because diverging from the shared predicate is how these two paths
-        // came to disagree in the first place.
+        // branch above already filed that case under failed/; the one failure
+        // that branch declines is a bestEffort one, which takes its verdict from
+        // the line below and never reaches this predicate. The arm is kept
+        // anyway, because diverging from the shared predicate is how these two
+        // paths came to disagree in the first place.
+        //
+        // A `bestEffort` failure was already classified where the evidence
+        // still existed, above; its verdict is used as-is rather than re-derived
+        // from an error that no longer carries any.
+        //
+        // ## The `platformSendAttempted` default
         //
         // Unreported flag means the DeliverFn is not the outbound sender and
         // cannot tell us, so keep the historical replay-whole behaviour — the
         // same default the landed count takes above. The real sender always
         // reports it: every throw out of `deliverOutboundPayloads` passes the
         // annotating site, including its pre-send failures.
-        const definitelyDidNotLand = didSendDefinitelyNotLand({
-          platformSendAttempted: readPlatformSendAttempted(err) ?? false,
-          error: err,
-          describedError: errMsg,
-        });
+        //
+        // Deliberately NOT fail-closed. Quarantine-on-absent reads as the safer
+        // default, but it is only safe for a sender that reaches a chat
+        // platform, and absent is exactly the case where we know the DeliverFn
+        // is NOT that sender. Every other DeliverFn — and every failure it
+        // raises — would be routed to an operator's manual queue and never sent,
+        // turning a routine transient error into permanent undelivered mail. The
+        // narrow risk it would buy against (a future non-outbound DeliverFn put
+        // on a chat-send path, throwing post-send-ambiguously without
+        // annotating) is instead held closed by there being exactly one
+        // production wiring of this function, pinned by
+        // `delivery-recovery-wiring.guard.test.ts` (#3063).
+        const definitelyDidNotLand =
+          bestEffortOutcome?.definitelyDidNotLand ??
+          didSendDefinitelyNotLand({
+            platformSendAttempted: readPlatformSendAttempted(err) ?? false,
+            error: err,
+            describedError: errMsg,
+          });
 
         if (!definitelyDidNotLand) {
           try {

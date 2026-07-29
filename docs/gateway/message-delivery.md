@@ -40,23 +40,18 @@ Practical consequences:
   connection was refused, the name did not resolve, the platform rejected the
   chat outright, or the send never started) still retry normally.
 
-  This applies to **both** senders: the live send, and the retry the recovery
-  pass makes on its own at startup. They classify a failure with the same
-  predicate, so an ambiguous one is quarantined whichever of the two hit it —
-  a recovery retry that times out after reaching the wire is held for review
-  rather than replayed on the next restart.
+  This applies to **both** senders — the live send, and the retry the recovery
+  pass makes on its own at startup — and to **both** ways a send can fail:
+  raising an error, or, under `bestEffort`, reporting each payload's failure and
+  returning. All four combinations classify with the same predicate, so an
+  ambiguous failure is quarantined whichever one hit it. A recovery retry that
+  times out after reaching the wire is held for review rather than replayed on
+  the next restart, and so is a `bestEffort` recovery retry whose payloads
+  failed that way with nothing landed.
 
-  Residual windows remain:
-  - the in-flight marker is written with an atomic rename but is not flushed to
-    stable storage, so a power loss can take the marker with it and a
-    post-reboot recovery pass has nothing left to refuse;
-  - under `bestEffort` a sender reports per-payload failures instead of
-    throwing, and that report does not carry how far each payload got. When a
-    **recovery retry** fails that way with nothing landed, the entry is retried
-    rather than held — so a payload that did reach the recipient can arrive
-    twice. A retry that landed part of the message is still quarantined, and the
-    live send, which keeps the per-payload detail, still quarantines the
-    ambiguous case.
+  One residual window remains: the in-flight marker is written with an atomic
+  rename but is not flushed to stable storage, so a power loss can take the
+  marker with it and a post-reboot recovery pass has nothing left to refuse.
 
 ## The `needs-review` reconciliation queue
 

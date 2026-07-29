@@ -141,6 +141,19 @@ export function resolveClickClackAccount(params: {
     env: params.env,
   });
   const workspace = merged.workspace?.trim() ?? "";
+  // Fail closed: an account with no configured `allowFrom` admits NO senders.
+  //
+  // Deliberate divergence from upstream OpenClaw, which defaults `["*"]`.
+  // That default is open admission, not a permissive per-sender filter on top
+  // of a separate gate: `access.ts` hands this exact value to
+  // `resolveStableChannelMessageIngress` as the allowlist for its hardcoded
+  // `dmPolicy`/`groupPolicy: "allowlist"`, and a `"*"` entry matches any
+  // subject — so an unconfigured account would admit every workspace member.
+  // The shared ingress kernel likewise coalesces an absent list to `[]`
+  // (`message-access/runtime.ts`).
+  //
+  // Do NOT restore the wildcard during an upstream sync (#3054).
+  const allowFrom = merged.allowFrom ?? [];
   return {
     accountId,
     enabled,
@@ -153,14 +166,14 @@ export function resolveClickClackAccount(params: {
     agentId: normalizeOptionalString(merged.agentId),
     timeoutSeconds: merged.timeoutSeconds,
     defaultTo: merged.defaultTo?.trim() || "channel:general",
-    allowFrom: merged.allowFrom ?? ["*"],
+    allowFrom,
     reconnectMs: resolveIntegerOption(merged.reconnectMs, DEFAULT_RECONNECT_MS, {
       min: MIN_RECONNECT_MS,
       max: MAX_RECONNECT_MS,
     }),
     config: {
       ...merged,
-      allowFrom: merged.allowFrom ?? ["*"],
+      allowFrom,
     },
   };
 }

@@ -10,6 +10,16 @@
 //  2. `shouldDispatch` derives from `ingress.admission === "dispatch"`, and
 //     admission is decided ahead of command authorization — a refused sender
 //     never becomes dispatchable by virtue of the command gate.
+//
+// A third point, added for #3054, closes the gap those two left open. Point 1
+// pins the admission MODE; it says nothing about the LIST that mode consults.
+// `allowFrom` is that list, and it now defaults to `[]`:
+//
+//  3. An account the operator never configured refuses EVERY sender, rather
+//     than admitting the whole workspace. Point 1 therefore holds for the
+//     SHIPPED DEFAULT, not merely for a fixture that happens to carry a list.
+//     Deliberate fork divergence from upstream OpenClaw, which defaults
+//     `["*"]` (open).
 import {
   type PluginRuntime,
   resolveStableChannelMessageIngress,
@@ -17,6 +27,7 @@ import {
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPluginRuntimeMock } from "../../test-utils/plugin-runtime-mock.js";
 import { resolveClickClackInboundAccess } from "./access.js";
+import { resolveClickClackAccount } from "./accounts.js";
 import { setClickClackRuntime } from "./runtime.js";
 import type { ClickClackMessage, CoreConfig, ResolvedClickClackAccount } from "./types.js";
 
@@ -220,7 +231,49 @@ describe("ClickClack ingress admission (hardcoded allowlist policy)", () => {
     }
   });
 
+  it("refuses every sender for an account with no configured allowFrom (fail-closed default)", async () => {
+    // The SHIPPED default, exercised end-to-end. Every other case in this file
+    // hands `resolveClickClackInboundAccess` a hand-built `createAccount()`
+    // fixture carrying an explicit list, so the value `accounts.ts` actually
+    // resolves never reached the admission path — which is exactly how an open
+    // `["*"]` default sat under a green suite until #3054. Build the account
+    // through the real normalization instead, and assert the consequence.
+    setClickClackRuntime(createRuntime({ commandRequested: false }));
+    const cfg = {
+      channels: {
+        clickclack: {
+          enabled: true,
+          baseUrl: "https://app.clickclack.chat",
+          token: "ccb_default",
+          workspace: "wsp_1",
+        },
+      },
+    } satisfies CoreConfig;
+    const account = resolveClickClackAccount({ cfg });
+
+    // Asserted here as well as in accounts.test.ts so a revert to `["*"]`
+    // reports as "the default changed" rather than "the gate stopped working".
+    expect(account.allowFrom).toEqual([]);
+
+    const direct = await resolveClickClackInboundAccess({
+      account,
+      config: cfg,
+      message: directMessage("usr_anyone"),
+    });
+    const group = await resolveClickClackInboundAccess({
+      account,
+      config: cfg,
+      message: groupMessage("usr_anyone"),
+    });
+
+    expect(direct.shouldDispatch).toBe(false);
+    expect(group.shouldDispatch).toBe(false);
+  });
+
   it("keeps a wildcard allowFrom entry working for both conversation kinds", async () => {
+    // An operator who writes `["*"]` explicitly still opts into open admission.
+    // The fail-closed default is about the ABSENT-config case, not about
+    // removing the wildcard, so this stays valid behavior.
     setClickClackRuntime(createRuntime({ commandRequested: false }));
     const account = createAccount({ allowFrom: ["*"], config: { allowFrom: ["*"] } });
 

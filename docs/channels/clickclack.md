@@ -44,6 +44,9 @@ Configure RemoteClaw:
 }
 ```
 
+`allowFrom` is required, not optional: it defaults to `[]` and an empty
+allowlist admits nobody. See [Access control](#access-control).
+
 Then run:
 
 ```bash
@@ -67,15 +70,36 @@ dropped before the message reaches the agent pipeline. There is no open-policy
 mode for this channel — the adapter pins its DM and group policies rather than
 reading them from config.
 
-Allowlist entries may be written as a bare user id or with a provider/DM prefix;
-all four forms below resolve to the same user:
+### ClickClack admits nobody until you set `allowFrom`
+
+`allowFrom` defaults to `[]`, and an empty allowlist means **deny-all — not
+allow-all**. An account with no `allowFrom` accepts no inbound message from
+anyone, and the bot will appear to ignore everything it receives.
+
+ClickClack has no guided onboarding flow. Selecting it in `remoteclaw onboard`
+enables the plugin, but the wizard then reports that this channel "does not
+support onboarding yet" and writes nothing under `channels.clickclack`. Every
+ClickClack channel config is written by hand, so **you must always set
+`allowFrom` yourself**, once per account: each account carries its own
+allowlist, and an account you add to `channels.clickclack.accounts` without one
+admits nobody.
+
+This is the intended fail-closed posture, and a deliberate RemoteClaw divergence
+from upstream OpenClaw, which defaults to `["*"]`.
+
+### Allowlist entries
+
+Entries may be written as a bare user id or with a provider/DM prefix; all four
+forms below resolve to the same user:
 
 ```json5
 allowFrom: ["usr_123", "clickclack:usr_123", "cc:usr_123", "dm:usr_123"]
 ```
 
-Use `["*"]` to admit every workspace member. Command authorization is evaluated
-only for senders that were already admitted — it never widens admission.
+Set `["*"]` explicitly to admit every workspace member — that opt-in still
+works, it is simply no longer what you get by default. Command authorization is
+evaluated only for senders that were already admitted — it never widens
+admission.
 
 ## Multiple bots
 
@@ -166,5 +190,5 @@ you control.
 
 - `ClickClack is not configured`: set `channels.clickclack.token` or `CLICKCLACK_BOT_TOKEN`.
 - `workspace not found`: set `workspace` to the workspace id or slug returned by ClickClack.
-- No inbound replies: confirm the sender is in `allowFrom`, the token has realtime read access, and the bot is not replying to its own messages.
+- No inbound replies: confirm `allowFrom` is set at all — it defaults to `[]`, which admits nobody — and that the sender is in it. Then check the token has realtime read access and the bot is not replying to its own messages.
 - Channel sends fail: verify the bot is a member of the workspace and has `bot:write`.

@@ -5,6 +5,7 @@ import {
   resolveClickClackAccount,
   resolveDefaultClickClackAccountId,
 } from "./accounts.js";
+import { clickClackPlugin } from "./channel.js";
 import type { CoreConfig } from "./types.js";
 
 describe("ClickClack account resolution", () => {
@@ -91,11 +92,12 @@ describe("ClickClack account resolution", () => {
         env: { CLICKCLACK_SERVICE_TOKEN: "  ccb_live  " },
       }),
     ).toEqual({
-      allowFrom: ["*"],
+      // Fail-closed default (#3054) — see the divergence note in accounts.ts.
+      allowFrom: [],
       accountId: "service",
       baseUrl: "https://app.clickclack.chat",
       config: {
-        allowFrom: ["*"],
+        allowFrom: [],
         baseUrl: "https://app.clickclack.chat",
         enabled: true,
         token: { source: "env", provider: "default", id: "CLICKCLACK_SERVICE_TOKEN" },
@@ -133,13 +135,13 @@ describe("ClickClack account resolution", () => {
     } satisfies CoreConfig;
 
     expect(resolveClickClackAccount({ cfg, accountId: "peter" })).toEqual({
-      allowFrom: ["*"],
+      allowFrom: [],
       accountId: "peter",
       agentId: "peter-bot",
       baseUrl: "https://app.clickclack.chat",
       config: {
         agentId: "peter-bot",
-        allowFrom: ["*"],
+        allowFrom: [],
         baseUrl: "https://app.clickclack.chat",
         enabled: true,
         timeoutSeconds: 120,
@@ -154,6 +156,25 @@ describe("ClickClack account resolution", () => {
       token: "ccb_peter",
       workspace: "wsp_1",
     });
+  });
+
+  it("exposes the fail-closed default through the channel plugin's resolveAllowFrom seam", () => {
+    // `channel.ts` re-exports the allowlist to the plugin host through its own
+    // accessor. The admission tests call `resolveClickClackAccount` directly, so
+    // a wildcard coalesce reintroduced AT THE SEAM would leave every other test
+    // green while handing the host an open allowlist. Pin the seam too (#3054).
+    const cfg = {
+      channels: {
+        clickclack: {
+          enabled: true,
+          baseUrl: "https://app.clickclack.chat",
+          token: "ccb_default",
+          workspace: "wsp_1",
+        },
+      },
+    } satisfies CoreConfig;
+
+    expect(clickClackPlugin.config.resolveAllowFrom?.({ cfg, accountId: "default" })).toEqual([]);
   });
 
   it("normalizes reconnect intervals to the public config bounds", () => {

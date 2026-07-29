@@ -12,7 +12,10 @@ import { withEnvAsync } from "../../test-utils/env.js";
 import { createIMessageTestPlugin } from "../../test-utils/imessage-test-plugin.js";
 import { createInternalHookEventPayload } from "../../test-utils/internal-hook-event-payload.js";
 import { resolvePreferredRemoteClawTmpDir } from "../tmp-remoteclaw-dir.js";
-import { readDeliveredBeforeFailure } from "./delivered-before-failure.js";
+import {
+  readDeliveredBeforeFailure,
+  readPlatformSendAttempted,
+} from "./delivered-before-failure.js";
 
 const mocks = vi.hoisted(() => ({
   appendAssistantMessageToSessionTranscript: vi.fn(async () => ({ ok: true, sessionFile: "x" })),
@@ -974,6 +977,60 @@ describe("deliverOutboundPayloads", () => {
     }).catch((e: unknown) => e);
 
     expect(readDeliveredBeforeFailure(err)).toBe(0);
+  });
+
+  it("annotates the rethrown error with whether a platform send was attempted", async () => {
+    // The landed count alone is not enough for the catcher: a zero count is what
+    // BOTH a pre-send throw and a post-transmission timeout look like, and those
+    // have opposite dispositions. Recovery re-runs `didSendDefinitelyNotLand`
+    // over this flag, so an unannotated throw makes it replay an ambiguous send
+    // (#3061).
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("socket hang up"));
+
+    const err = await deliverOutboundPayloads({
+      cfg: {},
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "a" }],
+      deps: { sendWhatsApp },
+      skipQueue: true,
+    }).catch((e: unknown) => e);
+
+    expect(sendWhatsApp).toHaveBeenCalledTimes(1);
+    expect(readDeliveredBeforeFailure(err)).toBe(0);
+    expect(readPlatformSendAttempted(err)).toBe(true);
+  });
+
+  it("annotates a failure raised before any send as send-not-attempted", async () => {
+    // The other half of the same contract, and the reason the recovery path can
+    // keep retrying: a media payload on an adapter with no sendMedia and no text
+    // fallback throws before the transport is touched. Reported as `true`, every
+    // pre-send validation error would become manual reconciliation work.
+    const sendText = vi.fn();
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "matrix",
+          source: "test",
+          plugin: createOutboundTestPlugin({
+            id: "matrix",
+            outbound: { deliveryMode: "direct", sendText },
+          }),
+        },
+      ]),
+    );
+
+    const err = await deliverOutboundPayloads({
+      cfg: {},
+      channel: "matrix",
+      to: "!room:1",
+      payloads: [{ text: "   ", mediaUrl: "https://example.com/file.png" }],
+      skipQueue: true,
+    }).catch((e: unknown) => e);
+
+    expect(sendText).not.toHaveBeenCalled();
+    expect(readDeliveredBeforeFailure(err)).toBe(0);
+    expect(readPlatformSendAttempted(err)).toBe(false);
   });
 
   it("records a mid-chunk failure as an unknown outcome — earlier chunks already landed", async () => {

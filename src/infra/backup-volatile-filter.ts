@@ -128,6 +128,10 @@ export function isVolatileBackupPath(absolutePath: string, plan: VolatileFilterP
       // undelivered message content, which is also where the reconcile/prune
       // expectation that keeps the exposure bounded lives. Narrowing this
       // carve-out means re-reading that page, not just this comment.
+      // `session-delivery-queue/needs-review` is intentionally NOT carved out:
+      // the session queue has no quarantine concept today, so there is nothing
+      // there to preserve. Revisit this carve-out if it gains one — otherwise
+      // those entries would be silently filtered out of backups.
       const needsReviewRoot = path.posix.join(stateDirPosix, "delivery-queue", "needs-review");
       const isAwaitingReview = isUnder(filePosix, needsReviewRoot);
 

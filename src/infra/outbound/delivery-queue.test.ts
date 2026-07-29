@@ -3,7 +3,10 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { RemoteClawConfig } from "../../config/config.js";
-import { annotateDeliveredBeforeFailure } from "./delivered-before-failure.js";
+import {
+  annotateDeliveredBeforeFailure,
+  annotatePlatformSendAttempted,
+} from "./delivered-before-failure.js";
 import {
   ackDelivery,
   clearDeliveryAttemptMarker,
@@ -79,6 +82,16 @@ async function runRecovery(
 async function readEntry(id: string, dir?: string): Promise<QueuedDelivery> {
   const filePath = path.join(dir ?? path.join(stateDir, "delivery-queue"), `${id}.json`);
   return JSON.parse(await fs.promises.readFile(filePath, "utf-8"));
+}
+
+/**
+ * Every path under the state directory, sorted. Asserting a refused entry
+ * produced no file ANYWHERE is stronger than checking the one directory an
+ * escape was expected to reach — a traversal that lands somewhere unanticipated
+ * still shows up as a new path.
+ */
+async function listStateDirTree(): Promise<string[]> {
+  return (await fs.promises.readdir(stateDir, { recursive: true })).toSorted();
 }
 
 describe("send-in-flight marker", () => {
@@ -327,6 +340,82 @@ describe("entry id shape guard (#3051)", () => {
     const pending = await loadPendingDeliveries(stateDir);
 
     expect(pending.map((entry) => entry.id)).toEqual([id]);
+  });
+
+  // #3061 item 3: the guard's only job is to keep an attacker-chosen string out
+  // of a path build, so the payloads it must refuse are worth naming one by one.
+  // "not-a-uuid" above is refused by almost any pattern; these are the ones a
+  // silently-loosened pattern lets through — a dropped anchor, an added `m`
+  // flag, a character class widened to include `/` or `.` — each with the suite
+  // still green and the failure mode a queue operation writing outside its own
+  // directory.
+  const traversalIds: readonly { label: string; id: string }[] = [
+    { label: "a relative traversal", id: "../../etc/passwd" },
+    { label: "an absolute path", id: "/etc/passwd" },
+    { label: "a bare parent reference", id: ".." },
+    { label: "an embedded separator", id: "00000000-0000-4000-8000-000000000000/x" },
+    // `$` in JS matches only the true end of input — unlike flavours where it
+    // also matches before a trailing newline. Pinned so adding an `m` flag (or
+    // porting the pattern) cannot reintroduce that escape unnoticed.
+    { label: "a trailing newline", id: "00000000-0000-4000-8000-000000000000\n" },
+    { label: "a NUL byte", id: "00000000-0000-4000-8000-000000000000\u0000.json" },
+  ];
+
+  it.each(traversalIds)("refuses $label as an entry id", async ({ id }) => {
+    // Read through the scan rather than the guard directly: this is the path an
+    // on-disk id actually travels, and it is where a caller would otherwise pick
+    // the value up and hand it to `${dir}/${id}.json`.
+    await plantRawEntry("00000000-0000-4000-8000-000000000000", { ...plantedEntry, id });
+    const skipped: unknown[] = [];
+
+    const pending = await loadPendingDeliveries(stateDir, (_file, err) => skipped.push(err));
+
+    expect(pending).toEqual([]);
+    expect(skipped).toHaveLength(1);
+    expect(skipped[0]).toBeInstanceOf(InvalidQueueEntryIdError);
+  });
+
+  it("accepts a canonical uuid, in either case", async () => {
+    // The complement of the table above: a shape check, not a version check, so
+    // every RFC 4122 layout is equally acceptable and the pattern is
+    // case-insensitive. Without this, "reject everything" would pass the table.
+    for (const id of [
+      "0b6d4f6e-6b7a-4f0e-9c2a-1d3e5f7a9b1c",
+      "AABBCCDD-1122-4EEF-8899-001122334455",
+      // A v1 layout, to pin "shape check, not version check".
+      "00000000-0000-1000-8000-000000000000",
+    ]) {
+      await plantRawEntry(id, { ...plantedEntry, id });
+    }
+
+    const pending = await loadPendingDeliveries(stateDir);
+
+    expect(pending).toHaveLength(3);
+  });
+
+  it("builds no path from any refused id, in the queue directory or outside it", async () => {
+    // The property that matters is not "it threw" but "nothing was created or
+    // moved on its behalf" — no `needs-review/${id}.json`, no `failed/${id}.json`,
+    // no sibling anywhere. Compare the whole state directory before and after a
+    // full recovery pass: an escape that lands somewhere unanticipated still
+    // shows up as a new path.
+    for (const [index, { id }] of traversalIds.entries()) {
+      await plantRawEntry(`0000000${index}-0000-4000-8000-000000000000`, {
+        ...plantedEntry,
+        id,
+      });
+    }
+    const before = await listStateDirTree();
+
+    const deliver = vi.fn<DeliverFn>(async () => undefined);
+    const { summary } = await runRecovery(deliver);
+
+    expect(deliver).not.toHaveBeenCalled();
+    expect(summary.needsReview).toBe(0);
+    expect(summary.quarantineFailed).toBe(0);
+    expect(summary.failed).toBe(0);
+    expect(fs.existsSync(resolveNeedsReviewDir(stateDir))).toBe(false);
+    expect(await listStateDirTree()).toEqual(before);
   });
 });
 
@@ -679,6 +768,162 @@ describe("recoverPendingDeliveries", () => {
     const entry = await readEntry(id);
     expect(entry.recoveryState).toBeUndefined();
     expect(hasUnknownSendOutcome(entry)).toBe(false);
+  });
+
+  // #3061: recovery's own re-send has the same ambiguous-failure window as the
+  // live path, and before this it resolved it the opposite way — the live send
+  // quarantined the failure, recovery cleared the marker and replayed it on the
+  // next restart. These four pin the symmetry: same classifier, same three arms,
+  // so only the genuinely undetermined subset is quarantined.
+  it("quarantines a re-send that failed ambiguously after reaching the transport (#3061)", async () => {
+    // The bug this closes: a send was attempted, nothing was OBSERVED to land,
+    // and the transport failed post-transmission. That is "we cannot tell", not
+    // "nothing arrived" — replaying it is how the recipient gets it twice.
+    const id = await enqueueTestDelivery();
+    const ambiguous = vi.fn<DeliverFn>(async () => {
+      throw annotatePlatformSendAttempted(
+        annotateDeliveredBeforeFailure(
+          Object.assign(new Error("socket hang up"), { code: "ETIMEDOUT" }),
+          0,
+        ),
+        true,
+      );
+    });
+
+    const { summary } = await runRecovery(ambiguous);
+
+    expect(summary.failed).toBe(1);
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBe("unknown_after_send");
+    expect(hasUnknownSendOutcome(entry)).toBe(true);
+    // Unknowable, not zero: `0` reads to an operator as "confirmed nothing
+    // arrived", which is exactly what this outcome cannot confirm.
+    expect(entry.deliveredBeforeFailure).toBeUndefined();
+  });
+
+  it("does not replay an ambiguously-failed re-send on the next startup (#3061)", async () => {
+    // The disposition only matters if it survives the restart. Quarantine has to
+    // take the entry out of the pending scan, not just stamp it.
+    const id = await enqueueTestDelivery();
+    await runRecovery(
+      vi.fn<DeliverFn>(async () => {
+        throw annotatePlatformSendAttempted(
+          annotateDeliveredBeforeFailure(new Error("socket hang up"), 0),
+          true,
+        );
+      }),
+    );
+
+    const replay = vi.fn<DeliverFn>(async () => undefined);
+    const { summary } = await runRecovery(replay);
+
+    expect(replay).not.toHaveBeenCalled();
+    expect(summary.needsReview).toBe(1);
+    expect(fs.existsSync(path.join(resolveNeedsReviewDir(stateDir), `${id}.json`))).toBe(true);
+  });
+
+  it("still replays a re-send that failed before reaching the transport (#3061)", async () => {
+    // The blanket-quarantine mistake, guarded: a deterministic pre-send throw
+    // (payload normalization, a hook, handler construction) definitely did not
+    // land, so it must stay on the retry path exactly as the live send treats it.
+    // Quarantining it would put routine validation errors into the operator's
+    // manual queue and stop them ever being sent.
+    const id = await enqueueTestDelivery();
+    const preSend = vi.fn<DeliverFn>(async () => {
+      throw annotatePlatformSendAttempted(
+        annotateDeliveredBeforeFailure(new Error("no text fallback is available"), 0),
+        false,
+      );
+    });
+
+    const { summary } = await runRecovery(preSend);
+
+    expect(summary.failed).toBe(1);
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBeUndefined();
+    expect(hasUnknownSendOutcome(entry)).toBe(false);
+    expect(entry.retryCount).toBe(1);
+  });
+
+  it("still replays a re-send whose connection was never established (#3061)", async () => {
+    // A send WAS attempted, so the flag alone would quarantine this — the errno
+    // arm of `didSendDefinitelyNotLand` is what keeps routine transient outages
+    // out of the reconciliation queue. Recovery re-runs the whole predicate, not
+    // just the new flag.
+    const id = await enqueueTestDelivery();
+    const refused = vi.fn<DeliverFn>(async () => {
+      throw annotatePlatformSendAttempted(
+        annotateDeliveredBeforeFailure(
+          Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:443"), {
+            code: "ECONNREFUSED",
+          }),
+          0,
+        ),
+        true,
+      );
+    });
+
+    await runRecovery(refused);
+
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBeUndefined();
+    expect(hasUnknownSendOutcome(entry)).toBe(false);
+  });
+
+  it("keeps the partial-delivery disposition ahead of the ambiguity check (#3061)", async () => {
+    // Both properties hold at once here (a send was attempted AND part of it
+    // landed), and the landed count has to win: it is the more specific record,
+    // and it is the only thing that tells the operator which parts arrived.
+    const id = await enqueueTestDelivery();
+    const partial = vi.fn<DeliverFn>(async () => {
+      throw annotatePlatformSendAttempted(
+        annotateDeliveredBeforeFailure(new Error("socket hang up"), 1),
+        true,
+      );
+    });
+
+    await runRecovery(partial);
+
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBe("unknown_after_send");
+    expect(entry.deliveredBeforeFailure).toBe(1);
+  });
+
+  it("keeps a permanent rejection on failed/ even though a send was attempted (#3061)", async () => {
+    // The third arm. "chat not found" is the platform saying it did NOT accept
+    // the message — a guaranteed non-delivery, not an ambiguity. Routing it to
+    // needs-review would bury a known outcome among the undetermined ones.
+    const id = await enqueueTestDelivery();
+    const permanent = vi.fn<DeliverFn>(async () => {
+      throw annotatePlatformSendAttempted(
+        annotateDeliveredBeforeFailure(new Error("Bad Request: chat not found"), 0),
+        true,
+      );
+    });
+
+    const { summary } = await runRecovery(permanent);
+
+    expect(summary.failed).toBe(1);
+    expect(fs.existsSync(path.join(stateDir, "delivery-queue", "failed", `${id}.json`))).toBe(true);
+    expect(fs.existsSync(path.join(stateDir, "delivery-queue", `${id}.json`))).toBe(false);
+  });
+
+  it("treats an unannotated failure as replay-whole (#3061)", async () => {
+    // A DeliverFn that is not the outbound sender cannot report the flag, and
+    // guessing "attempted" on its behalf would quarantine every failure it ever
+    // raises. Unreported keeps the historical behaviour — the same default the
+    // landed count takes.
+    const id = await enqueueTestDelivery();
+    const unannotated = vi.fn<DeliverFn>(async () => {
+      throw new Error("socket hang up");
+    });
+
+    await runRecovery(unannotated);
+
+    const entry = await readEntry(id);
+    expect(entry.recoveryState).toBeUndefined();
+    expect(hasUnknownSendOutcome(entry)).toBe(false);
+    expect(entry.retryCount).toBe(1);
   });
 
   it("does not ack a bestEffort retry whose payloads all failed", async () => {

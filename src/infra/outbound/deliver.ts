@@ -39,7 +39,10 @@ import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getAgentScopedMediaLocalRoots } from "../../media/local-roots.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
 import { throwIfAborted } from "./abort.js";
-import { annotateDeliveredBeforeFailure } from "./delivered-before-failure.js";
+import {
+  annotateDeliveredBeforeFailure,
+  annotatePlatformSendAttempted,
+} from "./delivered-before-failure.js";
 import {
   ackDelivery,
   enqueueDelivery,
@@ -629,7 +632,18 @@ export async function deliverOutboundPayloads(
       // this function with skipQueue set, so it owns its own queue bookkeeping
       // and has no other way to tell a total failure (safe to replay whole)
       // from a partial one (replaying duplicates what already arrived).
-      throw annotateDeliveredBeforeFailure(err, landed.length);
+      //
+      // Both facts, not just the count: with nothing landed, `platformSendAttempted`
+      // is the only thing separating "this failure proves nothing arrived" from
+      // "the outcome is unobserved". Without it the recovery pass has to assume
+      // the first and replay — the duplicate this classification exists to
+      // prevent, one restart later (#3061). This is the only throw that can
+      // carry the flag out of this function, and it is annotated at the same
+      // statement as the count so the two cannot drift apart.
+      throw annotatePlatformSendAttempted(
+        annotateDeliveredBeforeFailure(err, landed.length),
+        sendProgress.platformSendAttempted,
+      );
     }
   };
 

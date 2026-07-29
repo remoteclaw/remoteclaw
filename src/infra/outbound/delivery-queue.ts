@@ -42,9 +42,10 @@ import { generateSecureUuid } from "../secure-random.js";
 import {
   annotateDeliveredBeforeFailure,
   readDeliveredBeforeFailure,
+  readPlatformSendAttempted,
 } from "./delivered-before-failure.js";
 import { describeDeliveryError } from "./describe-delivery-error.js";
-import { isPermanentDeliveryError } from "./send-outcome.js";
+import { didSendDefinitelyNotLand, isPermanentDeliveryError } from "./send-outcome.js";
 import type { OutboundChannel } from "./targets.js";
 
 export { isPermanentDeliveryError } from "./send-outcome.js";
@@ -952,6 +953,16 @@ export async function recoverPendingDeliveries(opts: {
         if (sawPayloadFailure) {
           // Route it exactly as a thrown failure would be: what already landed
           // decides between "retry it whole" and "a human has to reconcile it".
+          //
+          // Deliberately NOT annotated with `platformSendAttempted`: under
+          // `bestEffort` the sender REPORTS per-payload errors and resolves
+          // instead of throwing, and how far each payload got does not cross
+          // that resolve boundary — this error is synthesized here, not caught
+          // from the sender. So with nothing landed the entry replays, where the
+          // live path (which still holds the per-payload detail) would quarantine
+          // an ambiguous one. Narrow, deliberate, and documented as a residual in
+          // `docs/gateway/message-delivery.md` § Delivery guarantee rather than
+          // papered over with a guess (#3060, #3061).
           const landed = Array.isArray(sent) ? sent.length : 0;
           throw annotateDeliveredBeforeFailure(
             new Error(
@@ -1005,6 +1016,48 @@ export async function recoverPendingDeliveries(opts: {
             opts.log.error(`Failed to move entry ${current.id} to failed/: ${String(moveErr)}`);
           }
           summary.failed += 1;
+          return;
+        }
+
+        // Nothing landed and retrying is not hopeless — but "no payload was
+        // observed to land" is not "nothing arrived". Re-run the LIVE path's
+        // own classifier rather than assuming the clean case: a re-send that
+        // times out or resets after the request hit the wire may already be on
+        // the recipient's device, and clearing the marker here replays it on the
+        // next restart. Before #3061 this branch always cleared, so the two
+        // paths disagreed about the identical failure — the live send
+        // quarantined it and recovery duplicated it.
+        //
+        // The live path's predicate verbatim, not a recovery-local variant: a
+        // pre-send throw that never reached the transport and a connection that
+        // was never established both still retry, so only the genuinely
+        // undetermined subset is quarantined. Its third arm — an outright
+        // platform rejection — is unreachable from here, since the permanent
+        // branch above already filed that case under failed/; it is kept anyway,
+        // because diverging from the shared predicate is how these two paths
+        // came to disagree in the first place.
+        //
+        // Unreported flag means the DeliverFn is not the outbound sender and
+        // cannot tell us, so keep the historical replay-whole behaviour — the
+        // same default the landed count takes above. The real sender always
+        // reports it: every throw out of `deliverOutboundPayloads` passes the
+        // annotating site, including its pre-send failures.
+        const definitelyDidNotLand = didSendDefinitelyNotLand({
+          platformSendAttempted: readPlatformSendAttempted(err) ?? false,
+          error: err,
+          describedError: errMsg,
+        });
+
+        if (!definitelyDidNotLand) {
+          try {
+            await failUnknownDelivery(current.id, errMsg, opts.stateDir);
+          } catch {
+            // Best-effort update.
+          }
+          summary.failed += 1;
+          opts.log.warn(
+            `Retry for delivery ${current.id} failed without a determinable outcome — it may or may not have reached the recipient, so it will be quarantined rather than replayed: ${errMsg}`,
+          );
           return;
         }
 

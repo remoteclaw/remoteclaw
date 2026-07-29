@@ -349,6 +349,22 @@ export const mainLanes = [
     "REMOTECLAW_NPM_ONBOARD_CHANNEL=slack REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-onboard-channel-agent",
     { resources: ["service"], stateScenario: "empty", weight: 3 },
   ),
+  // Not runnable in the RemoteClaw fork — no ClickClack (or any-channel) e2e
+  // coverage here (#3055). The lane's runner, upstream's
+  // `scripts/e2e/lib/release-user-journey/`, was never ported, so
+  // `test:docker:release-user-journey` is not a package.json script in this
+  // repo and the lane cannot execute. `node scripts/check-docker-e2e-boundaries.mjs`
+  // reports it — it is one of 64 lanes here pointing at 39 package scripts that
+  // this fork never ported.
+  //
+  // ClickClack coverage upstream is three files, not one: `clickclack-fixture.mjs`
+  // (a standalone mock ClickClack HTTP server — it imports no plugin-sdk, so the
+  // fork's plugin-sdk decomposition is NOT what blocks it), `write-clickclack-plugin.mjs`,
+  // and `assertions.mjs configure-clickclack`. All three are spawned by that
+  // directory's `scenario.sh`. Porting any of them on its own would land an
+  // unreachable file rather than coverage, so the exclusion is deliberate:
+  // restoring ClickClack e2e here means porting the `scripts/e2e/lib/` harness,
+  // which is tracked separately from #3055.
   npmLane(
     "release-user-journey",
     "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:release-user-journey",

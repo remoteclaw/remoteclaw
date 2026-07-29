@@ -166,7 +166,12 @@ GitHub Actions (`.github/workflows/ci.yml`):
   the `CI` rollup so adapter / auto-reply regressions block merge (#2779). See
   § Testing → Extensions & auto-reply coverage lanes
 - Jobs run on `ubuntu-latest` with Node 22 and pnpm 10.23.0
-- Branch protection requires `build`, `test`, `lint`, and `docs` to pass
+- Branch protection requires the `CI` rollup job to pass — it is the sole
+  required status check. An individual job gates merge only if it is listed in
+  **both** the rollup's `needs:` and its result-check condition. Omitting it
+  from the condition silently un-gates it (the job runs but its failure is
+  ignored); omitting it from `needs:` is worse — `needs.X.result` evaluates
+  empty, so the condition fails permanently and blocks every merge
 
 ### Fork-integrity gates
 
@@ -185,6 +190,17 @@ against regressions specific to the fork-sync lifecycle:
   detects throwing stubs with live non-test callers — see § Fork Stub
   Conventions.
 - **obsolescence-audit-gate**: retrospective audit sentinels for gut waves.
+- **raw-channel-fetch-gate** (`pnpm lint:no-raw-channel-fetch`): channel and
+  plugin runtime code under `src/channels`, `src/routing`, `src/line`, and
+  `extensions/` must route outbound calls through `fetchWithSsrFGuard()`
+  (DNS-pinned host, `redirect: "manual"`, per-hop redirect re-validation)
+  rather than raw `fetch()` / `globalThis.fetch()`. Reviewed exceptions live
+  on the inline ledger in `scripts/check-no-raw-channel-fetch.mjs`, pinned to
+  `file:line` so a moved callsite re-fails the gate and gets re-reviewed
+  instead of silently inheriting its exception. Adding a ledger entry requires
+  a comment justifying why that callsite is not an SSRF vector. Wired in
+  #3055 — the script existed from upstream but ran in no CI job, so it never
+  fired and its ledger rotted unnoticed.
 - **css-class-drift-gate** (`pnpm lint:ui:no-css-class-drift`, part of
   `pnpm check`): cross-references `class="..."` tokens in
   `ui/src/**/*.{ts,tsx,html}` against the CSS rule definitions reachable

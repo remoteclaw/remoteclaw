@@ -331,6 +331,7 @@
     "lint:no-clawd-discord": "node scripts/check-no-clawd-discord.mjs",
     "lint:no-lobster-leak": "node scripts/check-no-lobster-leak.mjs",
     "lint:no-models-write": "node scripts/check-no-models-write-config.mjs",
+    "lint:no-raw-channel-fetch": "node scripts/check-no-raw-channel-fetch.mjs",
     "lint:no-remoteclaw-ai": "node scripts/check-no-remoteclaw-ai.mjs",
     "lint:plugins:no-monolithic-plugin-sdk-entry-imports": "node --import tsx scripts/check-no-monolithic-plugin-sdk-entry-imports.ts",
     "lint:swift": "swiftlint lint --config .swiftlint.yml && (cd apps/ios && swiftlint lint --config .swiftlint.yml)",

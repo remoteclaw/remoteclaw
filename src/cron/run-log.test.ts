@@ -5,8 +5,6 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   appendCronRunLog,
-  DEFAULT_CRON_RUN_LOG_KEEP_LINES,
-  DEFAULT_CRON_RUN_LOG_MAX_BYTES,
   getPendingCronRunLogWriteCountForTests,
   readCronRunLogEntries,
   readCronRunLogEntriesPage,
@@ -14,6 +12,9 @@ import {
   resolveCronRunLogPruneOptions,
   resolveCronRunLogPath,
 } from "./run-log.js";
+
+const DEFAULT_CRON_RUN_LOG_MAX_BYTES = 2_000_000;
+const DEFAULT_CRON_RUN_LOG_KEEP_LINES = 2_000;
 
 describe("cron run log", () => {
   it("resolves prune options from config with defaults", () => {

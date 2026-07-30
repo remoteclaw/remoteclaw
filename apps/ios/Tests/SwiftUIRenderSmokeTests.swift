@@ -2,7 +2,7 @@ import RemoteClawKit
 import SwiftUI
 import Testing
 import UIKit
-@testable import OpenClaw
+@testable import RemoteClaw
 
 @Suite struct SwiftUIRenderSmokeTests {
     @MainActor private static func host(_ view: some View, size: CGSize? = nil) -> UIWindow {
@@ -102,8 +102,7 @@ import UIKit
         let screens: [AnyView] = [
             AnyView(CommandCenterTab(openChat: {}, openSettings: {})),
             AnyView(IPadActivityScreen(openChat: {}, openSettings: {})),
-            AnyView(OpenClawDocsScreen()),
-            AnyView(SettingsChannelsScreen()),
+            AnyView(RemoteClawDocsScreen()),
             AnyView(IPadWorkboardScreen(openChat: {}, openSettings: {})),
             AnyView(IPadSkillWorkshopScreen(openSettings: {})),
             AnyView(AgentProTab(directRoute: .agents)),
@@ -146,7 +145,7 @@ import UIKit
     }
 
     @Test @MainActor func voiceWakeToastBuildsAViewHierarchy() {
-        let root = VoiceWakeToast(command: "openclaw: do something")
+        let root = VoiceWakeToast(command: "remoteclaw: do something")
         _ = Self.host(root)
     }
 

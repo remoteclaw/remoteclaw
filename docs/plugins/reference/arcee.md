@@ -12,7 +12,7 @@ Adds Arcee model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/arcee-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/arcee-provider`
 
 ## Surface
 

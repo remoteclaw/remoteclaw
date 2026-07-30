@@ -6,7 +6,7 @@
 import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
 
 /** Legacy OAuth ref source persisted by older credential stores. */
-export const LEGACY_OAUTH_REF_SOURCE = "remoteclaw-credentials";
+const LEGACY_OAUTH_REF_SOURCE = "remoteclaw-credentials";
 /** Legacy OAuth ref provider persisted by older credential stores. */
 export const LEGACY_OAUTH_REF_PROVIDER = "openai-codex";
 

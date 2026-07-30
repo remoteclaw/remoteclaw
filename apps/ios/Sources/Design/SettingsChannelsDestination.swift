@@ -1,5 +1,5 @@
-import OpenClawKit
-import OpenClawProtocol
+import RemoteClawKit
+import RemoteClawProtocol
 import SwiftUI
 
 struct SettingsChannelsDestination: View {
@@ -46,7 +46,7 @@ struct SettingsChannelsDestination: View {
                 ProValuePill(value: self.summaryValue, color: self.summaryColor)
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     private var channelsCard: some View {
@@ -68,7 +68,7 @@ struct SettingsChannelsDestination: View {
                         title: "Channel status unavailable",
                         detail: errorText,
                         value: "error",
-                        color: OpenClawBrand.warn)
+                        color: RemoteClawBrand.warn)
                 } else if !self.canRead {
                     ProStatusRow(
                         icon: "wifi.slash",
@@ -82,7 +82,7 @@ struct SettingsChannelsDestination: View {
                         title: "Loading channels",
                         detail: "Fetching installed channels, accounts, and routing status from the gateway.",
                         value: "loading",
-                        color: OpenClawBrand.accent)
+                        color: RemoteClawBrand.accent)
                 } else if self.channelEntries.isEmpty {
                     ProStatusRow(
                         icon: "tray",
@@ -112,7 +112,7 @@ struct SettingsChannelsDestination: View {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     private var refreshID: String {
@@ -160,8 +160,8 @@ struct SettingsChannelsDestination: View {
 
     private var summaryColor: Color {
         guard self.canRead else { return .secondary }
-        if self.errorText != nil { return OpenClawBrand.warn }
-        return self.channelEntries.contains(where: { $0.running || $0.connected }) ? OpenClawBrand.ok : OpenClawBrand
+        if self.errorText != nil { return RemoteClawBrand.warn }
+        return self.channelEntries.contains(where: { $0.running || $0.connected }) ? RemoteClawBrand.ok : RemoteClawBrand
             .accent
     }
 
@@ -332,65 +332,6 @@ struct SettingsChannelsDestination: View {
     }
 }
 
-struct SettingsChannelsScreen: View {
-    let headerLeadingAction: OpenClawSidebarHeaderAction?
-    let gatewayAction: (() -> Void)?
-
-    init(headerLeadingAction: OpenClawSidebarHeaderAction? = nil, gatewayAction: (() -> Void)? = nil) {
-        self.headerLeadingAction = headerLeadingAction
-        self.gatewayAction = gatewayAction
-    }
-
-    var body: some View {
-        ZStack {
-            OpenClawProBackground()
-            ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    self.header
-                    SettingsChannelsDestination(showsSummaryCard: false)
-                }
-                .padding(.top, 18)
-                .padding(.bottom, OpenClawProMetric.bottomScrollInset)
-            }
-        }
-        .navigationTitle("Channels")
-        .navigationBarTitleDisplayMode(.inline)
-    }
-
-    private var header: some View {
-        HStack(alignment: .top, spacing: 12) {
-            if let headerLeadingAction {
-                OpenClawSidebarHeaderLeadingSlot(action: headerLeadingAction)
-            }
-
-            VStack(alignment: .leading, spacing: 5) {
-                Text("Channels / Integrations")
-                    .font(.title3.weight(.semibold))
-                Text("Message routing and external channel clients.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            Spacer(minLength: 8)
-            self.gatewayPill
-        }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
-    }
-
-    @ViewBuilder
-    private var gatewayPill: some View {
-        if let gatewayAction {
-            Button(action: gatewayAction) {
-                OpenClawGatewayCompactPill()
-            }
-            .buttonStyle(.plain)
-            .accessibilityHint("Opens Settings / Gateway")
-        } else {
-            OpenClawGatewayCompactPill()
-        }
-    }
-}
-
 private struct SettingsChannelRow: View {
     let entry: SettingsChannelEntry
     let canAdmin: Bool
@@ -413,7 +354,7 @@ private struct SettingsChannelRow: View {
                     if let lastError = self.entry.lastError {
                         Text(lastError)
                             .font(.caption2.weight(.medium))
-                            .foregroundStyle(OpenClawBrand.warn)
+                            .foregroundStyle(RemoteClawBrand.warn)
                             .lineLimit(2)
                     }
                 }
@@ -506,9 +447,9 @@ private struct SettingsChannelEntry: Identifiable {
     let accounts: [SettingsChannelAccount]
 
     var color: Color {
-        if self.connected || self.running { return OpenClawBrand.ok }
-        if self.lastError != nil { return OpenClawBrand.warn }
-        return self.configured ? OpenClawBrand.accent : .secondary
+        if self.connected || self.running { return RemoteClawBrand.ok }
+        if self.lastError != nil { return RemoteClawBrand.warn }
+        return self.configured ? RemoteClawBrand.accent : .secondary
     }
 
     var statusValue: String {
@@ -576,9 +517,9 @@ private struct SettingsChannelAccount: Identifiable {
     }
 
     var color: Color {
-        if self.connected || self.running { return OpenClawBrand.ok }
-        if self.lastError != nil { return OpenClawBrand.warn }
-        return self.configured ? OpenClawBrand.accent : .secondary
+        if self.connected || self.running { return RemoteClawBrand.ok }
+        if self.lastError != nil { return RemoteClawBrand.warn }
+        return self.configured ? RemoteClawBrand.accent : .secondary
     }
 }
 
@@ -613,7 +554,7 @@ private enum SettingsChannelError: Error {
 private struct SettingsChannelsStatesPreview: View {
     var body: some View {
         ZStack {
-            OpenClawProBackground()
+            RemoteClawProBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     self.stateSection("Connected") {
@@ -639,7 +580,7 @@ private struct SettingsChannelsStatesPreview: View {
                             title: "Loading channel status",
                             detail: "Checking installed channel clients and account state.",
                             value: "loading",
-                            color: OpenClawBrand.accent)
+                            color: RemoteClawBrand.accent)
                     }
 
                     self.stateSection("Empty") {
@@ -663,7 +604,7 @@ private struct SettingsChannelsStatesPreview: View {
                             title: "Channel status unavailable",
                             detail: "Gateway returned an unexpected channel status response.",
                             value: "error",
-                            color: OpenClawBrand.warn)
+                            color: RemoteClawBrand.warn)
                     }
 
                     self.stateSection("Offline") {
@@ -675,7 +616,7 @@ private struct SettingsChannelsStatesPreview: View {
                             color: .secondary)
                     }
                 }
-                .padding(.horizontal, OpenClawProMetric.pagePadding)
+                .padding(.horizontal, RemoteClawProMetric.pagePadding)
                 .padding(.vertical, 18)
             }
         }
@@ -712,7 +653,7 @@ private struct SettingsChannelsStatesPreview: View {
         accounts: [
             SettingsChannelAccount(
                 id: "main",
-                name: "OpenClaw Ops",
+                name: "RemoteClaw Ops",
                 configured: true,
                 enabled: true,
                 running: true,

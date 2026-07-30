@@ -12,7 +12,7 @@ Adds StepFun, StepFun Plan model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/stepfun-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/stepfun-provider`
 
 ## Surface
 

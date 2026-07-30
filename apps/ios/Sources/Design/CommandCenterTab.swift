@@ -315,12 +315,11 @@ struct CommandCenterTab: View {
     }
 
     private var sessionListAvailable: Bool {
-        self.appModel.isAppleReviewDemoModeEnabled || self.appModel.isOperatorGatewayConnected
+        self.appModel.isLocalChatFixtureEnabled || self.appModel.isOperatorGatewayConnected
     }
 
     private var sessionListMode: String {
-        if self.appModel.isAppleReviewDemoModeEnabled { return "demo" }
-        return self.appModel.isOperatorGatewayConnected ? "operator" : "offline"
+        self.appModel.chatTransportModeID
     }
 
     private var sessionItems: [WorkItem] {
@@ -359,9 +358,7 @@ struct CommandCenterTab: View {
         }
 
         do {
-            let transport: any RemoteClawChatTransport = self.appModel.isAppleReviewDemoModeEnabled
-                ? AppleReviewDemoChatTransport()
-                : IOSGatewayChatTransport(gateway: self.appModel.operatorSession)
+            let transport = self.appModel.makeChatTransport()
             let response = try await transport.listSessions(limit: Self.recentSessionsFetchLimit)
             self.defaultChatSessionEntry = response.sessions.first {
                 $0.key == self.appModel.defaultChatSessionKey
@@ -698,9 +695,7 @@ private struct CommandSessionsScreen: View {
         defer { self.isLoading = false }
 
         do {
-            let transport: any RemoteClawChatTransport = self.appModel.isAppleReviewDemoModeEnabled
-                ? AppleReviewDemoChatTransport()
-                : IOSGatewayChatTransport(gateway: self.appModel.operatorSession)
+            let transport = self.appModel.makeChatTransport()
             let response = try await transport.listSessions(limit: CommandCenterTab.recentSessionsFetchLimit)
             self.sessions = response.sessions
         } catch {
@@ -712,11 +707,10 @@ private struct CommandSessionsScreen: View {
 
 extension NodeAppModel {
     fileprivate var isCommandSessionListAvailable: Bool {
-        self.isAppleReviewDemoModeEnabled || self.isOperatorGatewayConnected
+        self.isLocalChatFixtureEnabled || self.isOperatorGatewayConnected
     }
 
     fileprivate var commandSessionListMode: String {
-        if self.isAppleReviewDemoModeEnabled { return "demo" }
-        return self.isOperatorGatewayConnected ? "operator" : "offline"
+        self.chatTransportModeID
     }
 }

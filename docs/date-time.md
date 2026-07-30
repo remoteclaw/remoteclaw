@@ -6,7 +6,7 @@ read_when:
 title: "Date and time"
 ---
 
-OpenClaw defaults to **host-local time for transport timestamps** and **user timezone only in the system prompt**.
+RemoteClaw defaults to **host-local time for transport timestamps** and **user timezone only in the system prompt**.
 Provider timestamps are preserved so tools keep their native semantics (current time is available via `session_status`).
 
 ## Message envelopes (local by default)
@@ -37,7 +37,7 @@ You can override this behavior:
 - `envelopeTimezone: "local"` uses the host timezone.
 - `envelopeTimezone: "user"` uses `agents.defaults.userTimezone` (falls back to host timezone).
 - Use an explicit IANA timezone (e.g., `"America/Chicago"`) for a fixed zone.
-- `envelopeTimestamp: "off"` removes absolute timestamps from envelope headers.
+- `envelopeTimestamp: "off"` removes absolute timestamps from envelope headers, direct agent prompt prefixes, and embedded model-input prefixes.
 - `envelopeElapsed: "off"` removes elapsed time suffixes (the `+2m` style).
 
 ### Examples
@@ -100,7 +100,7 @@ System: [2026-01-12 12:19:17 PST] Model switched.
 
 ## Time format detection (auto)
 
-When `timeFormat: "auto"`, OpenClaw inspects the OS preference (macOS/Windows)
+When `timeFormat: "auto"`, RemoteClaw inspects the OS preference (macOS/Windows)
 and falls back to locale formatting. The detected value is **cached per process**
 to avoid repeated system calls.
 

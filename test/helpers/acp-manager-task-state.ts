@@ -3,6 +3,7 @@ import { resetTaskFlowRegistryForTests } from "../../src/tasks/task-flow-registr
 import { configureTaskFlowRegistryRuntime } from "../../src/tasks/task-flow-registry.store.js";
 import { findTaskByRunId, resetTaskRegistryForTests } from "../../src/tasks/task-registry.js";
 import { withTempDir } from "../../src/test-helpers/temp-dir.js";
+import { captureEnv, setTestEnvValue } from "../../src/test-utils/env.js";
 import { installInMemoryTaskRegistryRuntime } from "../../src/test-utils/task-registry-runtime.js";
 
 // Shared ACP manager task registry setup for tests.
@@ -20,7 +21,8 @@ export async function withAcpManagerTaskStateDir(
   run: (root: string) => Promise<void>,
 ): Promise<void> {
   await withTempDir({ prefix: "remoteclaw-acp-manager-task-" }, async (root) => {
-    process.env.REMOTECLAW_STATE_DIR = root;
+    const envSnapshot = captureEnv(["REMOTECLAW_STATE_DIR"]);
+    setTestEnvValue("REMOTECLAW_STATE_DIR", root);
     resetAcpManagerTaskStateForTests();
     installInMemoryTaskRegistryRuntime();
     configureTaskFlowRegistryRuntime({
@@ -38,6 +40,7 @@ export async function withAcpManagerTaskStateDir(
       await run(root);
     } finally {
       resetAcpManagerTaskStateForTests();
+      envSnapshot.restore();
     }
   });
 }

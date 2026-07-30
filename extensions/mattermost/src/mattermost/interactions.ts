@@ -59,10 +59,6 @@ export function setInteractionCallbackUrl(accountId: string, url: string): void 
   callbackUrls.set(accountId, url);
 }
 
-export function getInteractionCallbackUrl(accountId: string): string | undefined {
-  return callbackUrls.get(accountId);
-}
-
 type InteractionCallbackConfig = Pick<RemoteClawConfig, "gateway" | "channels"> & {
   interactions?: {
     callbackBaseUrl?: string;

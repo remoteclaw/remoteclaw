@@ -5,7 +5,7 @@ import RemoteClawProtocol
 import OSLog
 
 struct IOSGatewayChatTransport: RemoteClawChatTransport {
-    static let logger = Logger(subsystem: "org.remoteclaw", category: "ios.chat.transport")
+    static let logger = Logger(subsystem: "org.remoteclaw.app", category: "ios.chat.transport")
     static let defaultChatSendTimeoutMs = 30000
     private let gateway: GatewayNodeSession
 

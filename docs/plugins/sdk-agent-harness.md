@@ -179,8 +179,10 @@ Native harnesses that own their own protocol projection can use
 `remoteclaw/plugin-sdk/agent-harness-runtime` when a completed turn produced no
 visible assistant text. The helper returns `empty`, `reasoning-only`, or
 `planning-only` so RemoteClaw's fallback policy can decide whether to retry on a
-different model. It intentionally leaves prompt errors, in-flight turns, and
-intentional silent replies such as `NO_REPLY` unclassified.
+different model. `planning-only` requires the harness's explicit `planText`
+field; RemoteClaw does not infer it from assistant prose. The helper intentionally
+leaves prompt errors, in-flight turns, and intentional silent replies such as
+`NO_REPLY` unclassified.
 
 ### Native Codex harness mode
 

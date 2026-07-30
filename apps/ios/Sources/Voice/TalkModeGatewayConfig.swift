@@ -3,7 +3,6 @@ import RemoteClawKit
 
 enum TalkModeExecutionMode {
     case native
-    case realtimeClient
     case realtimeRelay
 }
 

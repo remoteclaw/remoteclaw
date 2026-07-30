@@ -1,6 +1,24 @@
 import com.android.build.api.variant.impl.VariantOutputImpl
+import java.util.Properties
 
 val dnsjavaInetAddressResolverService = "META-INF/services/java.net.spi.InetAddressResolverProvider"
+val remoteClawAndroidVersionFile = rootProject.file("Config/Version.properties")
+val remoteClawAndroidVersionProperties =
+  Properties().apply {
+    if (!remoteClawAndroidVersionFile.isFile) {
+      error("Missing Android version properties. Run `pnpm android:version:sync`.")
+    }
+    remoteClawAndroidVersionFile.inputStream().use(::load)
+  }
+
+fun requireRemoteClawAndroidVersionProperty(name: String): String =
+  remoteClawAndroidVersionProperties.getProperty(name)?.trim()?.takeIf { it.isNotEmpty() }
+    ?: error("Missing $name in Config/Version.properties. Run `pnpm android:version:sync`.")
+
+val remoteClawAndroidVersionName = requireRemoteClawAndroidVersionProperty("REMOTECLAW_ANDROID_VERSION_NAME")
+val remoteClawAndroidVersionCode =
+  requireRemoteClawAndroidVersionProperty("REMOTECLAW_ANDROID_VERSION_CODE").toIntOrNull()
+    ?: error("REMOTECLAW_ANDROID_VERSION_CODE must be an integer in Config/Version.properties.")
 
 val androidStoreFile = providers.gradleProperty("REMOTECLAW_ANDROID_STORE_FILE").orNull?.takeIf { it.isNotBlank() }
 val androidStorePassword = providers.gradleProperty("REMOTECLAW_ANDROID_STORE_PASSWORD").orNull?.takeIf { it.isNotBlank() }
@@ -65,8 +83,8 @@ android {
     applicationId = "org.remoteclaw.app"
     minSdk = 31
     targetSdk = 36
-    versionCode = 2026060801
-    versionName = "2026.6.8"
+    versionCode = remoteClawAndroidVersionCode
+    versionName = remoteClawAndroidVersionName
     ndk {
       // Support all major ABIs — native libs are tiny (~47 KB per ABI)
       abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")

@@ -3,6 +3,10 @@ import RemoteClawKit
 import Testing
 
 @Suite struct ShareToAgentDeepLinkTests {
+    @Test func appGroupIdentifierUsesCanonicalRemoteClawGroup() {
+        #expect(RemoteClawAppGroup.canonicalIdentifier == "group.org.remoteclaw.app.shared")
+    }
+
     @Test func buildMessageIncludesSharedFields() {
         let payload = SharedContentPayload(
             title: "Article",
@@ -28,7 +32,7 @@ import Testing
         let url = ShareToAgentDeepLink.buildURL(from: payload)
         let parsed = url.flatMap { DeepLinkParser.parse($0) }
         guard case let .agent(agent)? = parsed else {
-            Issue.record("Expected openclaw://agent deep link")
+            Issue.record("Expected remoteclaw://agent deep link")
             return
         }
 

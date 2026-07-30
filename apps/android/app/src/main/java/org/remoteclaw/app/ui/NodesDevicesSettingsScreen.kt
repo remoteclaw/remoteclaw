@@ -1,6 +1,7 @@
 package org.remoteclaw.app.ui
 
 import org.remoteclaw.app.GatewayDeviceTokenSummary
+import org.remoteclaw.app.GatewayNodeApprovalState
 import org.remoteclaw.app.GatewayNodeSummary
 import org.remoteclaw.app.GatewayNodesDevicesSummary
 import org.remoteclaw.app.GatewayPairedDeviceSummary
@@ -155,8 +156,8 @@ private fun NodeRow(node: GatewayNodeSummary) {
     badge = nodeBadge(node.displayName ?: node.id),
     title = node.displayName ?: node.id,
     subtitle = nodeSubtitle(node),
-    statusText = if (node.connected) "Online" else "Offline",
-    status = if (node.connected) ClawStatus.Success else ClawStatus.Warning,
+    statusText = nodeStatusText(node),
+    status = nodeStatus(node),
   )
 }
 
@@ -205,13 +206,45 @@ private fun nodeSubtitle(node: GatewayNodeSummary): String {
   val kind = node.deviceFamily ?: "Node host"
   val version = node.version?.let { "RemoteClaw $it" }
   val status = if (node.paired) "Paired" else "Unpaired"
+  val approval = nodeApprovalSubtitle(node.approvalState)
   val commands =
     node.commands
       .take(2)
       .joinToString(", ")
       .takeIf { it.isNotBlank() }
-  return listOfNotNull(kind, version, status, commands).joinToString(" · ")
+  return listOfNotNull(kind, version, status, approval, commands).joinToString(" · ")
 }
+
+private fun nodeStatusText(node: GatewayNodeSummary): String =
+  when (node.approvalState) {
+    GatewayNodeApprovalState.PendingApproval -> "Needs approval"
+    GatewayNodeApprovalState.PendingReapproval -> "Needs reapproval"
+    GatewayNodeApprovalState.Unapproved -> "Unapproved"
+    else -> if (node.connected) "Online" else "Offline"
+  }
+
+private fun nodeStatus(node: GatewayNodeSummary): ClawStatus =
+  when (node.approvalState) {
+    GatewayNodeApprovalState.Approved -> if (node.connected) ClawStatus.Success else ClawStatus.Warning
+    GatewayNodeApprovalState.PendingApproval,
+    GatewayNodeApprovalState.PendingReapproval,
+    GatewayNodeApprovalState.Unapproved,
+    -> ClawStatus.Warning
+    GatewayNodeApprovalState.Loading,
+    GatewayNodeApprovalState.Unsupported,
+    -> if (node.connected) ClawStatus.Neutral else ClawStatus.Warning
+  }
+
+private fun nodeApprovalSubtitle(approvalState: GatewayNodeApprovalState): String? =
+  when (approvalState) {
+    GatewayNodeApprovalState.Approved -> "Approved"
+    GatewayNodeApprovalState.PendingApproval -> "Capability approval pending"
+    GatewayNodeApprovalState.PendingReapproval -> "Capability reapproval pending"
+    GatewayNodeApprovalState.Unapproved -> "Capability unapproved"
+    GatewayNodeApprovalState.Loading,
+    GatewayNodeApprovalState.Unsupported,
+    -> null
+  }
 
 private fun pendingDeviceSubtitle(device: GatewayPendingDeviceSummary): String {
   val roles = formatDeviceList(device.roles, "role")

@@ -1,0 +1,47 @@
+{
+  "teamId": "FWJYW4S8P8",
+  "signingRepo": "git@github.com:remoteclaw/apps-signing.git",
+  "signingBranch": "main",
+  "profileType": "appstore",
+  "appGroupId": "group.org.remoteclaw.app.shared",
+  "targets": [
+    {
+      "target": "RemoteClaw",
+      "displayName": "RemoteClaw",
+      "bundleId": "org.remoteclaw.app",
+      "platform": "IOS",
+      "profileKey": "REMOTECLAW_APP_PROFILE",
+      "profileName": "RemoteClaw App Store org.remoteclaw.app",
+      "capabilities": ["PUSH_NOTIFICATIONS", "APP_GROUPS"],
+      "appGroups": ["group.org.remoteclaw.app.shared"]
+    },
+    {
+      "target": "RemoteClawShareExtension",
+      "displayName": "RemoteClaw Share",
+      "bundleId": "org.remoteclaw.app.share",
+      "platform": "IOS",
+      "profileKey": "REMOTECLAW_SHARE_PROFILE",
+      "profileName": "RemoteClaw App Store org.remoteclaw.app.share",
+      "capabilities": ["APP_GROUPS"],
+      "appGroups": ["group.org.remoteclaw.app.shared"]
+    },
+    {
+      "target": "RemoteClawActivityWidget",
+      "displayName": "RemoteClaw Activity Widget",
+      "bundleId": "org.remoteclaw.app.activitywidget",
+      "platform": "IOS",
+      "profileKey": "REMOTECLAW_ACTIVITY_WIDGET_PROFILE",
+      "profileName": "RemoteClaw App Store org.remoteclaw.app.activitywidget",
+      "capabilities": []
+    },
+    {
+      "target": "RemoteClawWatchApp",
+      "displayName": "RemoteClaw Watch App",
+      "bundleId": "org.remoteclaw.app.watchkitapp",
+      "platform": "IOS",
+      "profileKey": "REMOTECLAW_WATCH_APP_PROFILE",
+      "profileName": "RemoteClaw App Store org.remoteclaw.app.watchkitapp",
+      "capabilities": []
+    }
+  ]
+}

@@ -36,6 +36,7 @@ import type { ResolvedGatewayAuth } from "./auth.js";
 import { sendJson, setSseHeaders, writeDone } from "./http-common.js";
 import { handleGatewayPostJsonEndpoint } from "./http-endpoint-helpers.js";
 import {
+  isGatewaySessionKeyOverrideError,
   resolveGatewayRequestContext,
   resolveOpenAiCompatibleHttpSenderIsOwner,
 } from "./http-utils.js";
@@ -444,14 +445,26 @@ export async function handleOpenResponsesHttpRequest(
     });
     return true;
   }
-  const { sessionKey, messageChannel } = resolveGatewayRequestContext({
-    req,
-    model,
-    user,
-    sessionPrefix: "openresponses",
-    defaultMessageChannel: "webchat",
-    useMessageChannelHeader: false,
-  });
+  let gatewayContext: ReturnType<typeof resolveGatewayRequestContext>;
+  try {
+    gatewayContext = resolveGatewayRequestContext({
+      req,
+      model,
+      user,
+      sessionPrefix: "openresponses",
+      defaultMessageChannel: "webchat",
+      useMessageChannelHeader: false,
+    });
+  } catch (err) {
+    if (isGatewaySessionKeyOverrideError(err)) {
+      sendJson(res, 400, {
+        error: { message: err.message, type: "invalid_request_error" },
+      });
+      return true;
+    }
+    throw err;
+  }
+  const { sessionKey, messageChannel } = gatewayContext;
 
   // Build prompt from input
   const prompt = buildAgentPrompt(payload.input);

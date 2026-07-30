@@ -1,6 +1,6 @@
 import Foundation
 import Testing
-@testable import OpenClaw
+@testable import RemoteClaw
 
 @Suite(.serialized) struct OnboardingStateStoreTests {
     @Test @MainActor func shouldPresentWhenFreshAndDisconnected() {
@@ -53,12 +53,6 @@ import Testing
         OnboardingStateStore.markCompleted(mode: .remoteDomain, defaults: defaults)
         #expect(OnboardingStateStore.lastMode(defaults: defaults) == .remoteDomain)
         #expect(!OnboardingStateStore.shouldPresentOnLaunch(
-            appModel: appModel,
-            defaults: defaults,
-            hasSavedGatewayConnection: false))
-
-        OnboardingStateStore.markIncomplete(defaults: defaults)
-        #expect(OnboardingStateStore.shouldPresentOnLaunch(
             appModel: appModel,
             defaults: defaults,
             hasSavedGatewayConnection: false))

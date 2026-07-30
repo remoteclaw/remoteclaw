@@ -228,6 +228,10 @@ export const TOOL_DISPLAY_CONFIG: ToolDisplayConfig = {
           label: "screen record",
           detailKeys: ["node", "nodeId", "duration", "durationMs", "fps", "screenIndex"],
         },
+        screen_snapshot: {
+          label: "screen snapshot",
+          detailKeys: ["node", "nodeId", "screenIndex", "maxWidth"],
+        },
       },
     },
     cron: {

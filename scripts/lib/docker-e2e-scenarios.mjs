@@ -255,7 +255,7 @@ function kitchenSinkRpcLane() {
     {
       resources: ["npm"],
       stateScenario: "empty",
-      timeoutMs: 15 * 60 * 1000,
+      timeoutMs: 25 * 60 * 1000,
       weight: 3,
     },
   );
@@ -416,6 +416,11 @@ export const mainLanes = [
     },
   ),
   serviceLane("gateway-network", "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:gateway-network"),
+  serviceLane("browser-cdp-snapshot", "pnpm test:docker:browser-cdp-snapshot", {
+    stateScenario: "empty",
+    timeoutMs: 20 * 60 * 1000,
+    weight: 3,
+  }),
   serviceLane(
     "agents-delete-shared-workspace",
     "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:agents-delete-shared-workspace",
@@ -507,6 +512,15 @@ export const mainLanes = [
   serviceLane("config-reload", "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:config-reload", {
     stateScenario: "empty",
   }),
+  npmLane(
+    "multi-node-update",
+    "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:multi-node-update",
+    {
+      stateScenario: "empty",
+      timeoutMs: 15 * 60 * 1000,
+      weight: 3,
+    },
+  ),
   lane("openai-image-auth", "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:openai-image-auth", {
     stateScenario: "empty",
   }),
@@ -531,6 +545,17 @@ export const mainLanes = [
   lane("commitments-safety", "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:commitments-safety", {
     stateScenario: "empty",
   }),
+  liveLane(
+    "npm-telegram-live",
+    "REMOTECLAW_SKIP_DOCKER_BUILD=1 pnpm test:docker:npm-telegram-live",
+    {
+      e2eImageKind: "bare",
+      provider: "openai",
+      resources: ["live:telegram", "npm", "service"],
+      timeoutMs: 30 * 60 * 1000,
+      weight: 3,
+    },
+  ),
   lane("qr", "pnpm test:docker:qr"),
 ];
 

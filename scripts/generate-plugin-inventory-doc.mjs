@@ -323,6 +323,10 @@ function resolveInstallRoute(packageJson, status) {
     return "source checkout only";
   }
   if (status === "core") {
+    const release = packageJson.remoteclaw?.release;
+    if (release?.publishToClawHub === true || release?.publishToNpm === true) {
+      return `included in RemoteClaw; ${resolveInstallRoute(packageJson, "external")}`;
+    }
     return "included in RemoteClaw";
   }
   const install = packageJson.remoteclaw?.install;

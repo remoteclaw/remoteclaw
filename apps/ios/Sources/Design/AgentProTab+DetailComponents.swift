@@ -1,5 +1,4 @@
 import RemoteClawKit
-import RemoteClawProtocol
 import SwiftUI
 
 extension AgentProTab {

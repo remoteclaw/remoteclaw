@@ -12,7 +12,7 @@ Adds Chutes model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/chutes-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/chutes-provider`
 
 ## Surface
 

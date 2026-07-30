@@ -12,7 +12,7 @@ Adds Qwen, Qwen Cloud, Model Studio, DashScope, Qwen Oauth, Qwen Portal, Qwen CL
 ## Distribution
 
 - Package: `@remoteclaw/qwen-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/qwen-provider`
 
 ## Surface
 

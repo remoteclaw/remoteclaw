@@ -3,7 +3,7 @@ import type { ChannelAccountSnapshot, ChannelPlugin } from "../channels/plugins/
 import type { RemoteClawConfig } from "../config/config.js";
 import { resolveDefaultChannelAccountContext } from "./channel-account-context.js";
 
-export type LinkChannelContext = {
+type LinkChannelContext = {
   linked: boolean;
   authAgeMs: number | null;
   account?: unknown;

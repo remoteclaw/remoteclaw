@@ -121,7 +121,7 @@ final class RealtimeTalkRelaySession {
     private let gateway: GatewayNodeSession
     private let options: Options
     private let pcmPlayer: PCMStreamingAudioPlaying
-    private let logger = Logger(subsystem: "org.remoteclaw", category: "RealtimeTalkRelay")
+    private let logger = Logger(subsystem: "org.remoteclaw.app", category: "RealtimeTalkRelay")
     private let onStatus: (String) -> Void
     private let onIssue: (TalkRuntimeIssue) -> Void
     private let onSpeakingChanged: (Bool) -> Void

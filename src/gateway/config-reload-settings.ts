@@ -3,7 +3,7 @@
 import type { GatewayReloadMode } from "../config/types.gateway.js";
 import type { RemoteClawConfig } from "../config/types.remoteclaw.js";
 
-export type GatewayReloadSettings = {
+type GatewayReloadSettings = {
   mode: GatewayReloadMode;
   debounceMs: number;
 };

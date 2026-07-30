@@ -1,9 +1,7 @@
 import { Command } from "commander";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createIosNodeListResponse } from "./program.nodes-test-helpers.js";
-import { callGateway, installBaseProgramMocks, runtime } from "./program.test-mocks.js";
-
-installBaseProgramMocks();
+import { callGateway, runtime } from "./program.test-mocks.js";
 
 let registerNodesCli: typeof import("./nodes-cli.js").registerNodesCli;
 
@@ -554,7 +552,7 @@ describe("cli program (nodes basics)", () => {
       "nodes",
       "status",
       "--url",
-      "ws://gateway-user:url-secret@gateway.example:18789/openclaw?cluster=qa",
+      "ws://gateway-user:url-secret@gateway.example:18789/remoteclaw?cluster=qa",
       "--timeout",
       "3000",
       "--token",

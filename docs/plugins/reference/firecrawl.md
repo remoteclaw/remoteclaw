@@ -12,7 +12,7 @@ Adds agent-callable tools. Adds web fetch provider support. Adds web search prov
 ## Distribution
 
 - Package: `@remoteclaw/firecrawl-plugin`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/firecrawl-plugin`
 
 ## Surface
 

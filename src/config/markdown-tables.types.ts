@@ -7,6 +7,7 @@ export type ResolveMarkdownTableModeParams = {
   cfg?: Partial<RemoteClawConfig>;
   channel?: string | null;
   accountId?: string | null;
+  supportsBlockTables?: boolean;
 };
 
 export type ResolveMarkdownTableMode = (

@@ -2,7 +2,7 @@
 summary: "Configure migrated native Codex plugins for Codex-mode RemoteClaw agents"
 title: "Native Codex plugins"
 read_when:
-  - You want Codex-mode OpenClaw agents to use native Codex plugins
+  - You want Codex-mode RemoteClaw agents to use native Codex plugins
   - You are migrating source-installed openai-curated Codex plugins
   - You are troubleshooting codexPlugins, app inventory, destructive actions, or plugin app diagnostics
 ---
@@ -200,11 +200,12 @@ enabled.
 
 RemoteClaw sets app-level `destructive_enabled` from the effective global or
 per-plugin `allow_destructive_actions` policy and lets Codex enforce
-destructive tool metadata from its native app tool annotations. The `_default`
-app config is disabled with `open_world_enabled: false`. Enabled plugin apps
-are emitted with `open_world_enabled: true`; RemoteClaw does not expose a separate
-plugin open-world policy knob and does not maintain per-plugin destructive
-tool-name deny lists.
+destructive tool metadata from its native app tool annotations. `true` and
+`"auto"` both set `destructive_enabled: true`; `false` sets it false. The
+`_default` app config is disabled with `open_world_enabled: false`. Enabled
+plugin apps are emitted with `open_world_enabled: true`; RemoteClaw does not
+expose a separate plugin open-world policy knob and does not maintain
+per-plugin destructive tool-name deny lists.
 
 Tool approval mode is automatic by default for plugin apps so non-destructive
 read tools can run without a same-thread approval UI. Destructive tools remain
@@ -221,6 +222,9 @@ plugins, while unsafe schemas and ambiguous ownership still fail closed:
 - When policy is `false`, RemoteClaw returns a deterministic decline.
 - When policy is `true`, RemoteClaw auto-accepts only safe schemas it can map to
   an approval response, such as a boolean approve field.
+- When policy is `"auto"`, RemoteClaw exposes destructive plugin actions to
+  Codex but turns ownership-proven MCP approval elicitations into RemoteClaw
+  plugin approvals before returning the Codex approval response.
 - Missing plugin identity, ambiguous ownership, a missing turn id, a wrong turn
   id, or an unsafe elicitation schema declines instead of prompting.
 
@@ -268,8 +272,8 @@ Codex thread bindings keep the app config they started with until RemoteClaw
 establishes a new harness session or replaces a stale binding.
 
 **Destructive action is declined:** check the global and per-plugin
-`allow_destructive_actions` values. Even when policy is true, unsafe elicitation
-schemas and ambiguous plugin identity still fail closed.
+`allow_destructive_actions` values. Even when policy is true or `"auto"`,
+unsafe elicitation schemas and ambiguous plugin identity still fail closed.
 
 ## Related
 

@@ -569,7 +569,7 @@ Configuring a custom/local provider `baseUrl` is also the narrow network trust d
     - `models.providers.*.models.*.compat.requiresStringContent`: optional compatibility hint for string-only OpenAI-compatible chat endpoints. When `true`, RemoteClaw flattens pure text `messages[].content` arrays into plain strings before sending the request.
     - `models.providers.*.models.*.compat.strictMessageKeys`: optional compatibility hint for strict OpenAI-compatible chat endpoints. When `true`, RemoteClaw strips outgoing Chat Completions message objects to `role` and `content` before sending the request.
     - `models.providers.*.models.*.compat.thinkingFormat`: optional thinking payload hint. Use `"together"` for Together-style `reasoning.enabled`, `"qwen"` for top-level `enable_thinking`, or `"qwen-chat-template"` for `chat_template_kwargs.enable_thinking` on Qwen-family OpenAI-compatible servers that support request-level chat-template kwargs, such as vLLM. Configured vLLM Qwen models expose binary `/think` choices (`off`, `on`) for these formats.
-    - `models.providers.*.models.*.compat.requiresReasoningContentOnAssistantMessages`: optional compatibility hint for DeepSeek-style Chat Completions backends that require prior assistant messages to keep `reasoning_content` on replay. When `true`, OpenClaw preserves that field on outgoing assistant messages. Use this when wiring a custom DeepSeek-compatible proxy that rejects requests after stripped reasoning. Default `false`.
+    - `models.providers.*.models.*.compat.requiresReasoningContentOnAssistantMessages`: optional compatibility hint for DeepSeek-style Chat Completions backends that require prior assistant messages to keep `reasoning_content` on replay. When `true`, RemoteClaw preserves that field on outgoing assistant messages. Use this when wiring a custom DeepSeek-compatible proxy that rejects requests after stripped reasoning. Default `false`.
 
   </Accordion>
   <Accordion title="Amazon Bedrock discovery">
@@ -590,7 +590,7 @@ Interactive custom-provider onboarding infers image input for common vision mode
 
 <AccordionGroup>
   <Accordion title="Cerebras (GLM 4.7 / GPT OSS)">
-    The bundled `cerebras` provider plugin can configure this via `remoteclaw onboard --auth-choice cerebras-api-key`. Use explicit provider config only when overriding defaults.
+    The official external `cerebras` provider plugin can configure this via `remoteclaw onboard --auth-choice cerebras-api-key`. Use explicit provider config only when overriding defaults.
 
     ```json5
     {
@@ -681,7 +681,7 @@ Interactive custom-provider onboarding infers image input for common vision mode
     }
     ```
 
-    Set `MINIMAX_API_KEY`. Shortcuts: `openclaw onboard --auth-choice minimax-global-api` or `openclaw onboard --auth-choice minimax-cn-api`. The model catalog defaults to M3 and also includes the M2.7 variants. On the Anthropic-compatible streaming path, OpenClaw disables MiniMax M2.x thinking by default unless you explicitly set `thinking` yourself; MiniMax-M3 (and M3.x) stays on the provider's omitted/adaptive thinking path by default. `/fast on` or `params.fastMode: true` rewrites `MiniMax-M2.7` to `MiniMax-M2.7-highspeed`.
+    Set `MINIMAX_API_KEY`. Shortcuts: `remoteclaw onboard --auth-choice minimax-global-api` or `remoteclaw onboard --auth-choice minimax-cn-api`. The model catalog defaults to M3 and also includes the M2.7 variants. On the Anthropic-compatible streaming path, RemoteClaw disables MiniMax M2.x thinking by default unless you explicitly set `thinking` yourself; MiniMax-M3 (and M3.x) stays on the provider's omitted/adaptive thinking path by default. `/fast on` or `params.fastMode: true` rewrites `MiniMax-M2.7` to `MiniMax-M2.7-highspeed`.
 
   </Accordion>
   <Accordion title="Moonshot AI (Kimi)">

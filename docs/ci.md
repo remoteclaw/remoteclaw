@@ -47,33 +47,21 @@ Use `pnpm ci:timings`, `pnpm ci:timings:recent`, or `node scripts/ci-run-timings
 
 For pull request runs, the terminal timing-summary job runs the helper from the trusted base revision before passing `GH_TOKEN` to `gh run view`. That keeps the tokened query out of branch-controlled code while still summarizing the pull request's current CI run.
 
-## Real behavior proof
+## PR context and evidence
 
-External contributor PRs run a `Real behavior proof` gate from
+External contributor PRs run a PR context and evidence gate from
 `.github/workflows/real-behavior-proof.yml`. The workflow checks out the trusted
 base commit and evaluates the PR body only; it does not execute code from the
 contributor branch.
 
 The gate applies to PR authors who are not repository owners, members,
-collaborators, or bots. It passes when the PR body contains a
-`Real behavior proof` section with filled values for:
-
-- `Behavior or issue addressed`
-- `Real environment tested`
-- `Exact steps or command run after this patch`
-- `Evidence after fix`
-- `Observed result after fix`
-- `What was not tested`
-
-The evidence must show the changed behavior after the patch in a real RemoteClaw
-setup. Screenshots, recordings, terminal captures, console output, copied live
-output, redacted runtime logs, and linked artifacts all count. Unit tests, mocks,
-snapshots, lint, typechecks, and CI results are useful supporting verification,
-but they do not satisfy this gate by themselves.
+collaborators, or bots. It passes when the PR body contains authored
+`What Problem This Solves` and `Evidence` sections. Evidence can be a focused
+test, CI result, screenshot, recording, terminal output, live observation,
+redacted log, or artifact link. The body provides intent and useful validation;
+reviewers inspect the code, tests, and CI to assess correctness.
 
 When the check fails, update the PR body instead of pushing another code commit.
-Maintainers can apply `proof: override` only when the proof gate should not
-apply to that PR.
 
 ## Scope and routing
 
@@ -189,24 +177,24 @@ Every lane uploads GitHub artifacts. When `CLAWGRIT_REPORTS_TOKEN` is configured
 
 ## Full Release Validation
 
-`Full Release Validation` is the manual umbrella workflow for "run everything before release." It accepts a branch, tag, or full commit SHA, dispatches the manual `CI` workflow with that target, dispatches `Plugin Prerelease` for release-only plugin/package/static/Docker proof, and dispatches `RemoteClaw Release Checks` for install smoke, package acceptance, cross-OS package checks, QA Lab parity, Matrix, and Telegram lanes. Stable/default runs keep exhaustive live/E2E and Docker release-path coverage behind `run_release_soak=true`; `release_profile=full` forces that soak coverage on so broad advisory validation remains broad. With `rerun_group=all` and `release_profile=full`, it also runs `NPM Telegram Beta E2E` against the `release-package-under-test` artifact from release checks. After publishing, pass `release_package_spec` to reuse the shipped npm package across release checks, Package Acceptance, Docker, cross-OS, and Telegram without rebuilding. Use `npm_telegram_package_spec` only when Telegram must prove a different package. The Codex plugin live package lane uses the same selected state by default: published `release_package_spec=remoteclaw@<tag>` derives `codex_plugin_spec=npm:@remoteclaw/codex@<tag>`, while SHA/artifact runs pack `extensions/codex` from the selected ref. Set `codex_plugin_spec` explicitly for custom plugin sources such as `npm:`, `npm-pack:`, or `git:` specs.
+`Full Release Validation` is the manual umbrella workflow for "run everything before release." It accepts a branch, tag, or full commit SHA, dispatches the manual `CI` workflow with that target, dispatches `Plugin Prerelease` for release-only plugin/package/static/Docker proof, and dispatches `RemoteClaw Release Checks` for install smoke, package acceptance, cross-OS package checks, QA Lab parity, Matrix, and Telegram lanes. Stable and full profiles always include exhaustive live/E2E and Docker release-path soak coverage; the beta profile can opt in with `run_release_soak=true`. The canonical package Telegram E2E runs inside Package Acceptance, so a full candidate does not start a duplicate live poller. After publishing, pass `release_package_spec` to reuse the shipped npm package across release checks, Package Acceptance, Docker, cross-OS, and Telegram without rebuilding. Use `npm_telegram_package_spec` only for a focused published-package Telegram rerun. The Codex plugin live package lane uses the same selected state by default: published `release_package_spec=remoteclaw@<tag>` derives `codex_plugin_spec=npm:@remoteclaw/codex@<tag>`, while SHA/artifact runs pack `extensions/codex` from the selected ref. Set `codex_plugin_spec` explicitly for custom plugin sources such as `npm:`, `npm-pack:`, or `git:` specs.
 
 See [Full release validation](/reference/full-release-validation) for the
 stage matrix, exact workflow job names, profile differences, artifacts, and
 focused rerun handles.
 
-`OpenClaw Release Publish` is the manual mutating release workflow. Dispatch it
+`RemoteClaw Release Publish` is the manual mutating release workflow. Dispatch it
 from `release/YYYY.M.PATCH` or `main` after the release tag exists and after the
-OpenClaw npm preflight has succeeded. It verifies `pnpm plugins:sync:check`,
+RemoteClaw npm preflight has succeeded. It verifies `pnpm plugins:sync:check`,
 dispatches `Plugin NPM Release` for all publishable plugin packages, dispatches
 `Plugin ClawHub Release` for the same release SHA, and only then dispatches
 `RemoteClaw NPM Release` with the saved `preflight_run_id`.
 
 ```bash
-gh workflow run openclaw-release-publish.yml \
+gh workflow run remoteclaw-release-publish.yml \
   --ref release/YYYY.M.PATCH \
   -f tag=vYYYY.M.PATCH-beta.N \
-  -f preflight_run_id=<successful-openclaw-npm-preflight-run-id> \
+  -f preflight_run_id=<successful-remoteclaw-npm-preflight-run-id> \
   -f npm_dist_tag=beta
 ```
 
@@ -226,9 +214,9 @@ different SHA.
 
 `release_profile` controls live/provider breadth passed into release checks. The
 manual release workflows default to `stable`; use `full` only when you
-intentionally want the broad advisory provider/media matrix. `run_release_soak`
-controls whether stable/default release checks run the exhaustive live/E2E and
-Docker release-path soak; `full` forces soak on.
+intentionally want the broad advisory provider/media matrix. Stable and full
+release checks always run the exhaustive live/E2E and Docker release-path soak;
+the beta profile can opt in with `run_release_soak=true`.
 
 - `minimum` keeps the fastest OpenAI/core release-critical lanes.
 - `stable` adds the stable provider/backend set.
@@ -392,17 +380,17 @@ Docker lane definitions live in `scripts/lib/docker-e2e-scenarios.mjs`, planner 
 
 ### Tunables
 
-| Variable                               | Default | Purpose                                                                                       |
-| -------------------------------------- | ------- | --------------------------------------------------------------------------------------------- |
-| `OPENCLAW_DOCKER_ALL_PARALLELISM`      | 10      | Main-pool slot count for normal lanes.                                                        |
-| `OPENCLAW_DOCKER_ALL_TAIL_PARALLELISM` | 10      | Provider-sensitive tail-pool slot count.                                                      |
-| `OPENCLAW_DOCKER_ALL_LIVE_LIMIT`       | 9       | Concurrent live lane cap so providers do not throttle.                                        |
-| `OPENCLAW_DOCKER_ALL_NPM_LIMIT`        | 5       | Concurrent npm install lane cap.                                                              |
-| `OPENCLAW_DOCKER_ALL_SERVICE_LIMIT`    | 7       | Concurrent multi-service lane cap.                                                            |
-| `OPENCLAW_DOCKER_ALL_START_STAGGER_MS` | 2000    | Stagger between lane starts to avoid Docker daemon create storms; set `0` for no stagger.     |
-| `OPENCLAW_DOCKER_ALL_LANE_TIMEOUT_MS`  | 7200000 | Per-lane fallback timeout (120 minutes); selected live/tail lanes use tighter caps.           |
-| `OPENCLAW_DOCKER_ALL_DRY_RUN`          | unset   | `1` prints the scheduler plan without running lanes.                                          |
-| `OPENCLAW_DOCKER_ALL_LANES`            | unset   | Comma-separated exact lane list; skips cleanup smoke so agents can reproduce one failed lane. |
+| Variable                                 | Default | Purpose                                                                                       |
+| ---------------------------------------- | ------- | --------------------------------------------------------------------------------------------- |
+| `REMOTECLAW_DOCKER_ALL_PARALLELISM`      | 10      | Main-pool slot count for normal lanes.                                                        |
+| `REMOTECLAW_DOCKER_ALL_TAIL_PARALLELISM` | 10      | Provider-sensitive tail-pool slot count.                                                      |
+| `REMOTECLAW_DOCKER_ALL_LIVE_LIMIT`       | 9       | Concurrent live lane cap so providers do not throttle.                                        |
+| `REMOTECLAW_DOCKER_ALL_NPM_LIMIT`        | 5       | Concurrent npm install lane cap.                                                              |
+| `REMOTECLAW_DOCKER_ALL_SERVICE_LIMIT`    | 7       | Concurrent multi-service lane cap.                                                            |
+| `REMOTECLAW_DOCKER_ALL_START_STAGGER_MS` | 2000    | Stagger between lane starts to avoid Docker daemon create storms; set `0` for no stagger.     |
+| `REMOTECLAW_DOCKER_ALL_LANE_TIMEOUT_MS`  | 7200000 | Per-lane fallback timeout (120 minutes); selected live/tail lanes use tighter caps.           |
+| `REMOTECLAW_DOCKER_ALL_DRY_RUN`          | unset   | `1` prints the scheduler plan without running lanes.                                          |
+| `REMOTECLAW_DOCKER_ALL_LANES`            | unset   | Comma-separated exact lane list; skips cleanup smoke so agents can reproduce one failed lane. |
 
 A lane heavier than its effective cap can still start from an empty pool, then runs alone until it releases capacity. The local aggregate preflights Docker, removes stale RemoteClaw E2E containers, emits active-lane status, persists lane timings for longest-first ordering, and stops scheduling new pooled lanes after the first failure by default.
 

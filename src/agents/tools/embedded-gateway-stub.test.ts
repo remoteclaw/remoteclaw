@@ -124,9 +124,13 @@ describe("embedded gateway stub", () => {
       maxMessages: 200,
     });
     expect(runtime.readSessionMessagesAsync).toHaveBeenCalledWith(
-      "sess-main",
-      "/tmp/remoteclaw-sessions.json",
-      undefined,
+      {
+        agentId: "main",
+        sessionEntry: { sessionId: "sess-main" },
+        sessionId: "sess-main",
+        sessionKey: "agent:main:main",
+        storePath: "/tmp/remoteclaw-sessions.json",
+      },
       {
         mode: "recent",
         maxMessages: 200,
@@ -186,9 +190,13 @@ describe("embedded gateway stub", () => {
       maxMessages: 1,
     });
     expect(runtime.readSessionMessagesAsync).toHaveBeenCalledWith(
-      "sess-main",
-      "/tmp/remoteclaw-sessions.json",
-      undefined,
+      {
+        agentId: "main",
+        sessionEntry: { sessionId: "sess-main" },
+        sessionId: "sess-main",
+        sessionKey: "agent:main:main",
+        storePath: "/tmp/remoteclaw-sessions.json",
+      },
       {
         mode: "recent",
         maxMessages: 1,
@@ -215,9 +223,13 @@ describe("embedded gateway stub", () => {
       maxMessages: 2,
     });
     expect(runtime.readSessionMessagesAsync).toHaveBeenCalledWith(
-      "sess-main",
-      "/tmp/remoteclaw-sessions.json",
-      undefined,
+      {
+        agentId: "main",
+        sessionEntry: { sessionId: "sess-main" },
+        sessionId: "sess-main",
+        sessionKey: "agent:main:main",
+        storePath: "/tmp/remoteclaw-sessions.json",
+      },
       {
         mode: "recent",
         maxMessages: 2,

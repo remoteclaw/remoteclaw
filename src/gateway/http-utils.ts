@@ -4,6 +4,11 @@ import { resolveDefaultAgentId } from "../agents/agent-scope.js";
 import { type RemoteClawConfig, loadConfig } from "../config/config.js";
 import { buildAgentMainSessionKey, normalizeAgentId } from "../routing/session-key.js";
 import {
+  isAcpSessionKey,
+  isCronSessionKey,
+  isSubagentSessionKey,
+} from "../sessions/session-key-utils.js";
+import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
 } from "../shared/string-coerce.js";
@@ -89,6 +94,35 @@ export function resolveAgentIdForRequest(params: {
   return fromModel ?? resolveDefaultAgentId(cfg);
 }
 
+/**
+ * A client-supplied `x-remoteclaw-session-key` must not impersonate an
+ * internal namespace (subagent / cron / acp). Ported from upstream v2026.6.9.
+ */
+export class GatewaySessionKeyOverrideError extends Error {
+  constructor() {
+    super("`x-remoteclaw-session-key` cannot use reserved internal session namespaces.");
+    this.name = "GatewaySessionKeyOverrideError";
+  }
+}
+
+export function isGatewaySessionKeyOverrideError(
+  err: unknown,
+): err is GatewaySessionKeyOverrideError {
+  return err instanceof GatewaySessionKeyOverrideError;
+}
+
+function isReservedSessionKeyOverride(sessionKey: string): boolean {
+  const lowered = normalizeLowercaseStringOrEmpty(sessionKey);
+  return (
+    lowered.startsWith("subagent:") ||
+    lowered.startsWith("cron:") ||
+    lowered.startsWith("acp:") ||
+    isSubagentSessionKey(sessionKey) ||
+    isCronSessionKey(sessionKey) ||
+    isAcpSessionKey(sessionKey)
+  );
+}
+
 export function resolveSessionKey(params: {
   req: IncomingMessage;
   agentId: string;
@@ -97,6 +131,9 @@ export function resolveSessionKey(params: {
 }): string {
   const explicit = getHeader(params.req, "x-remoteclaw-session-key")?.trim();
   if (explicit) {
+    if (isReservedSessionKeyOverride(explicit)) {
+      throw new GatewaySessionKeyOverrideError();
+    }
     return explicit;
   }
 

@@ -43,7 +43,7 @@ func canonicalizeCanvasHostUrl(raw: String?, activeURL: URL?) -> String? {
 }
 
 public actor GatewayNodeSession {
-    private let logger = Logger(subsystem: "ai.openclaw", category: "node.gateway")
+    private let logger = Logger(subsystem: "org.remoteclaw", category: "node.gateway")
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
     private static let defaultInvokeTimeoutMs = 30000
@@ -68,7 +68,7 @@ public actor GatewayNodeSession {
         timeoutMs: Int?,
         onInvoke: @escaping @Sendable (BridgeInvokeRequest) async -> BridgeInvokeResponse) async -> BridgeInvokeResponse
     {
-        let timeoutLogger = Logger(subsystem: "ai.openclaw", category: "node.gateway")
+        let timeoutLogger = Logger(subsystem: "org.remoteclaw", category: "node.gateway")
         let timeout: Int = {
             if let timeoutMs { return max(0, timeoutMs) }
             return Self.defaultInvokeTimeoutMs
@@ -129,7 +129,7 @@ public actor GatewayNodeSession {
                 latch.resume(BridgeInvokeResponse(
                     id: request.id,
                     ok: false,
-                    error: OpenClawNodeError(
+                    error: RemoteClawNodeError(
                         code: .unavailable,
                         message: "node invoke timed out")))
             }
@@ -162,6 +162,7 @@ public actor GatewayNodeSession {
         let clientId = options.clientId.trimmingCharacters(in: .whitespacesAndNewlines)
         let clientMode = options.clientMode.trimmingCharacters(in: .whitespacesAndNewlines)
         let clientDisplayName = (options.clientDisplayName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let deviceIdentityProfile = options.deviceIdentityProfile.rawValue
         let includeDeviceIdentity = options.includeDeviceIdentity ? "1" : "0"
         let permissions = options.permissions
             .map { key, value in
@@ -179,6 +180,7 @@ public actor GatewayNodeSession {
             clientId,
             clientMode,
             clientDisplayName,
+            deviceIdentityProfile,
             includeDeviceIdentity,
             permissions,
         ].joined(separator: "|")

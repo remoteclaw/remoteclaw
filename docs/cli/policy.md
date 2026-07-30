@@ -1,32 +1,32 @@
 ---
-summary: "CLI reference for `openclaw policy` conformance checks"
+summary: "CLI reference for `remoteclaw policy` conformance checks"
 read_when:
-  - You want to check OpenClaw settings against an authored policy.jsonc
+  - You want to check RemoteClaw settings against an authored policy.jsonc
   - You want policy findings in doctor lint
   - You need a policy attestation hash for audit evidence
 title: "Policy"
 ---
 
-# `openclaw policy`
+# `remoteclaw policy`
 
-`openclaw policy` is provided by the bundled Policy plugin. Policy is an
-enterprise conformance layer over existing OpenClaw settings. It does not add a
+`remoteclaw policy` is provided by the bundled Policy plugin. Policy is an
+enterprise conformance layer over existing RemoteClaw settings. It does not add a
 second configuration system. `policy.jsonc` defines authored requirements,
-OpenClaw observes the active workspace as evidence, and policy health checks
+RemoteClaw observes the active workspace as evidence, and policy health checks
 report drift through `doctor --lint`. The final conformance signal is a clean
 `doctor --lint` run; policy contributes findings to that shared lint surface
 instead of creating a separate health gate.
 
 Policy currently manages configured channels, MCP servers, model providers,
 network SSRF posture, ingress/channel access posture, Gateway exposure posture, agent workspace posture,
-data-handling posture, OpenClaw config secret provider/auth profile posture, and governed tool
+data-handling posture, RemoteClaw config secret provider/auth profile posture, and governed tool
 declarations. For example, IT or a workspace operator can record that Telegram
 is not an approved channel provider, restrict MCP servers and model refs to
 approved entries, require private-network fetch/browser access to remain
 disabled, require direct-message session isolation and channel ingress posture
 to stay within reviewed bounds, require Gateway bind/auth/HTTP exposure to stay within reviewed
 bounds, require agent workspace access and tool denies to stay in a reviewed
-posture, require OpenClaw config SecretRefs to use managed providers, require
+posture, require RemoteClaw config SecretRefs to use managed providers, require
 config auth profiles to carry provider/mode metadata, require governed tools to
 carry risk and sensitivity metadata, require sensitive logging redaction, deny
 telemetry content capture, require session retention maintenance, deny session
@@ -35,7 +35,7 @@ conformance gate.
 
 Use policy when a workspace needs a durable statement such as "these channels
 must not be enabled" or "governed tools must declare approval metadata" and a
-repeatable way to prove that OpenClaw still conforms to that statement. Use
+repeatable way to prove that RemoteClaw still conforms to that statement. Use
 regular config and workspace docs alone when you only need local behavior and
 do not need policy findings or attestation output.
 
@@ -44,7 +44,7 @@ do not need policy findings or attestation output.
 Enable the bundled Policy plugin before first use:
 
 ```bash
-openclaw plugins enable policy
+remoteclaw plugins enable policy
 ```
 
 When policy is enabled, doctor can load policy health checks without activating
@@ -53,8 +53,9 @@ doctor can report the missing artifact.
 
 Policy is authored, not generated from the user's current settings. A minimal
 policy for channels, MCP servers, model providers, network posture, ingress/channel access, Gateway
-exposure, agent workspace posture, configured sandbox runtime posture, OpenClaw
-data-handling posture, config secret provider/auth profile posture, and tool metadata looks like this:
+exposure, agent workspace posture, configured sandbox runtime posture, RemoteClaw
+data-handling posture, config secret provider/auth profile posture, exec approval
+file posture, and tool metadata looks like this:
 
 ```jsonc
 {
@@ -145,6 +146,15 @@ data-handling posture, config secret provider/auth profile posture, and tool met
       "allowModes": ["api_key", "token"],
     },
   },
+  "execApprovals": {
+    "requireFile": true,
+    "defaults": { "allowSecurity": ["deny"] },
+    "agents": {
+      "allowSecurity": ["deny", "allowlist"],
+      "allowAutoAllowSkills": false,
+      "allowlist": { "expected": ["deploy", "status"] },
+    },
+  },
   "tools": {
     "requireMetadata": ["risk", "sensitivity", "owner"],
     "profiles": {
@@ -167,11 +177,11 @@ data-handling posture, config secret provider/auth profile posture, and tool met
 ```
 
 The rules are the authority. A category block is only a namespace; checks run
-when a concrete rule is present. OpenClaw reads current `channels.*` settings
+when a concrete rule is present. RemoteClaw reads current `channels.*` settings
 `mcp.servers.*`, `models.providers.*`, selected agent model refs, network SSRF
 settings, direct-message session scope, channel DM policy, channel group policy,
 channel/group mention gates, Gateway bind/auth/Control UI/Tailscale/remote/HTTP
-posture, OpenClaw config agent sandbox workspace access and tool deny posture,
+posture, RemoteClaw config agent sandbox workspace access and tool deny posture,
 data-handling config posture, config secret
 provider and SecretRef provenance, config auth profile metadata, configured
 global/per-agent tool posture, and `TOOLS.md` declarations as evidence, then
@@ -182,14 +192,16 @@ strict config conformance. For read-only agent posture, configure sandbox mode
 on the applicable defaults or agent and set `workspaceAccess` to `none` or
 `ro`; omitted or `off` sandbox mode does not satisfy a read-only/no-write
 policy. `agents.workspace.denyTools` supports `exec`, `process`, `write`,
-`edit`, and `apply_patch`; OpenClaw config `group:fs` covers file mutation tools
+`edit`, and `apply_patch`; RemoteClaw config `group:fs` covers file mutation tools
 and `group:runtime` covers shell/process tools. Tool posture policy observes
 `tools.profile`, `tools.allow`, `tools.alsoAllow`, `tools.deny`,
 `tools.fs.workspaceOnly`, `tools.exec.security`, `tools.exec.ask`,
 `tools.exec.host`, `tools.elevated.enabled`, and the same per-agent
-`agents.list[].tools.*` overrides. It does not read runtime/operator approval
-state such as exec-approvals.json, and it does not enforce tool calls at
-runtime. Secret evidence records
+`agents.list[].tools.*` overrides. Exec approval policy reads the named
+`exec-approvals.json` product artifact only when an `execApprovals` rule is
+present; evidence records defaults, per-agent posture, and allowlist patterns
+without socket tokens or last-used command text. Policy does not enforce tool
+calls at runtime. Secret evidence records
 provider/source posture and SecretRef metadata, never raw secret values. Policy
 does not read or attest per-agent credential stores such as `auth-profiles.json`;
 those stores remain owned by the existing auth and credential flows.
@@ -202,7 +214,7 @@ data or secrets exist.
 ### Policy rule reference
 
 Each policy field below is optional. A check runs only when the matching rule is
-present in `policy.jsonc`. The observed state is existing OpenClaw config or
+present in `policy.jsonc`. The observed state is existing RemoteClaw config or
 workspace metadata; policy reports drift but does not rewrite runtime behavior
 unless a repair path is explicitly available and enabled.
 Policy files are strict: unsupported sections or rule keys are reported as
@@ -218,11 +230,11 @@ its own finding against the same observed config.
 
 Use `scopes.<scopeName>` when one set of agents or channels needs stricter
 policy than the top-level baseline. Agent-scoped sections use `agentIds`, which
-supports `tools.*`, `agents.workspace.*`, `sandbox.*`, and
-`dataHandling.memory.*`. Channel-scoped
+supports `tools.*`, `agents.workspace.*`, `sandbox.*`, `dataHandling.memory.*`,
+and `execApprovals.*`. Channel-scoped
 ingress uses `channelIds`, which supports `ingress.channels.*`. Unsupported
 sections are rejected instead of being ignored. If an `agentIds` entry is not
-present in `agents.list[]`, OpenClaw evaluates the scoped rule against inherited
+present in `agents.list[]`, RemoteClaw evaluates the scoped rule against inherited
 global/default posture for that runtime agent id.
 
 ```jsonc
@@ -293,7 +305,7 @@ equally or more restrictive according to policy metadata; weaker duplicate
 claims are rejected. Strictness metadata treats allow-lists as subsets,
 deny-lists as supersets, and required booleans as fixed requirements.
 
-Container posture policy is evaluated only against evidence OpenClaw can
+Container posture policy is evaluated only against evidence RemoteClaw can
 observe for the matched agent. If an enabled `sandbox.containers.*` rule applies
 to an agent whose sandbox backend cannot expose that field, policy reports
 `policy/sandbox-container-posture-unobservable` instead of treating the claim as
@@ -304,10 +316,10 @@ groups where those fields cannot be observed.
 Top-level `ingress.session.requireDmScope` remains global because
 `session.dmScope` is not channel-attributable evidence.
 
-| Selector     | Supported sections                                                | Use when                                          |
-| ------------ | ----------------------------------------------------------------- | ------------------------------------------------- |
-| `agentIds`   | `tools`, `agents.workspace`, `sandbox`, and `dataHandling.memory` | One or more runtime agents need stricter rules.   |
-| `channelIds` | `ingress.channels`                                                | One or more channels need stricter ingress rules. |
+| Selector     | Supported sections                                                                 | Use when                                          |
+| ------------ | ---------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `agentIds`   | `tools`, `agents.workspace`, `sandbox`, `dataHandling.memory`, and `execApprovals` | One or more runtime agents need stricter rules.   |
+| `channelIds` | `ingress.channels`                                                                 | One or more channels need stricter ingress rules. |
 
 Every scope present in `policy.jsonc` must be valid and enforceable.
 
@@ -401,6 +413,69 @@ allowlist such as `["all"]`.
 | `secrets.denySources`             | Secret provider sources and SecretRef sources            | Deny sources such as `exec`, `file`, or another configured source name. |
 | `secrets.allowInsecureProviders`  | Insecure secret-provider posture flags                   | Set to `false` to reject providers that opt into insecure posture.      |
 
+#### Exec approvals
+
+Exec approvals policy observes the active runtime `exec-approvals.json`
+artifact. By default this is `~/.remoteclaw/exec-approvals.json`; when
+`REMOTECLAW_STATE_DIR` is set, Policy reads
+`$REMOTECLAW_STATE_DIR/exec-approvals.json`. Actual posture rules such as
+`execApprovals.defaults.*` or `execApprovals.agents.*` require readable artifact
+evidence; a missing or invalid artifact is reported as unobservable evidence
+instead of becoming a best-effort pass against synthetic runtime defaults. Once
+the artifact is readable, omitted approval fields inherit runtime defaults: missing
+`defaults.security` is `full`, and missing agent security inherits that
+default. Evidence includes `defaults`, `agents.*`, and
+`agents.*.allowlist[].pattern` plus optional `argPattern`, effective
+`autoAllowSkills` posture, and entry source. It does not include socket
+path/token, `commandText`, `lastUsedCommand`, resolved paths, or timestamps.
+
+| Policy field                                | Observed state                                                                         | Use when                                                                                |
+| ------------------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `execApprovals.requireFile`                 | Active runtime `exec-approvals.json` path                                              | Set to `true` to require the approvals artifact to exist and parse.                     |
+| `execApprovals.defaults.allowSecurity`      | `defaults.security`, defaulting to `full`                                              | Allow only approved default approval security modes.                                    |
+| `execApprovals.agents.allowSecurity`        | `agents.*.security`, inheriting defaults                                               | Allow only approved per-agent effective approval security modes.                        |
+| `execApprovals.agents.allowAutoAllowSkills` | `defaults.autoAllowSkills` and `agents.*.autoAllowSkills`, inheriting runtime defaults | Set to `false` to require strict manual allowlists without implicit skill CLI approval. |
+| `execApprovals.agents.allowlist.expected`   | Aggregate `agents.*.allowlist[]` pattern and optional argPattern entries               | Require the approvals allowlist to match the reviewed pattern set.                      |
+
+For example, require the approvals artifact, deny permissive defaults, and
+allow only reviewed exec approval posture for selected agents:
+
+```jsonc
+{
+  "execApprovals": {
+    "requireFile": true,
+    "defaults": {
+      // Security modes: "deny", "allowlist", or "full".
+      // This default permits only the locked-down deny posture.
+      "allowSecurity": ["deny"],
+    },
+  },
+  "scopes": {
+    "restricted-shell": {
+      "agentIds": ["family-agent", "groups-agent"],
+      "execApprovals": {
+        "agents": {
+          // Selected agents may use reviewed allowlist posture, but not "full".
+          "allowSecurity": ["allowlist"],
+          // false means skill CLIs must appear in the reviewed allowlist instead of
+          // being implicitly approved by autoAllowSkills.
+          "allowAutoAllowSkills": false,
+          "allowlist": {
+            "expected": [
+              // Simple entry: exact reviewed executable pattern with no argPattern.
+              "travel-hub",
+              // Constrained entry: pattern plus reviewed argument regex.
+              { "pattern": "calendar-cli", "argPattern": "^sync\\b" },
+              "/bin/date",
+            ],
+          },
+        },
+      },
+    },
+  },
+}
+```
+
 #### Auth profiles
 
 | Policy field                    | Observed state                               | Use when                                                                                   |
@@ -430,24 +505,24 @@ allowlist such as `["all"]`.
 Run policy-only checks during authoring:
 
 ```bash
-openclaw policy check
-openclaw policy check --json
-openclaw policy check --severity-min error
+remoteclaw policy check
+remoteclaw policy check --json
+remoteclaw policy check --severity-min error
 ```
 
 `policy check` runs only the policy check set and emits evidence, findings, and
-attestation hashes. The same findings also appear in `openclaw doctor --lint`
+attestation hashes. The same findings also appear in `remoteclaw doctor --lint`
 when the Policy plugin is enabled.
 
 Compare an operator policy file to an authored baseline policy file:
 
 ```bash
-openclaw policy compare --baseline official.policy.jsonc
-openclaw policy compare --baseline official.policy.jsonc --policy policy.jsonc --json
+remoteclaw policy compare --baseline official.policy.jsonc
+remoteclaw policy compare --baseline official.policy.jsonc --policy policy.jsonc --json
 ```
 
 `policy compare` compares policy file syntax to policy file syntax. It does not
-inspect OpenClaw runtime state, evidence, credentials, or secrets. The command
+inspect RemoteClaw runtime state, evidence, credentials, or secrets. The command
 uses the same policy rule metadata that governs scoped overlays: allowlists must
 stay equal or narrower, denylists must stay equal or broader, required booleans
 must keep their required value, ordered strings must move only toward the more
@@ -566,14 +641,14 @@ Example JSON output:
       {
         "id": "docs",
         "transport": "stdio",
-        "source": "oc://openclaw.config/mcp/servers/docs",
+        "source": "oc://remoteclaw.config/mcp/servers/docs",
         "command": "npx"
       }
     ],
     "modelProviders": [
       {
         "id": "openai",
-        "source": "oc://openclaw.config/models/providers/openai"
+        "source": "oc://remoteclaw.config/models/providers/openai"
       }
     ],
     "modelRefs": [
@@ -642,7 +717,7 @@ Example JSON output:
     "authProfiles": [
       {
         "id": "github",
-        "source": "oc://openclaw.config/auth/profiles/github",
+        "source": "oc://remoteclaw.config/auth/profiles/github",
         "validMetadata": true,
         "provider": "github",
         "mode": "token"
@@ -666,7 +741,7 @@ Example JSON output:
 ```
 
 The policy hash identifies the authored rule artifact. The evidence block
-records the observed OpenClaw state used by the policy checks. The
+records the observed RemoteClaw state used by the policy checks. The
 `workspace.hash` value identifies that evidence payload for the checked scope.
 The findings hash identifies the exact finding set returned by the check.
 `checkedAt` records when the evaluation ran. The attestation hash identifies
@@ -683,10 +758,10 @@ stable attestation hash.
 Use this lifecycle when accepting policy state:
 
 1. Author or review `policy.jsonc`.
-2. Run `openclaw policy check --json`.
+2. Run `remoteclaw policy check --json`.
 3. If the result is clean, record `attestation.policy.hash` as `expectedHash`.
 4. Record `attestation.attestationHash` as `expectedAttestationHash`.
-5. Re-run `openclaw doctor --lint` in CI or release gates.
+5. Re-run `remoteclaw doctor --lint` in CI or release gates.
 
 If policy rules change intentionally, update both accepted hashes from a clean
 check. If workspace settings change intentionally but policy stays the same,
@@ -698,11 +773,11 @@ evidence and refresh accepted attestation hashes after enabling these rules.
 Enabling or upgrading tool posture rules adds `toolPosture` evidence in the
 same way.
 
-`openclaw policy watch` runs the same check repeatedly and reports when the
+`remoteclaw policy watch` runs the same check repeatedly and reports when the
 current evidence no longer matches `expectedAttestationHash`:
 
 ```bash
-openclaw policy watch --json
+remoteclaw policy watch --json
 ```
 
 Use `--once` in CI or scripts that only need one drift evaluation. Without
@@ -769,6 +844,13 @@ Policy currently verifies:
 | `policy/secrets-insecure-provider`                       | A secret provider opts into insecure posture when policy denies it.               |
 | `policy/auth-profile-invalid-metadata`                   | A config auth profile is missing valid provider or mode metadata.                 |
 | `policy/auth-profile-unapproved-mode`                    | A config auth profile mode is outside the policy allowlist.                       |
+| `policy/exec-approvals-missing`                          | Policy requires `exec-approvals.json`, but the artifact is missing.               |
+| `policy/exec-approvals-invalid`                          | The configured exec approvals artifact cannot be parsed.                          |
+| `policy/exec-approvals-default-security-unapproved`      | Exec approval defaults use a security mode outside the policy allowlist.          |
+| `policy/exec-approvals-agent-security-unapproved`        | A per-agent effective exec approval security mode is outside the allowlist.       |
+| `policy/exec-approvals-auto-allow-skills-enabled`        | An exec approval agent implicitly auto-allows skill CLIs when policy denies it.   |
+| `policy/exec-approvals-allowlist-missing`                | The approvals allowlist is missing a pattern required by policy.                  |
+| `policy/exec-approvals-allowlist-unexpected`             | The approvals allowlist includes a pattern not expected by policy.                |
 | `policy/tools-missing-risk-level`                        | A governed tool declaration is missing risk metadata.                             |
 | `policy/tools-unknown-risk-level`                        | A governed tool declaration uses an unknown risk value.                           |
 | `policy/tools-missing-sensitivity-token`                 | A governed tool declaration is missing sensitivity metadata.                      |
@@ -789,7 +871,7 @@ Example JSON finding:
   "severity": "error",
   "message": "Channel 'telegram' uses denied provider 'telegram'.",
   "source": "policy",
-  "path": "openclaw config",
+  "path": "remoteclaw config",
   "ocPath": "oc://remoteclaw.config/channels/telegram",
   "target": "oc://remoteclaw.config/channels/telegram",
   "requirement": "oc://policy.jsonc/channels/denyRules/#0",
@@ -821,7 +903,7 @@ Example MCP finding:
   "severity": "error",
   "message": "MCP server 'remote' is not in the policy allowlist.",
   "source": "policy",
-  "path": "openclaw config",
+  "path": "remoteclaw config",
   "ocPath": "oc://remoteclaw.config/mcp/servers/remote",
   "target": "oc://remoteclaw.config/mcp/servers/remote",
   "requirement": "oc://policy.jsonc/mcp/servers/allow"
@@ -836,7 +918,7 @@ Example model-provider finding:
   "severity": "error",
   "message": "Model ref 'anthropic/claude-sonnet-4.7' uses unapproved provider 'anthropic'.",
   "source": "policy",
-  "path": "openclaw config",
+  "path": "remoteclaw config",
   "ocPath": "oc://remoteclaw.config/agents/defaults/model/fallbacks/#0",
   "target": "oc://remoteclaw.config/agents/defaults/model/fallbacks/#0",
   "requirement": "oc://policy.jsonc/models/providers/allow"
@@ -851,7 +933,7 @@ Example network finding:
   "severity": "error",
   "message": "Network setting 'browser-private-network' allows private-network access.",
   "source": "policy",
-  "path": "openclaw config",
+  "path": "remoteclaw config",
   "ocPath": "oc://remoteclaw.config/browser/ssrfPolicy/dangerouslyAllowPrivateNetwork",
   "target": "oc://remoteclaw.config/browser/ssrfPolicy/dangerouslyAllowPrivateNetwork",
   "requirement": "oc://policy.jsonc/network/privateNetwork/allow"
@@ -866,7 +948,7 @@ Example Gateway exposure finding:
   "severity": "error",
   "message": "Gateway bind setting 'gateway-bind' permits non-loopback exposure.",
   "source": "policy",
-  "path": "openclaw config",
+  "path": "remoteclaw config",
   "ocPath": "oc://remoteclaw.config/gateway/bind",
   "target": "oc://remoteclaw.config/gateway/bind",
   "requirement": "oc://policy.jsonc/gateway/exposure/allowNonLoopbackBind"
@@ -881,7 +963,7 @@ Example agent workspace finding:
   "severity": "error",
   "message": "agents.defaults sandbox workspaceAccess 'rw' is not allowed by policy.",
   "source": "policy",
-  "path": "openclaw config",
+  "path": "remoteclaw config",
   "ocPath": "oc://remoteclaw.config/agents/defaults/sandbox/workspaceAccess",
   "target": "oc://remoteclaw.config/agents/defaults/sandbox/workspaceAccess",
   "requirement": "oc://policy.jsonc/agents/workspace/allowedAccess"
@@ -896,7 +978,7 @@ Example agent workspace finding:
 `workspaceRepairs` is explicitly enabled. Without that opt-in, policy checks
 report what they would repair and leave settings unchanged.
 
-In this version, repair can disable channels that are enabled in OpenClaw config
+In this version, repair can disable channels that are enabled in RemoteClaw config
 but denied by `channels.denyRules`. Enable `workspaceRepairs` only after the
 policy file has been reviewed, because a valid deny rule can turn off a
 configured channel:

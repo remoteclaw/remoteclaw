@@ -36,6 +36,8 @@ export type DiscordReactOpts = {
   rest?: RequestClient;
   verbose?: boolean;
   retry?: RetryConfig;
+  signal?: AbortSignal;
+  timeoutMs?: number;
 };
 
 export type DiscordReactionUser = {

@@ -11,7 +11,7 @@ import Testing
         #expect(source.contains("Show Sidebar"))
         #expect(source.contains("shouldShowSidebarRevealInDestinationHeader"))
         #expect(source.contains("layoutMode: self.isSidebarDrawerLayout ? .drawer : .split"))
-        #expect(componentSource.contains("OpenClawSidebarHeaderLeadingSlot"))
+        #expect(componentSource.contains("RemoteClawSidebarHeaderLeadingSlot"))
         #expect(componentSource.contains(".frame(width: 44, height: 44, alignment: .center)"))
         #expect(source.contains(".safeAreaPadding(.top, 8)"))
         #expect(source.contains("Self.sidebarShowButtonAccessibilityIdentifier"))
@@ -81,8 +81,8 @@ import Testing
         #expect(!source.contains("sidebarDeviceMenu"))
         #expect(sidebarColumn.contains("self.sidebarIdentityHeader"))
         #expect(source.contains("private var sidebarIdentityHeader: some View"))
-        #expect(source.contains("OpenClawProMark(size: 30"))
-        #expect(source.contains("Text(\"OpenClaw\")"))
+        #expect(source.contains("RemoteClawProMark(size: 30"))
+        #expect(source.contains("Text(\"RemoteClaw\")"))
         #expect(source.contains("private var sidebarGatewayStatusTitle: String"))
         #expect(source.contains("private var sidebarGatewayStatusColor: Color"))
         #expect(!sidebarColumn.contains("activeAgent"))
@@ -139,13 +139,13 @@ import Testing
         #expect(sidebarDetail.contains("headerTitle: \"Dreaming\""))
         #expect(sidebarDetail.contains("headerTitle: \"Usage\""))
         #expect(sidebarDetail.contains("headerTitle: \"Cron Jobs\""))
-        #expect(!sidebarDetail.contains("headerTitle: \"OpenClaw\""))
-        #expect(agentOverviewSource.contains("OpenClawAdaptiveHeaderRow("))
+        #expect(!sidebarDetail.contains("headerTitle: \"RemoteClaw\""))
+        #expect(agentOverviewSource.contains("RemoteClawAdaptiveHeaderRow("))
         #expect(agentOverviewSource.contains("title: self.headerTitle"))
-        #expect(!agentOverviewSource.contains("Text(\"OpenClaw\")"))
-        #expect(docsSource.contains("OpenClawAdaptiveHeaderRow("))
+        #expect(!agentOverviewSource.contains("Text(\"RemoteClaw\")"))
+        #expect(docsSource.contains("RemoteClawAdaptiveHeaderRow("))
         #expect(docsSource.contains("title: \"Docs\""))
-        #expect(!docsSource.contains("Text(\"OpenClaw Docs\")"))
+        #expect(!docsSource.contains("Text(\"RemoteClaw Docs\")"))
     }
 
     @Test func agentsDirectRouteKeepsSingleSidebarControl() throws {
@@ -153,20 +153,16 @@ import Testing
         let destinationsSource = try String(contentsOf: Self.agentProTabDestinationsSourceURL(), encoding: .utf8)
         let nodesSource = try String(contentsOf: Self.agentProNodesDestinationSourceURL(), encoding: .utf8)
         let dreamingSource = try String(contentsOf: Self.agentProDreamingDestinationSourceURL(), encoding: .utf8)
-        let directDestination = try Self.extract(
-            source,
-            from: "private func directDestination(for route: AgentRoute) -> some View",
-            to: "private func applyInitialRouteIfNeeded()")
 
-        #expect(!directDestination.contains("ToolbarItem"))
-        #expect(directDestination.contains("self.directHeaderLeadingAction(for: route) == nil ? .visible : .hidden"))
+        #expect(!source.contains("ToolbarItem"))
+        #expect(source.contains("self.directHeaderLeadingAction(for: route) == nil ? .visible : .hidden"))
         #expect(destinationsSource.contains("self.directHeaderLeadingAction(for: .instances)"))
         #expect(destinationsSource.contains("self.directHeaderLeadingAction(for: .dreaming)"))
         #expect(destinationsSource.contains("self.directHeader(\n                        for: .usage"))
         #expect(destinationsSource.contains("self.directHeader(\n                        for: .cron"))
         #expect(destinationsSource.contains("self.directRoute == route ? self.headerLeadingAction : nil"))
-        #expect(nodesSource.contains("OpenClawSidebarHeaderLeadingSlot(action: headerLeadingAction)"))
-        #expect(dreamingSource.contains("OpenClawSidebarHeaderLeadingSlot(action: headerLeadingAction)"))
+        #expect(nodesSource.contains("RemoteClawSidebarHeaderLeadingSlot(action: headerLeadingAction)"))
+        #expect(dreamingSource.contains("RemoteClawSidebarHeaderLeadingSlot(action: headerLeadingAction)"))
     }
 
     @Test func routedHeadersUseSharedAdaptiveLayout() throws {
@@ -178,28 +174,28 @@ import Testing
         let agentOverviewSource = try String(contentsOf: Self.agentProTabOverviewSourceURL(), encoding: .utf8)
         let settingsSource = try String(contentsOf: Self.settingsProTabSectionsSourceURL(), encoding: .utf8)
 
-        #expect(componentsSource.contains("struct OpenClawAdaptiveHeaderRow<Leading: View, Accessory: View>: View"))
+        #expect(componentsSource.contains("struct RemoteClawAdaptiveHeaderRow<Leading: View, Accessory: View>: View"))
         #expect(componentsSource.contains("ViewThatFits(in: .horizontal)"))
         #expect(componentsSource.contains("private var stackedLayout: some View"))
         #expect(componentsSource.contains(".layoutPriority(1)"))
         #expect(componentsSource.contains(".fixedSize(horizontal: true, vertical: false)"))
-        #expect(featureChromeSource.contains("OpenClawAdaptiveHeaderRow("))
-        #expect(docsSource.contains("OpenClawAdaptiveHeaderRow("))
-        #expect(overviewSource.contains("OpenClawAdaptiveHeaderRow("))
-        #expect(chatSource.contains("OpenClawAdaptiveHeaderRow("))
-        #expect(agentOverviewSource.contains("OpenClawAdaptiveHeaderRow("))
-        #expect(settingsSource.contains("OpenClawAdaptiveHeaderRow("))
+        #expect(featureChromeSource.contains("RemoteClawAdaptiveHeaderRow("))
+        #expect(docsSource.contains("RemoteClawAdaptiveHeaderRow("))
+        #expect(overviewSource.contains("RemoteClawAdaptiveHeaderRow("))
+        #expect(chatSource.contains("RemoteClawAdaptiveHeaderRow("))
+        #expect(agentOverviewSource.contains("RemoteClawAdaptiveHeaderRow("))
+        #expect(settingsSource.contains("RemoteClawAdaptiveHeaderRow("))
     }
 
     @Test func phoneHubKeepsDocsAsDestinationOnly() throws {
         let source = try String(contentsOf: Self.phoneHubSourceURL(), encoding: .utf8)
 
         #expect(source.contains("case .docs:"))
-        #expect(source.contains("OpenClawDocsScreen("))
+        #expect(source.contains("RemoteClawDocsScreen("))
         #expect(source.contains("headerLeadingAction: self.phoneDetailBackAction"))
         #expect(source.contains("gatewayAction: { self.openRootDestination(.gateway) }"))
         #expect(!source.contains("Label(\"Docs\", systemImage: \"book\")"))
-        #expect(!source.contains("https://docs.openclaw.ai"))
+        #expect(!source.contains("https://docs.remoteclaw.org"))
     }
 
     @Test func rootShellPreviewMatrixCoversPhoneAndIPadStates() throws {
@@ -244,9 +240,9 @@ import Testing
 
         #expect(source.contains("private var gatewayActionRow: some View"))
         #expect(source.contains("self.openRootDestination(.gateway)"))
-        #expect(source.contains("private var phoneDetailBackAction: OpenClawSidebarHeaderAction"))
+        #expect(source.contains("private var phoneDetailBackAction: RemoteClawSidebarHeaderAction"))
         #expect(source.contains("accessibilityLabel: \"Back to Control\""))
-        #expect(source.contains("accessibilityIdentifier: \"OpenClawPhoneDetailBackButton\""))
+        #expect(source.contains("accessibilityIdentifier: \"RemoteClawPhoneDetailBackButton\""))
         #expect(source.contains(".navigationBarBackButtonHidden(true)"))
         #expect(source.contains(".toolbar(.hidden, for: .navigationBar)"))
         #expect(source.matches(of: /headerLeadingAction: self\.phoneDetailBackAction/).count == 10)
@@ -458,7 +454,7 @@ import Testing
         #expect(activitySource.contains("IOSGatewayChatTransport(gateway: self.appModel.operatorSession)"))
         #expect(activitySource.contains("IPadSidebarScreenChrome("))
         #expect(!taskSource.contains("struct IPadActivityScreen"))
-        #expect(!taskSource.contains("import OpenClawChatUI"))
+        #expect(!taskSource.contains("import RemoteClawChatUI"))
         #expect(projectSource.contains("IPadActivityScreen.swift in Sources"))
     }
 
@@ -468,8 +464,8 @@ import Testing
         let projectSource = try String(contentsOf: Self.xcodeProjectSourceURL(), encoding: .utf8)
 
         #expect(chromeSource.contains("struct IPadSidebarScreenChrome<Content: View>: View"))
-        #expect(chromeSource.contains("OpenClawSidebarHeaderLeadingSlot(action: headerLeadingAction)"))
-        #expect(chromeSource.contains("OpenClawGatewayCompactPill()"))
+        #expect(chromeSource.contains("RemoteClawSidebarHeaderLeadingSlot(action: headerLeadingAction)"))
+        #expect(chromeSource.contains("RemoteClawGatewayCompactPill()"))
         #expect(!taskSource.contains("struct IPadSidebarScreenChrome"))
         #expect(projectSource.contains("IPadSidebarScreenChrome.swift in Sources"))
     }
@@ -498,7 +494,6 @@ import Testing
         let chatSource = try String(contentsOf: Self.chatProTabSourceURL(), encoding: .utf8)
         let docsSource = try String(contentsOf: Self.docsSourceURL(), encoding: .utf8)
         let settingsSource = try String(contentsOf: Self.settingsProTabSectionsSourceURL(), encoding: .utf8)
-        let channelsSource = try String(contentsOf: Self.channelsSourceURL(), encoding: .utf8)
 
         #expect(rootSource.matches(of: /openSettings: \{ self\.selectSidebarDestination\(\.gateway\) \}/).count >= 2)
         #expect(rootSource.matches(of: /gatewayAction: \{ self\.selectSidebarDestination\(\.gateway\) \}/).count == 1)
@@ -507,7 +502,7 @@ import Testing
         #expect(overviewSource.contains("Button(action: self.openSettings)"))
         #expect(overviewSource.contains(".accessibilityHint(\"Opens Settings / Gateway\")"))
         #expect(agentSource.contains("let openSettings: (() -> Void)?"))
-        #expect(agentOverviewSource.contains("OpenClawGatewayCompactPill()"))
+        #expect(agentOverviewSource.contains("RemoteClawGatewayCompactPill()"))
         #expect(agentOverviewSource.contains("Button(action: openSettings)"))
         #expect(rootSource
             .matches(of: /AgentProTab\([\s\S]*?openSettings: \{ self\.selectSidebarDestination\(\.gateway\) \}/)
@@ -522,9 +517,7 @@ import Testing
         #expect(rootSource.contains("SettingsProTab(initialRoute: self.selectedSidebarDestination.settingsRoute)"))
         #expect(settingsSource.contains("title: \"Channels / Integrations\""))
         #expect(settingsSource.contains("route: .channels"))
-        #expect(channelsSource.contains("let gatewayAction: (() -> Void)?"))
         #expect(docsSource.contains(".accessibilityHint(\"Opens Settings / Gateway\")"))
-        #expect(channelsSource.contains(".accessibilityHint(\"Opens Settings / Gateway\")"))
     }
 
     @Test func gatewaySettingsKeepsPairingTrustDiagnosticsAndTailscaleActions() throws {
@@ -560,7 +553,7 @@ import Testing
         #expect(actionsSource.contains("await TCPProbe.probe(host: trimmed, port: port"))
         #expect(actionsSource.contains("Check Tailscale or LAN."))
         #expect(actionsSource.contains("Tailscale is off on this device. Turn it on, then try again."))
-        #expect(actionsSource.contains("Run /pair approve in your OpenClaw chat"))
+        #expect(actionsSource.contains("Run /pair approve in your RemoteClaw chat"))
         #expect(actionsSource.contains("self.resetOnboarding()"))
         #expect(actionsSource.contains("self.gatewayController.trustRotatedGatewayCertificate(from: problem)"))
         #expect(actionsSource.contains("await self.retryGatewayConnectionFromProblem()"))
@@ -584,7 +577,7 @@ import Testing
         #expect(supportSource.contains("self.stateSection(\"Error\")"))
         #expect(supportSource.contains("GatewayProblemBanner("))
         #expect(supportSource.contains("kind: .pairingRequired"))
-        #expect(supportSource.contains("Run /pair approve in your OpenClaw chat"))
+        #expect(supportSource.contains("Run /pair approve in your RemoteClaw chat"))
         #expect(supportSource.contains("Tailscale is off on this device. Turn it on, then try again."))
         #expect(supportSource.contains("self.previewButton(\"Scan QR\""))
         #expect(supportSource.contains("self.previewButton(\"Connect\""))
@@ -621,7 +614,7 @@ import Testing
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("Sources/Design/OpenClawProComponents.swift")
+            .appendingPathComponent("Sources/Design/RemoteClawProComponents.swift")
     }
 
     private static func commandCenterSourceURL() -> URL {
@@ -736,7 +729,7 @@ import Testing
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("Sources/Design/OpenClawDocsScreen.swift")
+            .appendingPathComponent("Sources/Design/RemoteClawDocsScreen.swift")
     }
 
     private static func settingsProTabSectionsSourceURL() -> URL {
@@ -793,14 +786,14 @@ import Testing
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("shared/OpenClawKit/Sources/OpenClawChatUI/ChatView+Previews.swift")
+            .appendingPathComponent("shared/RemoteClawKit/Sources/RemoteClawChatUI/ChatView+Previews.swift")
     }
 
     private static func xcodeProjectSourceURL() -> URL {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-            .appendingPathComponent("OpenClaw.xcodeproj/project.pbxproj")
+            .appendingPathComponent("RemoteClaw.xcodeproj/project.pbxproj")
     }
 
     private static func extract(_ source: String, from start: String, to end: String) throws -> String {

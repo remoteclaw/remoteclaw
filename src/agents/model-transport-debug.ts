@@ -11,9 +11,9 @@ type SubsystemLogger = ReturnType<typeof createSubsystemLogger>;
 type ModelTransportDebugEnv = NodeJS.ProcessEnv;
 
 /** Payload debug detail levels accepted by `REMOTECLAW_DEBUG_MODEL_PAYLOAD`. */
-export type ModelPayloadDebugMode = "off" | "summary" | "tools" | "full-redacted";
+type ModelPayloadDebugMode = "off" | "summary" | "tools" | "full-redacted";
 /** SSE debug detail levels accepted by `REMOTECLAW_DEBUG_SSE`. */
-export type ModelSseDebugMode = "off" | "events" | "peek";
+type ModelSseDebugMode = "off" | "events" | "peek";
 
 /**
  * Runtime attestation (ADR 0005 H9). Declares the implementation status
@@ -24,7 +24,6 @@ export type ModelSseDebugMode = "off" | "events" | "peek";
 export const MODULE_ATTESTATIONS = {
   resolveModelPayloadDebugMode: "live",
   resolveModelSseDebugMode: "live",
-  isModelTransportDebugEnabled: "live",
   emitModelTransportDebug: "live",
 } as const;
 
@@ -72,7 +71,7 @@ export function resolveModelSseDebugMode(
 }
 
 /** Returns whether any model transport debug channel is enabled. */
-export function isModelTransportDebugEnabled(env: ModelTransportDebugEnv = process.env): boolean {
+function isModelTransportDebugEnabled(env: ModelTransportDebugEnv = process.env): boolean {
   return (
     isTruthyEnv(env.REMOTECLAW_DEBUG_MODEL_TRANSPORT) ||
     resolveModelPayloadDebugMode(env) !== "off" ||

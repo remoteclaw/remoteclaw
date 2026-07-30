@@ -13,7 +13,9 @@ import {
 // processes and provider transports so capture sessions share one store/proxy.
 export const REMOTECLAW_DEBUG_PROXY_ENABLED = "REMOTECLAW_DEBUG_PROXY_ENABLED";
 export const REMOTECLAW_DEBUG_PROXY_URL = "REMOTECLAW_DEBUG_PROXY_URL";
+/** @deprecated Capture storage now lives in the shared state database. */
 export const REMOTECLAW_DEBUG_PROXY_DB_PATH = "REMOTECLAW_DEBUG_PROXY_DB_PATH";
+/** @deprecated Capture payloads now live in the shared state database. */
 export const REMOTECLAW_DEBUG_PROXY_BLOB_DIR = "REMOTECLAW_DEBUG_PROXY_BLOB_DIR";
 export const REMOTECLAW_DEBUG_PROXY_CERT_DIR = "REMOTECLAW_DEBUG_PROXY_CERT_DIR";
 export const REMOTECLAW_DEBUG_PROXY_SESSION_ID = "REMOTECLAW_DEBUG_PROXY_SESSION_ID";
@@ -23,7 +25,9 @@ export type DebugProxySettings = {
   enabled: boolean;
   required: boolean;
   proxyUrl?: string;
+  /** @deprecated Capture storage now lives in the shared state database. */
   dbPath: string;
+  /** @deprecated Capture payloads now live in the shared state database. */
   blobDir: string;
   certDir: string;
   sessionId: string;
@@ -69,20 +73,19 @@ export function applyDebugProxyEnv(
   params: {
     proxyUrl: string;
     sessionId: string;
-    dbPath?: string;
-    blobDir?: string;
     certDir?: string;
   },
 ): NodeJS.ProcessEnv {
   // Child process env forces proxy capture and standard proxy variables while
   // preserving unrelated environment values.
+  const baseEnv = { ...env };
+  delete baseEnv.REMOTECLAW_DEBUG_PROXY_DB_PATH;
+  delete baseEnv.REMOTECLAW_DEBUG_PROXY_BLOB_DIR;
   return {
-    ...env,
+    ...baseEnv,
     [REMOTECLAW_DEBUG_PROXY_ENABLED]: "1",
     [REMOTECLAW_DEBUG_PROXY_REQUIRE]: "1",
     [REMOTECLAW_DEBUG_PROXY_URL]: params.proxyUrl,
-    [REMOTECLAW_DEBUG_PROXY_DB_PATH]: params.dbPath ?? resolveDebugProxyDbPath(env),
-    [REMOTECLAW_DEBUG_PROXY_BLOB_DIR]: params.blobDir ?? resolveDebugProxyBlobDir(env),
     [REMOTECLAW_DEBUG_PROXY_CERT_DIR]: params.certDir ?? resolveDebugProxyCertDir(env),
     [REMOTECLAW_DEBUG_PROXY_SESSION_ID]: params.sessionId,
     HTTP_PROXY: params.proxyUrl,

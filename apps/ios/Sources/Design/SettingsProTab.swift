@@ -53,20 +53,19 @@ struct SettingsProTab: View {
     @State var suppressCredentialPersist = false
     @State var locationStatusText: String?
     @State var previousLocationModeRaw: String = RemoteClawLocationMode.off.rawValue
-    @State var notificationStatusText = "Checking"
-    @State var notificationActionText = "Request Access"
+    @State var notificationStatus: SettingsNotificationStatus = .checking
     @State var diagnosticsLastRunText = "Not run"
     @State var diagnosticsIssueCount: Int?
     @State var showTalkIssueDetails = false
     @State private var navigationPath: [SettingsRoute] = []
     let initialRoute: SettingsRoute?
     let directRoute: SettingsRoute?
-    let headerLeadingAction: OpenClawSidebarHeaderAction?
+    let headerLeadingAction: RemoteClawSidebarHeaderAction?
 
     init(
         initialRoute: SettingsRoute? = nil,
         directRoute: SettingsRoute? = nil,
-        headerLeadingAction: OpenClawSidebarHeaderAction? = nil)
+        headerLeadingAction: RemoteClawSidebarHeaderAction? = nil)
     {
         self.initialRoute = initialRoute
         self.directRoute = directRoute

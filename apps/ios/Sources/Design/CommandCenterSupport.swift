@@ -23,7 +23,7 @@ struct CommandPanel<Content: View>: View {
             tint: self.tint,
             isProminent: self.isProminent,
             padding: self.padding,
-            radius: OpenClawProMetric.cardRadius)
+            radius: RemoteClawProMetric.cardRadius)
         {
             self.content
         }
@@ -91,10 +91,10 @@ struct CommandSessionRow: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
         .background {
-            RoundedRectangle(cornerRadius: OpenClawProMetric.controlRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: RemoteClawProMetric.controlRadius, style: .continuous)
                 .fill(self.rowFill)
                 .overlay {
-                    RoundedRectangle(cornerRadius: OpenClawProMetric.controlRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: RemoteClawProMetric.controlRadius, style: .continuous)
                         .strokeBorder(self.rowBorder, lineWidth: 1)
                 }
         }
@@ -129,10 +129,10 @@ struct CommandViewMoreRow: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
             .background {
-                RoundedRectangle(cornerRadius: OpenClawProMetric.controlRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: RemoteClawProMetric.controlRadius, style: .continuous)
                     .fill(self.rowFill)
                     .overlay {
-                        RoundedRectangle(cornerRadius: OpenClawProMetric.controlRadius, style: .continuous)
+                        RoundedRectangle(cornerRadius: RemoteClawProMetric.controlRadius, style: .continuous)
                             .strokeBorder(self.rowBorder, lineWidth: 1)
                     }
             }
@@ -176,42 +176,12 @@ struct CommandEmptyStateRow: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 8)
         .background {
-            RoundedRectangle(cornerRadius: OpenClawProMetric.controlRadius, style: .continuous)
+            RoundedRectangle(cornerRadius: RemoteClawProMetric.controlRadius, style: .continuous)
                 .fill(Color(uiColor: .systemBackground))
                 .overlay {
-                    RoundedRectangle(cornerRadius: OpenClawProMetric.controlRadius, style: .continuous)
+                    RoundedRectangle(cornerRadius: RemoteClawProMetric.controlRadius, style: .continuous)
                         .strokeBorder(Color(uiColor: .separator).opacity(0.22), lineWidth: 1)
                 }
         }
-    }
-}
-
-struct CommandTaskRow: View {
-    let item: CommandCenterTab.WorkItem
-
-    var body: some View {
-        HStack(alignment: .center, spacing: 6) {
-            Text(self.item.title)
-                .font(.footnote.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.80)
-                .frame(maxWidth: .infinity, minHeight: 20, alignment: .leading)
-            Text(self.item.detail)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.78)
-                .frame(width: 64, alignment: .leading)
-            if let progress = self.item.progress {
-                ProProgressBar(progress: progress, color: self.item.color)
-                    .frame(width: 56)
-            }
-            Text(self.item.state)
-                .font(.footnote.weight(.medium))
-                .foregroundStyle(self.item.progress == nil ? self.item.color : .secondary)
-                .lineLimit(1)
-                .frame(width: self.item.progress == nil ? 58 : 34, alignment: .trailing)
-        }
-        .padding(.vertical, 8)
     }
 }

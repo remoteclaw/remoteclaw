@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { RuntimeEnv } from "../runtime.js";
+import { withEnvAsync } from "../test-utils/env.js";
 import { withMockedPlatform } from "../test-utils/vitest-spies.js";
 import {
   formatControlUiSshHint,
@@ -98,12 +99,6 @@ describe("handleReset", () => {
       `remoteclaw-workspace-attestation:v1\n${new Date().toISOString()}\n`,
     );
 
-    vi.stubEnv("HOME", homeDir);
-    vi.stubEnv("REMOTECLAW_HOME", homeDir);
-    vi.stubEnv("REMOTECLAW_PROFILE", "work");
-    vi.stubEnv("REMOTECLAW_STATE_DIR", profileStateDir);
-    vi.stubEnv("REMOTECLAW_CONFIG_PATH", profileConfigPath);
-
     const runtime = { log: vi.fn() } as unknown as RuntimeEnv;
     const expectedTrashedPaths = [
       profileConfigPath,
@@ -115,7 +110,16 @@ describe("handleReset", () => {
     const expectedDefaultCredentialsDir = expectedTrashSourcePath(defaultCredentialsDir);
 
     try {
-      await handleReset("full", workspaceDir, runtime);
+      await withEnvAsync(
+        {
+          HOME: homeDir,
+          REMOTECLAW_HOME: homeDir,
+          REMOTECLAW_PROFILE: "work",
+          REMOTECLAW_STATE_DIR: profileStateDir,
+          REMOTECLAW_CONFIG_PATH: profileConfigPath,
+        },
+        async () => await handleReset("full", workspaceDir, runtime),
+      );
     } finally {
       fs.rmSync(homeDir, { recursive: true, force: true });
     }
@@ -140,17 +144,20 @@ describe("handleReset", () => {
     fs.writeFileSync(profileConfigPath, "{}\n");
     fs.writeFileSync(workspaceAttestationPath, "external data\n");
 
-    vi.stubEnv("HOME", homeDir);
-    vi.stubEnv("REMOTECLAW_HOME", homeDir);
-    vi.stubEnv("REMOTECLAW_PROFILE", "work");
-    vi.stubEnv("REMOTECLAW_STATE_DIR", profileStateDir);
-    vi.stubEnv("REMOTECLAW_CONFIG_PATH", profileConfigPath);
-
     const runtime = { log: vi.fn() } as unknown as RuntimeEnv;
     const unownedAttestationTrashPath = expectedTrashSourcePath(workspaceAttestationPath);
 
     try {
-      await handleReset("full", workspaceDir, runtime);
+      await withEnvAsync(
+        {
+          HOME: homeDir,
+          REMOTECLAW_HOME: homeDir,
+          REMOTECLAW_PROFILE: "work",
+          REMOTECLAW_STATE_DIR: profileStateDir,
+          REMOTECLAW_CONFIG_PATH: profileConfigPath,
+        },
+        async () => await handleReset("full", workspaceDir, runtime),
+      );
     } finally {
       fs.rmSync(homeDir, { recursive: true, force: true });
     }
@@ -177,17 +184,22 @@ describe("handleReset", () => {
       fs.writeFileSync(workspaceAttestationPath, "external data\n", { mode: 0o000 });
       fs.chmodSync(workspaceAttestationPath, 0o000);
 
-      vi.stubEnv("HOME", homeDir);
-      vi.stubEnv("REMOTECLAW_HOME", homeDir);
-      vi.stubEnv("REMOTECLAW_PROFILE", "work");
-      vi.stubEnv("REMOTECLAW_STATE_DIR", profileStateDir);
-      vi.stubEnv("REMOTECLAW_CONFIG_PATH", profileConfigPath);
-
       const runtime = { log: vi.fn() } as unknown as RuntimeEnv;
       const unreadableAttestationTrashPath = expectedTrashSourcePath(workspaceAttestationPath);
 
       try {
-        await expect(handleReset("full", workspaceDir, runtime)).resolves.toBeUndefined();
+        await withEnvAsync(
+          {
+            HOME: homeDir,
+            REMOTECLAW_HOME: homeDir,
+            REMOTECLAW_PROFILE: "work",
+            REMOTECLAW_STATE_DIR: profileStateDir,
+            REMOTECLAW_CONFIG_PATH: profileConfigPath,
+          },
+          async () => {
+            await expect(handleReset("full", workspaceDir, runtime)).resolves.toBeUndefined();
+          },
+        );
       } finally {
         fs.chmodSync(workspaceAttestationPath, 0o600);
         fs.rmSync(homeDir, { recursive: true, force: true });

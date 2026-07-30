@@ -12,7 +12,7 @@ Adds Cloudflare AI Gateway model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/cloudflare-ai-gateway-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/cloudflare-ai-gateway-provider`
 
 ## Surface
 

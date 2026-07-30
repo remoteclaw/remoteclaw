@@ -29,7 +29,7 @@ dependencies are available.
 ## Install a plugin
 
 Use the install route in each entry to decide whether install is needed. Plugins
-that say `included in OpenClaw` are already present in the core package.
+that say `included in RemoteClaw` are already present in the core package.
 Official external packages need one install, then a Gateway restart.
 
 For example, Discord is an official external package:
@@ -51,268 +51,270 @@ Each entry lists the package, distribution route, and description.
 
 ## Core npm package
 
-90 plugins
+72 plugins
 
-- **[admin-http-rpc](/plugins/reference/admin-http-rpc)** (`@openclaw/admin-http-rpc`) - included in OpenClaw. OpenClaw admin HTTP RPC endpoint.
+- **[admin-http-rpc](/plugins/reference/admin-http-rpc)** (`@remoteclaw/admin-http-rpc`) - included in RemoteClaw. RemoteClaw admin HTTP RPC endpoint.
 
-- **[alibaba](/plugins/reference/alibaba)** (`@openclaw/alibaba-provider`) - included in OpenClaw. Adds video generation provider support.
+- **[alibaba](/plugins/reference/alibaba)** (`@remoteclaw/alibaba-provider`) - included in RemoteClaw. Adds video generation provider support.
 
-- **[anthropic](/plugins/reference/anthropic)** (`@openclaw/anthropic-provider`) - included in OpenClaw. Adds Anthropic model provider support to OpenClaw.
+- **[anthropic](/plugins/reference/anthropic)** (`@remoteclaw/anthropic-provider`) - included in RemoteClaw. Adds Anthropic model provider support to RemoteClaw.
 
-- **[arcee](/plugins/reference/arcee)** (`@openclaw/arcee-provider`) - included in OpenClaw. Adds Arcee model provider support to OpenClaw.
+- **[azure-speech](/plugins/reference/azure-speech)** (`@remoteclaw/azure-speech`) - included in RemoteClaw. Azure AI Speech text-to-speech (MP3, native Ogg/Opus voice notes, PCM telephony).
 
-- **[azure-speech](/plugins/reference/azure-speech)** (`@openclaw/azure-speech`) - included in OpenClaw. Azure AI Speech text-to-speech (MP3, native Ogg/Opus voice notes, PCM telephony).
+- **[bonjour](/plugins/reference/bonjour)** (`@remoteclaw/bonjour`) - included in RemoteClaw. Advertise the local RemoteClaw gateway over Bonjour/mDNS.
 
-- **[bonjour](/plugins/reference/bonjour)** (`@openclaw/bonjour`) - included in OpenClaw. Advertise the local OpenClaw gateway over Bonjour/mDNS.
+- **[browser](/plugins/reference/browser)** (`@remoteclaw/browser-plugin`) - included in RemoteClaw. Adds agent-callable tools.
 
-- **[browser](/plugins/reference/browser)** (`@openclaw/browser-plugin`) - included in OpenClaw. Adds agent-callable tools.
+- **[byteplus](/plugins/reference/byteplus)** (`@remoteclaw/byteplus-provider`) - included in RemoteClaw. Adds BytePlus, BytePlus Plan model provider support to RemoteClaw.
 
-- **[byteplus](/plugins/reference/byteplus)** (`@openclaw/byteplus-provider`) - included in OpenClaw. Adds BytePlus, BytePlus Plan model provider support to OpenClaw.
+- **[canvas](/plugins/reference/canvas)** (`@remoteclaw/canvas-plugin`) - included in RemoteClaw. Experimental Canvas control and A2UI rendering surfaces for paired nodes.
 
-- **[canvas](/plugins/reference/canvas)** (`@openclaw/canvas-plugin`) - included in OpenClaw. Experimental Canvas control and A2UI rendering surfaces for paired nodes.
+- **[clickclack](/plugins/reference/clickclack)** (`@remoteclaw/clickclack`) - included in RemoteClaw. Adds the Clickclack channel surface for sending and receiving RemoteClaw messages.
 
-- **[cerebras](/plugins/reference/cerebras)** (`@openclaw/cerebras-provider`) - included in OpenClaw. Adds Cerebras model provider support to OpenClaw.
+- **[codex-supervisor](/plugins/reference/codex-supervisor)** (`@remoteclaw/codex-supervisor`) - included in RemoteClaw. Supervise Codex app-server sessions from RemoteClaw.
 
-- **[chutes](/plugins/reference/chutes)** (`@openclaw/chutes-provider`) - included in OpenClaw. Adds Chutes model provider support to OpenClaw.
+- **[cohere](/plugins/reference/cohere)** (`@remoteclaw/cohere-provider`) - included in RemoteClaw; npm; ClawHub: `clawhub:@remoteclaw/cohere-provider`. RemoteClaw Cohere provider plugin.
 
-- **[clickclack](/plugins/reference/clickclack)** (`@openclaw/clickclack`) - included in OpenClaw. Adds the Clickclack channel surface for sending and receiving OpenClaw messages.
+- **[comfy](/plugins/reference/comfy)** (`@remoteclaw/comfy-provider`) - included in RemoteClaw. Adds ComfyUI model provider support to RemoteClaw.
 
-- **[cloudflare-ai-gateway](/plugins/reference/cloudflare-ai-gateway)** (`@openclaw/cloudflare-ai-gateway-provider`) - included in OpenClaw. Adds Cloudflare AI Gateway model provider support to OpenClaw.
+- **[copilot-proxy](/plugins/reference/copilot-proxy)** (`@remoteclaw/copilot-proxy`) - included in RemoteClaw. Adds Copilot Proxy model provider support to RemoteClaw.
 
-- **[codex-supervisor](/plugins/reference/codex-supervisor)** (`@openclaw/codex-supervisor`) - included in OpenClaw. Supervise Codex app-server sessions from OpenClaw.
+- **[deepgram](/plugins/reference/deepgram)** (`@remoteclaw/deepgram-provider`) - included in RemoteClaw. Adds media understanding provider support. Adds realtime transcription provider support.
 
-- **[comfy](/plugins/reference/comfy)** (`@openclaw/comfy-provider`) - included in OpenClaw. Adds ComfyUI model provider support to OpenClaw.
+- **[document-extract](/plugins/reference/document-extract)** (`@remoteclaw/document-extract-plugin`) - included in RemoteClaw. Extract text and fallback page images from local document attachments.
 
-- **[copilot-proxy](/plugins/reference/copilot-proxy)** (`@openclaw/copilot-proxy`) - included in OpenClaw. Adds Copilot Proxy model provider support to OpenClaw.
+- **[duckduckgo](/plugins/reference/duckduckgo)** (`@remoteclaw/duckduckgo-plugin`) - included in RemoteClaw. Adds web search provider support.
 
-- **[deepgram](/plugins/reference/deepgram)** (`@openclaw/deepgram-provider`) - included in OpenClaw. Adds media understanding provider support. Adds realtime transcription provider support.
+- **[elevenlabs](/plugins/reference/elevenlabs)** (`@remoteclaw/elevenlabs-speech`) - included in RemoteClaw. Adds media understanding provider support. Adds realtime transcription provider support. Adds text-to-speech provider support.
 
-- **[deepinfra](/plugins/reference/deepinfra)** (`@openclaw/deepinfra-provider`) - included in OpenClaw. Adds DeepInfra model provider support to OpenClaw.
+- **[fal](/plugins/reference/fal)** (`@remoteclaw/fal-provider`) - included in RemoteClaw. Adds fal model provider support to RemoteClaw.
 
-- **[deepseek](/plugins/reference/deepseek)** (`@openclaw/deepseek-provider`) - included in OpenClaw. Adds DeepSeek model provider support to OpenClaw.
+- **[file-transfer](/plugins/reference/file-transfer)** (`@remoteclaw/file-transfer`) - included in RemoteClaw. Fetch, list, and write files on paired nodes via dedicated node commands. Bypasses bash stdout truncation by using base64 over node.invoke for binaries up to 16 MB.
 
-- **[document-extract](/plugins/reference/document-extract)** (`@openclaw/document-extract-plugin`) - included in OpenClaw. Extract text and fallback page images from local document attachments.
+- **[fireworks](/plugins/reference/fireworks)** (`@remoteclaw/fireworks-provider`) - included in RemoteClaw. Adds Fireworks model provider support to RemoteClaw.
 
-- **[duckduckgo](/plugins/reference/duckduckgo)** (`@openclaw/duckduckgo-plugin`) - included in OpenClaw. Adds web search provider support.
+- **[github-copilot](/plugins/reference/github-copilot)** (`@remoteclaw/github-copilot-provider`) - included in RemoteClaw. Adds GitHub Copilot model provider support to RemoteClaw.
 
-- **[elevenlabs](/plugins/reference/elevenlabs)** (`@openclaw/elevenlabs-speech`) - included in OpenClaw. Adds media understanding provider support. Adds realtime transcription provider support. Adds text-to-speech provider support.
+- **[google](/plugins/reference/google)** (`@remoteclaw/google-plugin`) - included in RemoteClaw. Adds Google, Google Gemini CLI, Google Vertex model provider support to RemoteClaw.
 
-- **[exa](/plugins/reference/exa)** (`@openclaw/exa-plugin`) - included in OpenClaw. Adds web search provider support.
+- **[huggingface](/plugins/reference/huggingface)** (`@remoteclaw/huggingface-provider`) - included in RemoteClaw. Adds Hugging Face model provider support to RemoteClaw.
 
-- **[fal](/plugins/reference/fal)** (`@openclaw/fal-provider`) - included in OpenClaw. Adds fal model provider support to OpenClaw.
+- **[imessage](/plugins/reference/imessage)** (`@remoteclaw/imessage`) - included in RemoteClaw. Adds the iMessage channel surface for sending and receiving RemoteClaw messages.
 
-- **[file-transfer](/plugins/reference/file-transfer)** (`@openclaw/file-transfer`) - included in OpenClaw. Fetch, list, and write files on paired nodes via dedicated node commands. Bypasses bash stdout truncation by using base64 over node.invoke for binaries up to 16 MB.
+- **[irc](/plugins/reference/irc)** (`@remoteclaw/irc`) - included in RemoteClaw. Adds the IRC channel surface for sending and receiving RemoteClaw messages.
 
-- **[firecrawl](/plugins/reference/firecrawl)** (`@openclaw/firecrawl-plugin`) - included in OpenClaw. Adds agent-callable tools. Adds web fetch provider support. Adds web search provider support.
+- **[litellm](/plugins/reference/litellm)** (`@remoteclaw/litellm-provider`) - included in RemoteClaw. Adds LiteLLM model provider support to RemoteClaw.
 
-- **[fireworks](/plugins/reference/fireworks)** (`@openclaw/fireworks-provider`) - included in OpenClaw. Adds Fireworks model provider support to OpenClaw.
+- **[llm-task](/plugins/reference/llm-task)** (`@remoteclaw/llm-task`) - included in RemoteClaw. Generic JSON-only LLM tool for structured tasks callable from workflows.
 
-- **[github-copilot](/plugins/reference/github-copilot)** (`@openclaw/github-copilot-provider`) - included in OpenClaw. Adds GitHub Copilot model provider support to OpenClaw.
+- **[lmstudio](/plugins/reference/lmstudio)** (`@remoteclaw/lmstudio-provider`) - included in RemoteClaw. Adds LM Studio model provider support to RemoteClaw.
 
-- **[gmi](/plugins/reference/gmi)** (`@openclaw/gmi-provider`) - included in OpenClaw. Adds Gmi, Gmi Cloud, Gmicloud model provider support to OpenClaw.
+- **[mattermost](/plugins/reference/mattermost)** (`@remoteclaw/mattermost`) - included in RemoteClaw. Adds the Mattermost channel surface for sending and receiving RemoteClaw messages.
 
-- **[google](/plugins/reference/google)** (`@openclaw/google-plugin`) - included in OpenClaw. Adds Google, Google Gemini CLI, Google Vertex model provider support to OpenClaw.
+- **[memory-core](/plugins/reference/memory-core)** (`@remoteclaw/memory-core`) - included in RemoteClaw. Adds agent-callable tools.
 
-- **[gradium](/plugins/reference/gradium)** (`@openclaw/gradium-speech`) - included in OpenClaw. Adds text-to-speech provider support.
+- **[memory-wiki](/plugins/reference/memory-wiki)** (`@remoteclaw/memory-wiki`) - included in RemoteClaw. Persistent wiki compiler and Obsidian-friendly knowledge vault for RemoteClaw.
 
-- **[groq](/plugins/reference/groq)** (`@openclaw/groq-provider`) - included in OpenClaw. Adds Groq model provider support to OpenClaw.
+- **[microsoft](/plugins/reference/microsoft)** (`@remoteclaw/microsoft-speech`) - included in RemoteClaw. Adds text-to-speech provider support.
 
-- **[huggingface](/plugins/reference/huggingface)** (`@openclaw/huggingface-provider`) - included in OpenClaw. Adds Hugging Face model provider support to OpenClaw.
+- **[microsoft-foundry](/plugins/reference/microsoft-foundry)** (`@remoteclaw/microsoft-foundry`) - included in RemoteClaw. Adds Microsoft Foundry model provider support to RemoteClaw.
 
-- **[imessage](/plugins/reference/imessage)** (`@openclaw/imessage`) - included in OpenClaw. Adds the iMessage channel surface for sending and receiving OpenClaw messages.
+- **[migrate-claude](/plugins/reference/migrate-claude)** (`@remoteclaw/migrate-claude`) - included in RemoteClaw. Imports Claude Code and Claude Desktop instructions, MCP servers, skills, and safe configuration into RemoteClaw.
 
-- **[inworld](/plugins/reference/inworld)** (`@openclaw/inworld-speech`) - included in OpenClaw. Inworld streaming text-to-speech (MP3, OGG_OPUS, PCM telephony).
+- **[migrate-hermes](/plugins/reference/migrate-hermes)** (`@remoteclaw/migrate-hermes`) - included in RemoteClaw. Imports Hermes configuration, memories, skills, and supported credentials into RemoteClaw.
 
-- **[irc](/plugins/reference/irc)** (`@openclaw/irc`) - included in OpenClaw. Adds the IRC channel surface for sending and receiving OpenClaw messages.
+- **[minimax](/plugins/reference/minimax)** (`@remoteclaw/minimax-provider`) - included in RemoteClaw. Adds MiniMax, MiniMax Portal model provider support to RemoteClaw.
 
-- **[kilocode](/plugins/reference/kilocode)** (`@openclaw/kilocode-provider`) - included in OpenClaw. Adds Kilocode model provider support to OpenClaw.
+- **[mistral](/plugins/reference/mistral)** (`@remoteclaw/mistral-provider`) - included in RemoteClaw. Adds Mistral model provider support to RemoteClaw.
 
-- **[kimi](/plugins/reference/kimi)** (`@openclaw/kimi-provider`) - included in OpenClaw. Adds Kimi, Kimi Coding model provider support to OpenClaw.
+- **[moonshot](/plugins/reference/moonshot)** (`@remoteclaw/moonshot-provider`) - included in RemoteClaw. Adds Moonshot model provider support to RemoteClaw.
 
-- **[litellm](/plugins/reference/litellm)** (`@openclaw/litellm-provider`) - included in OpenClaw. Adds LiteLLM model provider support to OpenClaw.
+- **[novita](/plugins/reference/novita)** (`@remoteclaw/novita-provider`) - included in RemoteClaw. Adds Novita, Novita AI, Novitaai model provider support to RemoteClaw.
 
-- **[llm-task](/plugins/reference/llm-task)** (`@openclaw/llm-task`) - included in OpenClaw. Generic JSON-only LLM tool for structured tasks callable from workflows.
+- **[nvidia](/plugins/reference/nvidia)** (`@remoteclaw/nvidia-provider`) - included in RemoteClaw. Adds NVIDIA model provider support to RemoteClaw.
 
-- **[lmstudio](/plugins/reference/lmstudio)** (`@openclaw/lmstudio-provider`) - included in OpenClaw. Adds LM Studio model provider support to OpenClaw.
+- **[oc-path](/plugins/reference/oc-path)** (`@remoteclaw/oc-path`) - included in RemoteClaw. Adds the remoteclaw path CLI for oc:// workspace file addressing.
 
-- **[mattermost](/plugins/reference/mattermost)** (`@openclaw/mattermost`) - included in OpenClaw. Adds the Mattermost channel surface for sending and receiving OpenClaw messages.
+- **[ollama](/plugins/reference/ollama)** (`@remoteclaw/ollama-provider`) - included in RemoteClaw. Adds Ollama, Ollama Cloud model provider support to RemoteClaw.
 
-- **[memory-core](/plugins/reference/memory-core)** (`@openclaw/memory-core`) - included in OpenClaw. Adds agent-callable tools.
+- **[open-prose](/plugins/reference/open-prose)** (`@remoteclaw/open-prose`) - included in RemoteClaw. OpenProse VM skill pack with a /prose slash command.
 
-- **[memory-wiki](/plugins/reference/memory-wiki)** (`@openclaw/memory-wiki`) - included in OpenClaw. Persistent wiki compiler and Obsidian-friendly knowledge vault for OpenClaw.
+- **[openai](/plugins/reference/openai)** (`@remoteclaw/openai-provider`) - included in RemoteClaw. Adds OpenAI model provider support to RemoteClaw.
 
-- **[microsoft](/plugins/reference/microsoft)** (`@openclaw/microsoft-speech`) - included in OpenClaw. Adds text-to-speech provider support.
+- **[opencode](/plugins/reference/opencode)** (`@remoteclaw/opencode-provider`) - included in RemoteClaw. Adds OpenCode model provider support to RemoteClaw.
 
-- **[microsoft-foundry](/plugins/reference/microsoft-foundry)** (`@openclaw/microsoft-foundry`) - included in OpenClaw. Adds Microsoft Foundry model provider support to OpenClaw.
+- **[opencode-go](/plugins/reference/opencode-go)** (`@remoteclaw/opencode-go-provider`) - included in RemoteClaw. Adds OpenCode Go model provider support to RemoteClaw.
 
-- **[migrate-claude](/plugins/reference/migrate-claude)** (`@openclaw/migrate-claude`) - included in OpenClaw. Imports Claude Code and Claude Desktop instructions, MCP servers, skills, and safe configuration into OpenClaw.
+- **[openrouter](/plugins/reference/openrouter)** (`@remoteclaw/openrouter-provider`) - included in RemoteClaw. Adds OpenRouter model provider support to RemoteClaw.
 
-- **[migrate-hermes](/plugins/reference/migrate-hermes)** (`@openclaw/migrate-hermes`) - included in OpenClaw. Imports Hermes configuration, memories, skills, and supported credentials into OpenClaw.
+- **[policy](/plugins/reference/policy)** (`@remoteclaw/policy`) - included in RemoteClaw. Adds policy-backed doctor checks for workspace conformance.
 
-- **[minimax](/plugins/reference/minimax)** (`@openclaw/minimax-provider`) - included in OpenClaw. Adds MiniMax, MiniMax Portal model provider support to OpenClaw.
+- **[runway](/plugins/reference/runway)** (`@remoteclaw/runway-provider`) - included in RemoteClaw. Adds video generation provider support.
 
-- **[mistral](/plugins/reference/mistral)** (`@openclaw/mistral-provider`) - included in OpenClaw. Adds Mistral model provider support to OpenClaw.
+- **[searxng](/plugins/reference/searxng)** (`@remoteclaw/searxng-plugin`) - included in RemoteClaw. Adds web search provider support.
 
-- **[moonshot](/plugins/reference/moonshot)** (`@openclaw/moonshot-provider`) - included in OpenClaw. Adds Moonshot model provider support to OpenClaw.
+- **[senseaudio](/plugins/reference/senseaudio)** (`@remoteclaw/senseaudio-provider`) - included in RemoteClaw. Adds media understanding provider support.
 
-- **[novita](/plugins/reference/novita)** (`@openclaw/novita-provider`) - included in OpenClaw. Adds Novita, Novita AI, Novitaai model provider support to OpenClaw.
+- **[sglang](/plugins/reference/sglang)** (`@remoteclaw/sglang-provider`) - included in RemoteClaw. Adds SGLang model provider support to RemoteClaw.
 
-- **[nvidia](/plugins/reference/nvidia)** (`@openclaw/nvidia-provider`) - included in OpenClaw. Adds NVIDIA model provider support to OpenClaw.
+- **[signal](/plugins/reference/signal)** (`@remoteclaw/signal`) - included in RemoteClaw. Adds the Signal channel surface for sending and receiving RemoteClaw messages.
 
-- **[oc-path](/plugins/reference/oc-path)** (`@openclaw/oc-path`) - included in OpenClaw. Adds the openclaw path CLI for oc:// workspace file addressing.
+- **[sms](/plugins/reference/sms)** (`@remoteclaw/sms`) - included in RemoteClaw. Twilio SMS channel plugin for RemoteClaw text messages.
 
-- **[ollama](/plugins/reference/ollama)** (`@openclaw/ollama-provider`) - included in OpenClaw. Adds Ollama, Ollama Cloud model provider support to OpenClaw.
+- **[synthetic](/plugins/reference/synthetic)** (`@remoteclaw/synthetic-provider`) - included in RemoteClaw. Adds Synthetic model provider support to RemoteClaw.
 
-- **[open-prose](/plugins/reference/open-prose)** (`@openclaw/open-prose`) - included in OpenClaw. OpenProse VM skill pack with a /prose slash command.
+- **[tavily](/plugins/reference/tavily)** (`@remoteclaw/tavily-plugin`) - included in RemoteClaw. Adds agent-callable tools. Adds web search provider support.
 
-- **[openai](/plugins/reference/openai)** (`@openclaw/openai-provider`) - included in OpenClaw. Adds OpenAI model provider support to OpenClaw.
+- **[telegram](/plugins/reference/telegram)** (`@remoteclaw/telegram`) - included in RemoteClaw. Adds the Telegram channel surface for sending and receiving RemoteClaw messages.
 
-- **[opencode](/plugins/reference/opencode)** (`@openclaw/opencode-provider`) - included in OpenClaw. Adds OpenCode model provider support to OpenClaw.
+- **[tencent](/plugins/reference/tencent)** (`@remoteclaw/tencent-provider`) - included in RemoteClaw. Adds Tencent TokenHub model provider support to RemoteClaw.
 
-- **[opencode-go](/plugins/reference/opencode-go)** (`@openclaw/opencode-go-provider`) - included in OpenClaw. Adds OpenCode Go model provider support to OpenClaw.
+- **[together](/plugins/reference/together)** (`@remoteclaw/together-provider`) - included in RemoteClaw. Adds Together model provider support to RemoteClaw.
 
-- **[openrouter](/plugins/reference/openrouter)** (`@openclaw/openrouter-provider`) - included in OpenClaw. Adds OpenRouter model provider support to OpenClaw.
+- **[tts-local-cli](/plugins/reference/tts-local-cli)** (`@remoteclaw/tts-local-cli`) - included in RemoteClaw. Adds text-to-speech provider support.
 
-- **[parallel](/tools/parallel-search)** (`@openclaw/parallel-plugin`) - included in OpenClaw. Adds web search provider support.
+- **[venice](/plugins/reference/venice)** (`@remoteclaw/venice-provider`) - included in RemoteClaw. Adds Venice model provider support to RemoteClaw.
 
-- **[perplexity](/plugins/reference/perplexity)** (`@openclaw/perplexity-plugin`) - included in OpenClaw. Adds web search provider support.
+- **[vercel-ai-gateway](/plugins/reference/vercel-ai-gateway)** (`@remoteclaw/vercel-ai-gateway-provider`) - included in RemoteClaw. Adds Vercel AI Gateway model provider support to RemoteClaw.
 
-- **[policy](/plugins/reference/policy)** (`@openclaw/policy`) - included in OpenClaw. Adds policy-backed doctor checks for workspace conformance.
+- **[vllm](/plugins/reference/vllm)** (`@remoteclaw/vllm-provider`) - included in RemoteClaw. Adds vLLM model provider support to RemoteClaw.
 
-- **[qianfan](/plugins/reference/qianfan)** (`@openclaw/qianfan-provider`) - included in OpenClaw. Adds Qianfan model provider support to OpenClaw.
+- **[volcengine](/plugins/reference/volcengine)** (`@remoteclaw/volcengine-provider`) - included in RemoteClaw. Adds Volcengine, Volcengine Plan model provider support to RemoteClaw.
 
-- **[qwen](/plugins/reference/qwen)** (`@openclaw/qwen-provider`) - included in OpenClaw. Adds Qwen, Qwen Cloud, Model Studio, DashScope, Qwen Oauth, Qwen Portal, Qwen CLI model provider support to OpenClaw.
+- **[voyage](/plugins/reference/voyage)** (`@remoteclaw/voyage-provider`) - included in RemoteClaw. Adds memory embedding provider support.
 
-- **[runway](/plugins/reference/runway)** (`@openclaw/runway-provider`) - included in OpenClaw. Adds video generation provider support.
+- **[vydra](/plugins/reference/vydra)** (`@remoteclaw/vydra-provider`) - included in RemoteClaw. Adds Vydra model provider support to RemoteClaw.
 
-- **[searxng](/plugins/reference/searxng)** (`@openclaw/searxng-plugin`) - included in OpenClaw. Adds web search provider support.
+- **[web-readability](/plugins/reference/web-readability)** (`@remoteclaw/web-readability-plugin`) - included in RemoteClaw. Extract readable article content from local HTML web fetch responses.
 
-- **[senseaudio](/plugins/reference/senseaudio)** (`@openclaw/senseaudio-provider`) - included in OpenClaw. Adds media understanding provider support.
+- **[webhooks](/plugins/reference/webhooks)** (`@remoteclaw/webhooks`) - included in RemoteClaw. Authenticated inbound webhooks that bind external automation to RemoteClaw TaskFlows.
 
-- **[sglang](/plugins/reference/sglang)** (`@openclaw/sglang-provider`) - included in OpenClaw. Adds SGLang model provider support to OpenClaw.
+- **[workboard](/plugins/reference/workboard)** (`@remoteclaw/workboard`) - included in RemoteClaw. Dashboard workboard for agent-owned issues and sessions.
 
-- **[signal](/plugins/reference/signal)** (`@openclaw/signal`) - included in OpenClaw. Adds the Signal channel surface for sending and receiving OpenClaw messages.
+- **[xai](/plugins/reference/xai)** (`@remoteclaw/xai-plugin`) - included in RemoteClaw. Adds xAI model provider support to RemoteClaw.
 
-- **[sms](/plugins/reference/sms)** (`@openclaw/sms`) - included in OpenClaw. Twilio SMS channel plugin for OpenClaw text messages.
+- **[xiaomi](/plugins/reference/xiaomi)** (`@remoteclaw/xiaomi-provider`) - included in RemoteClaw. Adds Xiaomi, Xiaomi Token Plan model provider support to RemoteClaw.
 
-- **[stepfun](/plugins/reference/stepfun)** (`@openclaw/stepfun-provider`) - included in OpenClaw. Adds StepFun, StepFun Plan model provider support to OpenClaw.
-
-- **[synthetic](/plugins/reference/synthetic)** (`@openclaw/synthetic-provider`) - included in OpenClaw. Adds Synthetic model provider support to OpenClaw.
-
-- **[tavily](/plugins/reference/tavily)** (`@openclaw/tavily-plugin`) - included in OpenClaw. Adds agent-callable tools. Adds web search provider support.
-
-- **[telegram](/plugins/reference/telegram)** (`@openclaw/telegram`) - included in OpenClaw. Adds the Telegram channel surface for sending and receiving OpenClaw messages.
-
-- **[tencent](/plugins/reference/tencent)** (`@openclaw/tencent-provider`) - included in OpenClaw. Adds Tencent TokenHub model provider support to OpenClaw.
-
-- **[together](/plugins/reference/together)** (`@openclaw/together-provider`) - included in OpenClaw. Adds Together model provider support to OpenClaw.
-
-- **[tts-local-cli](/plugins/reference/tts-local-cli)** (`@openclaw/tts-local-cli`) - included in OpenClaw. Adds text-to-speech provider support.
-
-- **[venice](/plugins/reference/venice)** (`@openclaw/venice-provider`) - included in OpenClaw. Adds Venice model provider support to OpenClaw.
-
-- **[vercel-ai-gateway](/plugins/reference/vercel-ai-gateway)** (`@openclaw/vercel-ai-gateway-provider`) - included in OpenClaw. Adds Vercel AI Gateway model provider support to OpenClaw.
-
-- **[vllm](/plugins/reference/vllm)** (`@openclaw/vllm-provider`) - included in OpenClaw. Adds vLLM model provider support to OpenClaw.
-
-- **[volcengine](/plugins/reference/volcengine)** (`@openclaw/volcengine-provider`) - included in OpenClaw. Adds Volcengine, Volcengine Plan model provider support to OpenClaw.
-
-- **[voyage](/plugins/reference/voyage)** (`@openclaw/voyage-provider`) - included in OpenClaw. Adds memory embedding provider support.
-
-- **[vydra](/plugins/reference/vydra)** (`@openclaw/vydra-provider`) - included in OpenClaw. Adds Vydra model provider support to OpenClaw.
-
-- **[web-readability](/plugins/reference/web-readability)** (`@openclaw/web-readability-plugin`) - included in OpenClaw. Extract readable article content from local HTML web fetch responses.
-
-- **[webhooks](/plugins/reference/webhooks)** (`@openclaw/webhooks`) - included in OpenClaw. Authenticated inbound webhooks that bind external automation to OpenClaw TaskFlows.
-
-- **[workboard](/plugins/reference/workboard)** (`@openclaw/workboard`) - included in OpenClaw. Dashboard workboard for agent-owned issues and sessions.
-
-- **[xai](/plugins/reference/xai)** (`@openclaw/xai-plugin`) - included in OpenClaw. Adds xAI model provider support to OpenClaw.
-
-- **[xiaomi](/plugins/reference/xiaomi)** (`@openclaw/xiaomi-provider`) - included in OpenClaw. Adds Xiaomi, Xiaomi Token Plan model provider support to OpenClaw.
-
-- **[zai](/plugins/reference/zai)** (`@openclaw/zai-provider`) - included in OpenClaw. Adds Z.AI model provider support to OpenClaw.
+- **[zai](/plugins/reference/zai)** (`@remoteclaw/zai-provider`) - included in RemoteClaw. Adds Z.AI model provider support to RemoteClaw.
 
 ## Official external packages
 
-35 plugins
+54 plugins
 
-- **[acpx](/plugins/reference/acpx)** (`@openclaw/acpx`) - npm; ClawHub. OpenClaw ACP runtime backend with plugin-owned session and transport management.
+- **[acpx](/plugins/reference/acpx)** (`@remoteclaw/acpx`) - npm; ClawHub. RemoteClaw ACP runtime backend with plugin-owned session and transport management.
 
-- **[amazon-bedrock](/plugins/reference/amazon-bedrock)** (`@openclaw/amazon-bedrock-provider`) - npm; ClawHub. OpenClaw Amazon Bedrock provider plugin with model discovery, embeddings, and guardrail support.
+- **[amazon-bedrock](/plugins/reference/amazon-bedrock)** (`@remoteclaw/amazon-bedrock-provider`) - npm; ClawHub. RemoteClaw Amazon Bedrock provider plugin with model discovery, embeddings, and guardrail support.
 
-- **[amazon-bedrock-mantle](/plugins/reference/amazon-bedrock-mantle)** (`@openclaw/amazon-bedrock-mantle-provider`) - npm; ClawHub. OpenClaw Amazon Bedrock Mantle provider plugin for OpenAI-compatible model routing.
+- **[amazon-bedrock-mantle](/plugins/reference/amazon-bedrock-mantle)** (`@remoteclaw/amazon-bedrock-mantle-provider`) - npm; ClawHub. RemoteClaw Amazon Bedrock Mantle provider plugin for OpenAI-compatible model routing.
 
-- **[anthropic-vertex](/plugins/reference/anthropic-vertex)** (`@openclaw/anthropic-vertex-provider`) - npm; ClawHub. OpenClaw Anthropic Vertex provider plugin for Claude models on Google Vertex AI.
+- **[anthropic-vertex](/plugins/reference/anthropic-vertex)** (`@remoteclaw/anthropic-vertex-provider`) - npm; ClawHub. RemoteClaw Anthropic Vertex provider plugin for Claude models on Google Vertex AI.
 
-- **[brave](/plugins/reference/brave)** (`@openclaw/brave-plugin`) - npm; ClawHub. OpenClaw Brave Search provider plugin for web search.
+- **[arcee](/plugins/reference/arcee)** (`@remoteclaw/arcee-provider`) - npm; ClawHub: `clawhub:@remoteclaw/arcee-provider`. Adds Arcee model provider support to RemoteClaw.
 
-- **[codex](/plugins/reference/codex)** (`@openclaw/codex`) - npm; ClawHub. OpenClaw Codex app-server harness and model provider plugin with a Codex-managed GPT catalog.
+- **[brave](/plugins/reference/brave)** (`@remoteclaw/brave-plugin`) - npm; ClawHub. RemoteClaw Brave Search provider plugin for web search.
 
-- **[copilot](/plugins/reference/copilot)** (`@openclaw/copilot`) - npm; ClawHub: `clawhub:@openclaw/copilot`. Registers the GitHub Copilot agent runtime.
+- **[cerebras](/plugins/reference/cerebras)** (`@remoteclaw/cerebras-provider`) - npm; ClawHub: `clawhub:@remoteclaw/cerebras-provider`. Adds Cerebras model provider support to RemoteClaw.
 
-- **[diagnostics-otel](/plugins/reference/diagnostics-otel)** (`@openclaw/diagnostics-otel`) - npm; ClawHub: `clawhub:@openclaw/diagnostics-otel`. OpenClaw diagnostics OpenTelemetry exporter for metrics and traces.
+- **[chutes](/plugins/reference/chutes)** (`@remoteclaw/chutes-provider`) - npm; ClawHub: `clawhub:@remoteclaw/chutes-provider`. Adds Chutes model provider support to RemoteClaw.
 
-- **[diagnostics-prometheus](/plugins/reference/diagnostics-prometheus)** (`@openclaw/diagnostics-prometheus`) - npm; ClawHub: `clawhub:@openclaw/diagnostics-prometheus`. OpenClaw diagnostics Prometheus exporter for runtime metrics.
+- **[cloudflare-ai-gateway](/plugins/reference/cloudflare-ai-gateway)** (`@remoteclaw/cloudflare-ai-gateway-provider`) - npm; ClawHub: `clawhub:@remoteclaw/cloudflare-ai-gateway-provider`. Adds Cloudflare AI Gateway model provider support to RemoteClaw.
 
-- **[diffs](/plugins/reference/diffs)** (`@openclaw/diffs`) - npm; ClawHub. OpenClaw read-only diff viewer plugin and file renderer for agents.
+- **[codex](/plugins/reference/codex)** (`@remoteclaw/codex`) - npm; ClawHub. RemoteClaw Codex app-server harness and model provider plugin with a Codex-managed GPT catalog.
 
-- **[diffs-language-pack](/plugins/reference/diffs-language-pack)** (`@openclaw/diffs-language-pack`) - npm; ClawHub: `clawhub:@openclaw/diffs-language-pack`. Adds syntax highlighting for languages outside the default diffs viewer set.
+- **[copilot](/plugins/reference/copilot)** (`@remoteclaw/copilot`) - npm; ClawHub: `clawhub:@remoteclaw/copilot`. Registers the GitHub Copilot agent runtime.
 
-- **[discord](/plugins/reference/discord)** (`@openclaw/discord`) - npm; ClawHub. OpenClaw Discord channel plugin for channels, DMs, commands, and app events.
+- **[deepinfra](/plugins/reference/deepinfra)** (`@remoteclaw/deepinfra-provider`) - npm; ClawHub: `clawhub:@remoteclaw/deepinfra-provider`. Adds DeepInfra model provider support to RemoteClaw.
 
-- **[feishu](/plugins/reference/feishu)** (`@openclaw/feishu`) - npm; ClawHub. OpenClaw Feishu/Lark channel plugin for chats and workplace tools (community maintained by @m1heng).
+- **[deepseek](/plugins/reference/deepseek)** (`@remoteclaw/deepseek-provider`) - npm; ClawHub: `clawhub:@remoteclaw/deepseek-provider`. Adds DeepSeek model provider support to RemoteClaw.
 
-- **[google-meet](/plugins/reference/google-meet)** (`@openclaw/google-meet`) - npm; ClawHub. OpenClaw Google Meet participant plugin for joining calls through Chrome or Twilio transports.
+- **[diagnostics-otel](/plugins/reference/diagnostics-otel)** (`@remoteclaw/diagnostics-otel`) - npm; ClawHub: `clawhub:@remoteclaw/diagnostics-otel`. RemoteClaw diagnostics OpenTelemetry exporter for metrics, traces, and logs.
 
-- **[googlechat](/plugins/reference/googlechat)** (`@openclaw/googlechat`) - npm; ClawHub. OpenClaw Google Chat channel plugin for spaces and direct messages.
+- **[diagnostics-prometheus](/plugins/reference/diagnostics-prometheus)** (`@remoteclaw/diagnostics-prometheus`) - npm; ClawHub: `clawhub:@remoteclaw/diagnostics-prometheus`. RemoteClaw diagnostics Prometheus exporter for runtime metrics.
 
-- **[line](/plugins/reference/line)** (`@openclaw/line`) - npm; ClawHub. OpenClaw LINE channel plugin for LINE Bot API chats.
+- **[diffs](/plugins/reference/diffs)** (`@remoteclaw/diffs`) - npm; ClawHub. RemoteClaw read-only diff viewer plugin and file renderer for agents.
 
-- **[llama-cpp](/plugins/reference/llama-cpp)** (`@openclaw/llama-cpp-provider`) - npm; ClawHub. Local GGUF embeddings through node-llama-cpp.
+- **[diffs-language-pack](/plugins/reference/diffs-language-pack)** (`@remoteclaw/diffs-language-pack`) - npm; ClawHub: `clawhub:@remoteclaw/diffs-language-pack`. Adds syntax highlighting for languages outside the default diffs viewer set.
 
-- **[lobster](/plugins/reference/lobster)** (`@openclaw/lobster`) - npm; ClawHub. Lobster workflow tool plugin for typed pipelines and resumable approvals.
+- **[discord](/plugins/reference/discord)** (`@remoteclaw/discord`) - npm; ClawHub. RemoteClaw Discord channel plugin for channels, DMs, commands, and app events.
 
-- **[matrix](/plugins/reference/matrix)** (`@openclaw/matrix`) - ClawHub: `clawhub:@openclaw/matrix`; npm. OpenClaw Matrix channel plugin for rooms and direct messages.
+- **[exa](/plugins/reference/exa)** (`@remoteclaw/exa-plugin`) - npm; ClawHub: `clawhub:@remoteclaw/exa-plugin`. Adds web search provider support.
 
-- **[memory-lancedb](/plugins/reference/memory-lancedb)** (`@openclaw/memory-lancedb`) - npm; ClawHub. OpenClaw LanceDB-backed long-term memory plugin with auto-recall, auto-capture, and vector search.
+- **[feishu](/plugins/reference/feishu)** (`@remoteclaw/feishu`) - npm; ClawHub. RemoteClaw Feishu/Lark channel plugin for chats and workplace tools (community maintained by @m1heng).
 
-- **[msteams](/plugins/reference/msteams)** (`@openclaw/msteams`) - npm; ClawHub. OpenClaw Microsoft Teams channel plugin for bot conversations.
+- **[firecrawl](/plugins/reference/firecrawl)** (`@remoteclaw/firecrawl-plugin`) - npm; ClawHub: `clawhub:@remoteclaw/firecrawl-plugin`. Adds agent-callable tools. Adds web fetch provider support. Adds web search provider support.
 
-- **[nextcloud-talk](/plugins/reference/nextcloud-talk)** (`@openclaw/nextcloud-talk`) - npm; ClawHub. OpenClaw Nextcloud Talk channel plugin for conversations.
+- **[gmi](/plugins/reference/gmi)** (`@remoteclaw/gmi-provider`) - npm; ClawHub: `clawhub:@remoteclaw/gmi-provider`. RemoteClaw GMI Cloud provider plugin.
 
-- **[nostr](/plugins/reference/nostr)** (`@openclaw/nostr`) - npm; ClawHub. OpenClaw Nostr channel plugin for NIP-04 encrypted direct messages.
+- **[google-meet](/plugins/reference/google-meet)** (`@remoteclaw/google-meet`) - npm; ClawHub. RemoteClaw Google Meet participant plugin for joining calls through Chrome or Twilio transports.
 
-- **[openshell](/plugins/reference/openshell)** (`@openclaw/openshell-sandbox`) - npm; ClawHub. OpenClaw sandbox backend for the NVIDIA OpenShell CLI with mirrored local workspaces and SSH command execution.
+- **[googlechat](/plugins/reference/googlechat)** (`@remoteclaw/googlechat`) - npm; ClawHub. RemoteClaw Google Chat channel plugin for spaces and direct messages.
 
-- **[pixverse](/plugins/reference/pixverse)** (`@openclaw/pixverse-provider`) - npm; ClawHub: `clawhub:@openclaw/pixverse-provider`. OpenClaw PixVerse video generation provider plugin.
+- **[gradium](/plugins/reference/gradium)** (`@remoteclaw/gradium-speech`) - npm; ClawHub: `clawhub:@remoteclaw/gradium-speech`. Adds text-to-speech provider support.
 
-- **[qqbot](/plugins/reference/qqbot)** (`@openclaw/qqbot`) - npm; ClawHub. OpenClaw QQ Bot channel plugin for group and direct-message workflows.
+- **[groq](/plugins/reference/groq)** (`@remoteclaw/groq-provider`) - npm; ClawHub: `clawhub:@remoteclaw/groq-provider`. Adds Groq model provider support to RemoteClaw.
 
-- **[slack](/plugins/reference/slack)** (`@openclaw/slack`) - npm; ClawHub. OpenClaw Slack channel plugin for channels, DMs, commands, and app events.
+- **[inworld](/plugins/reference/inworld)** (`@remoteclaw/inworld-speech`) - npm; ClawHub: `clawhub:@remoteclaw/inworld-speech`. Inworld streaming text-to-speech (MP3, OGG_OPUS, PCM telephony).
 
-- **[synology-chat](/plugins/reference/synology-chat)** (`@openclaw/synology-chat`) - npm; ClawHub. Synology Chat channel plugin for OpenClaw channels and direct messages.
+- **[kilocode](/plugins/reference/kilocode)** (`@remoteclaw/kilocode-provider`) - npm; ClawHub: `clawhub:@remoteclaw/kilocode-provider`. Adds Kilocode model provider support to RemoteClaw.
 
-- **[tlon](/plugins/reference/tlon)** (`@openclaw/tlon`) - npm; ClawHub. OpenClaw Tlon/Urbit channel plugin for chat workflows.
+- **[kimi](/plugins/reference/kimi)** (`@remoteclaw/kimi-provider`) - npm; ClawHub: `clawhub:@remoteclaw/kimi-provider`. Adds Kimi, Kimi Coding model provider support to RemoteClaw.
 
-- **[tokenjuice](/plugins/reference/tokenjuice)** (`@openclaw/tokenjuice`) - npm; ClawHub: `clawhub:@openclaw/tokenjuice`. Compacts exec and bash tool results with tokenjuice reducers.
+- **[line](/plugins/reference/line)** (`@remoteclaw/line`) - npm; ClawHub. RemoteClaw LINE channel plugin for LINE Bot API chats.
 
-- **[twitch](/plugins/reference/twitch)** (`@openclaw/twitch`) - npm; ClawHub. OpenClaw Twitch channel plugin for chat and moderation workflows.
+- **[llama-cpp](/plugins/reference/llama-cpp)** (`@remoteclaw/llama-cpp-provider`) - npm; ClawHub. Local GGUF embeddings through node-llama-cpp.
 
-- **[voice-call](/plugins/reference/voice-call)** (`@openclaw/voice-call`) - npm; ClawHub. OpenClaw voice-call plugin for Twilio, Telnyx, and Plivo phone calls.
+- **[lobster](/plugins/reference/lobster)** (`@remoteclaw/lobster`) - npm; ClawHub. Lobster workflow tool plugin for typed pipelines and resumable approvals.
 
-- **[whatsapp](/plugins/reference/whatsapp)** (`@openclaw/whatsapp`) - ClawHub: `clawhub:@openclaw/whatsapp`; npm. OpenClaw WhatsApp channel plugin for WhatsApp Web chats.
+- **[matrix](/plugins/reference/matrix)** (`@remoteclaw/matrix`) - ClawHub: `clawhub:@remoteclaw/matrix`; npm. RemoteClaw Matrix channel plugin for rooms and direct messages.
 
-- **[zalo](/plugins/reference/zalo)** (`@openclaw/zalo`) - npm; ClawHub. OpenClaw Zalo channel plugin for bot and webhook chats.
+- **[memory-lancedb](/plugins/reference/memory-lancedb)** (`@remoteclaw/memory-lancedb`) - npm; ClawHub. RemoteClaw LanceDB-backed long-term memory plugin with auto-recall, auto-capture, and vector search.
 
-- **[zalouser](/plugins/reference/zalouser)** (`@openclaw/zalouser`) - npm; ClawHub. OpenClaw Zalo Personal Account plugin via native zca-js integration.
+- **[msteams](/plugins/reference/msteams)** (`@remoteclaw/msteams`) - npm; ClawHub. RemoteClaw Microsoft Teams channel plugin for bot conversations.
+
+- **[nextcloud-talk](/plugins/reference/nextcloud-talk)** (`@remoteclaw/nextcloud-talk`) - npm; ClawHub. RemoteClaw Nextcloud Talk channel plugin for conversations.
+
+- **[nostr](/plugins/reference/nostr)** (`@remoteclaw/nostr`) - npm; ClawHub. RemoteClaw Nostr channel plugin for NIP-04 encrypted direct messages.
+
+- **[openshell](/plugins/reference/openshell)** (`@remoteclaw/openshell-sandbox`) - npm; ClawHub. RemoteClaw sandbox backend for the NVIDIA OpenShell CLI with mirrored local workspaces and SSH command execution.
+
+- **[parallel](/tools/parallel-search)** (`@remoteclaw/parallel-plugin`) - npm; ClawHub: `clawhub:@remoteclaw/parallel-plugin`. Adds web search provider support.
+
+- **[perplexity](/plugins/reference/perplexity)** (`@remoteclaw/perplexity-plugin`) - npm; ClawHub: `clawhub:@remoteclaw/perplexity-plugin`. Adds web search provider support.
+
+- **[pixverse](/plugins/reference/pixverse)** (`@remoteclaw/pixverse-provider`) - npm; ClawHub: `clawhub:@remoteclaw/pixverse-provider`. RemoteClaw PixVerse video generation provider plugin.
+
+- **[qianfan](/plugins/reference/qianfan)** (`@remoteclaw/qianfan-provider`) - npm; ClawHub: `clawhub:@remoteclaw/qianfan-provider`. Adds Qianfan model provider support to RemoteClaw.
+
+- **[qqbot](/plugins/reference/qqbot)** (`@remoteclaw/qqbot`) - npm; ClawHub. RemoteClaw QQ Bot channel plugin for group and direct-message workflows.
+
+- **[qwen](/plugins/reference/qwen)** (`@remoteclaw/qwen-provider`) - npm; ClawHub: `clawhub:@remoteclaw/qwen-provider`. Adds Qwen, Qwen Cloud, Model Studio, DashScope, Qwen Oauth, Qwen Portal, Qwen CLI model provider support to RemoteClaw.
+
+- **[slack](/plugins/reference/slack)** (`@remoteclaw/slack`) - npm; ClawHub. RemoteClaw Slack channel plugin for channels, DMs, commands, and app events.
+
+- **[stepfun](/plugins/reference/stepfun)** (`@remoteclaw/stepfun-provider`) - npm; ClawHub: `clawhub:@remoteclaw/stepfun-provider`. Adds StepFun, StepFun Plan model provider support to RemoteClaw.
+
+- **[synology-chat](/plugins/reference/synology-chat)** (`@remoteclaw/synology-chat`) - npm; ClawHub. Synology Chat channel plugin for RemoteClaw channels and direct messages.
+
+- **[tlon](/plugins/reference/tlon)** (`@remoteclaw/tlon`) - npm; ClawHub. RemoteClaw Tlon/Urbit channel plugin for chat workflows.
+
+- **[tokenjuice](/plugins/reference/tokenjuice)** (`@remoteclaw/tokenjuice`) - npm; ClawHub: `clawhub:@remoteclaw/tokenjuice`. Compacts exec and bash tool results with tokenjuice reducers.
+
+- **[twitch](/plugins/reference/twitch)** (`@remoteclaw/twitch`) - npm; ClawHub. RemoteClaw Twitch channel plugin for chat and moderation workflows.
+
+- **[voice-call](/plugins/reference/voice-call)** (`@remoteclaw/voice-call`) - npm; ClawHub. RemoteClaw voice-call plugin for Twilio, Telnyx, and Plivo phone calls.
+
+- **[whatsapp](/plugins/reference/whatsapp)** (`@remoteclaw/whatsapp`) - ClawHub: `clawhub:@remoteclaw/whatsapp`; npm. RemoteClaw WhatsApp channel plugin for WhatsApp Web chats.
+
+- **[zalo](/plugins/reference/zalo)** (`@remoteclaw/zalo`) - npm; ClawHub. RemoteClaw Zalo channel plugin for bot and webhook chats.
+
+- **[zalouser](/plugins/reference/zalouser)** (`@remoteclaw/zalouser`) - npm; ClawHub. RemoteClaw Zalo Personal Account plugin via native zca-js integration.
 
 ## Source checkout only
 
 3 plugins
 
-- **[qa-channel](/plugins/reference/qa-channel)** (`@openclaw/qa-channel`) - source checkout only. Adds the QA Channel surface for sending and receiving OpenClaw messages.
+- **[qa-channel](/plugins/reference/qa-channel)** (`@remoteclaw/qa-channel`) - source checkout only. Adds the QA Channel surface for sending and receiving RemoteClaw messages.
 
-- **[qa-lab](/plugins/reference/qa-lab)** (`@openclaw/qa-lab`) - source checkout only. OpenClaw QA lab plugin with private debugger UI and scenario runner.
+- **[qa-lab](/plugins/reference/qa-lab)** (`@remoteclaw/qa-lab`) - source checkout only. RemoteClaw QA lab plugin with private debugger UI and scenario runner.
 
-- **[qa-matrix](/plugins/reference/qa-matrix)** (`@openclaw/qa-matrix`) - source checkout only. Matrix QA transport runner and substrate.
+- **[qa-matrix](/plugins/reference/qa-matrix)** (`@remoteclaw/qa-matrix`) - source checkout only. Matrix QA transport runner and substrate.

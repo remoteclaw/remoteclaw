@@ -1,0 +1,14 @@
+{
+  "signingRepo": "git@github.com:remoteclaw/apps-signing.git",
+  "signingBranch": "main",
+  "assetPath": "android/remoteclaw",
+  "uploadKeystoreEncryptedFile": "upload-keystore.jks.enc",
+  "gradlePropertiesEncryptedFile": "gradle.properties.enc",
+  "materializedRoot": "apps/android/build/release-signing",
+  "gradlePropertyNames": [
+    "REMOTECLAW_ANDROID_STORE_FILE",
+    "REMOTECLAW_ANDROID_STORE_PASSWORD",
+    "REMOTECLAW_ANDROID_KEY_ALIAS",
+    "REMOTECLAW_ANDROID_KEY_PASSWORD"
+  ]
+}

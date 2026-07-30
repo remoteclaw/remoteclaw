@@ -12,7 +12,7 @@ Adds Kilocode model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/kilocode-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/kilocode-provider`
 
 ## Surface
 

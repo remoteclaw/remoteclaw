@@ -251,13 +251,13 @@ enum ExecApprovalsStore {
     }
 
     private static func legacyStateDirURLs() -> [URL] {
-        if let home = OpenClawEnv.path("OPENCLAW_HOME") {
+        if let home = RemoteClawEnv.path("REMOTECLAW_HOME") {
             var urls = [
                 URL(fileURLWithPath: home, isDirectory: true)
-                    .appendingPathComponent(".openclaw", isDirectory: true),
+                    .appendingPathComponent(".remoteclaw", isDirectory: true),
             ]
             let osHomeURL = FileManager().homeDirectoryForCurrentUser
-                .appendingPathComponent(".openclaw", isDirectory: true)
+                .appendingPathComponent(".remoteclaw", isDirectory: true)
             if !urls.contains(where: {
                 $0.standardizedFileURL.path == osHomeURL.standardizedFileURL.path
             }) {
@@ -267,12 +267,12 @@ enum ExecApprovalsStore {
         }
         return [
             FileManager().homeDirectoryForCurrentUser
-                .appendingPathComponent(".openclaw", isDirectory: true),
+                .appendingPathComponent(".remoteclaw", isDirectory: true),
         ]
     }
 
     private static func legacyFileURLIfPending() -> URL? {
-        guard OpenClawEnv.path("OPENCLAW_STATE_DIR") != nil else { return nil }
+        guard RemoteClawEnv.path("REMOTECLAW_STATE_DIR") != nil else { return nil }
         let targetURL = self.fileURL()
         for stateDirURL in self.legacyStateDirURLs() {
             let legacyURL = stateDirURL
@@ -368,7 +368,7 @@ enum ExecApprovalsStore {
                 tempURL.path,
                 targetURL.path,
                 nil,
-                copyfile_flags_t(COPYFILE_EXCL))
+                copyfile_flags_t(COPYFILE_DATA | COPYFILE_EXCL))
             if copied == -1 {
                 if errno == EEXIST {
                     try? FileManager().removeItem(at: tempURL)

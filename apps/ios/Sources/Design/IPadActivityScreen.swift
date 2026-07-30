@@ -1,19 +1,19 @@
-import OpenClawChatUI
-import OpenClawKit
+import RemoteClawChatUI
+import RemoteClawKit
 import SwiftUI
 
 struct IPadActivityScreen: View {
     @Environment(NodeAppModel.self) private var appModel
     @Environment(\.scenePhase) private var scenePhase
-    @State private var sessions: [OpenClawChatSessionEntry] = []
+    @State private var sessions: [RemoteClawChatSessionEntry] = []
     @State private var isLoading = false
     @State private var loadErrorText: String?
-    let headerLeadingAction: OpenClawSidebarHeaderAction?
+    let headerLeadingAction: RemoteClawSidebarHeaderAction?
     let openChat: () -> Void
     let openSettings: () -> Void
 
     init(
-        headerLeadingAction: OpenClawSidebarHeaderAction? = nil,
+        headerLeadingAction: RemoteClawSidebarHeaderAction? = nil,
         openChat: @escaping () -> Void,
         openSettings: @escaping () -> Void)
     {
@@ -46,22 +46,22 @@ struct IPadActivityScreen: View {
                 icon: self.gatewayConnected ? "checkmark.circle.fill" : "wifi.slash",
                 title: "Gateway",
                 value: self.gatewayStateText,
-                color: self.gatewayConnected ? OpenClawBrand.ok : .secondary),
+                color: self.gatewayConnected ? RemoteClawBrand.ok : .secondary),
             ProMetric(
                 icon: "person.2.fill",
                 title: "Agents",
                 value: self.gatewayConnected ? "\(self.appModel.gatewayAgents.count)" : "offline",
-                color: OpenClawBrand.accent),
+                color: RemoteClawBrand.accent),
             ProMetric(
                 icon: "bubble.left.and.text.bubble.right",
                 title: "Sessions",
                 value: self.isLoading ? "..." : "\(self.sessionRows.count)",
-                color: OpenClawBrand.accentHot),
+                color: RemoteClawBrand.accentHot),
         ]
     }
 
     private var activityFeed: some View {
-        ProCard(padding: 0, radius: OpenClawProMetric.cardRadius) {
+        ProCard(padding: 0, radius: RemoteClawProMetric.cardRadius) {
             VStack(spacing: 0) {
                 ProPanelHeader(
                     title: "Recent activity",
@@ -77,7 +77,7 @@ struct IPadActivityScreen: View {
                         title: "Approval needed",
                         detail: pendingExecApprovalPrompt.commandPreview ?? pendingExecApprovalPrompt.commandText,
                         value: "pending",
-                        color: OpenClawBrand.warn,
+                        color: RemoteClawBrand.warn,
                         actionTitle: nil,
                         action: nil)
                     Divider().padding(.leading, 58)
@@ -88,7 +88,7 @@ struct IPadActivityScreen: View {
                     title: "Gateway",
                     detail: self.gatewayDetailText,
                     value: self.gatewayStateText.lowercased(),
-                    color: self.gatewayConnected ? OpenClawBrand.ok : .secondary,
+                    color: self.gatewayConnected ? RemoteClawBrand.ok : .secondary,
                     actionTitle: self.gatewayConnected ? nil : "Settings",
                     action: self.gatewayConnected ? nil : self.openSettings)
 
@@ -99,7 +99,7 @@ struct IPadActivityScreen: View {
                     title: "Share intake",
                     detail: self.appModel.lastShareEventText,
                     value: "iPad",
-                    color: OpenClawBrand.accent,
+                    color: RemoteClawBrand.accent,
                     actionTitle: nil,
                     action: nil)
 
@@ -110,7 +110,7 @@ struct IPadActivityScreen: View {
                         title: "Loading sessions",
                         detail: "Fetching recent activity from the gateway.",
                         value: "loading",
-                        color: OpenClawBrand.accent,
+                        color: RemoteClawBrand.accent,
                         actionTitle: nil,
                         action: nil)
                 } else if let loadErrorText {
@@ -120,7 +120,7 @@ struct IPadActivityScreen: View {
                         title: "Sessions unavailable",
                         detail: loadErrorText,
                         value: "error",
-                        color: OpenClawBrand.warn,
+                        color: RemoteClawBrand.warn,
                         actionTitle: nil,
                         action: nil)
                 } else if self.sessionRows.isEmpty {
@@ -152,7 +152,7 @@ struct IPadActivityScreen: View {
                 }
             }
         }
-        .padding(.horizontal, OpenClawProMetric.pagePadding)
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     private var refreshID: String {
@@ -180,12 +180,11 @@ struct IPadActivityScreen: View {
     }
 
     private var sessionsAvailable: Bool {
-        self.appModel.isAppleReviewDemoModeEnabled || self.appModel.isOperatorGatewayConnected
+        self.appModel.isLocalChatFixtureEnabled || self.appModel.isOperatorGatewayConnected
     }
 
     private var sessionsMode: String {
-        if self.appModel.isAppleReviewDemoModeEnabled { return "demo" }
-        return self.appModel.isOperatorGatewayConnected ? "operator" : "offline"
+        self.appModel.chatTransportModeID
     }
 
     private var sessionRows: [CommandCenterTab.WorkItem] {
@@ -215,9 +214,7 @@ struct IPadActivityScreen: View {
         defer { self.isLoading = false }
 
         do {
-            let transport: any OpenClawChatTransport = self.appModel.isAppleReviewDemoModeEnabled
-                ? AppleReviewDemoChatTransport()
-                : IOSGatewayChatTransport(gateway: self.appModel.operatorSession)
+            let transport = self.appModel.makeChatTransport()
             let response = try await transport.listSessions(limit: CommandCenterTab.recentSessionsFetchLimit)
             self.sessions = response.sessions
         } catch {

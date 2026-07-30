@@ -98,7 +98,7 @@ Optional request headers:
 
 - `x-remoteclaw-model: <provider/model-or-bare-id>` overrides the backend model for the selected agent.
 - `x-remoteclaw-agent-id: <agentId>` remains supported as a compatibility override.
-- `x-remoteclaw-session-key: <sessionKey>` fully controls session routing.
+- `x-remoteclaw-session-key: <sessionKey>` explicitly controls session routing. The value must not use reserved internal session namespaces such as `subagent:`, `cron:`, or `acp:`; those requests are rejected with `400 invalid_request_error`.
 - `x-remoteclaw-message-channel: <channel>` sets the synthetic ingress channel context for channel-aware prompts and policies.
 
 Compatibility aliases still accepted:
@@ -144,7 +144,7 @@ By default the endpoint is **stateless per request** (a new session key is gener
 
 If the request includes an OpenAI `user` string, the Gateway derives a stable session key from it, so repeated calls can share an agent session.
 
-For custom apps, the safest default is to reuse the same `user` value per conversation thread. Avoid account-level identifiers unless you explicitly want multiple conversations or devices to share one RemoteClaw session. Use `x-remoteclaw-session-key` when you need explicit routing control across multiple clients or threads.
+For custom apps, the safest default is to reuse the same `user` value per conversation thread. Avoid account-level identifiers unless you explicitly want multiple conversations or devices to share one RemoteClaw session. Use `x-remoteclaw-session-key` only when you need explicit routing control across multiple clients or threads, and choose application-owned keys that do not start with reserved internal namespaces such as `subagent:`, `cron:`, or `acp:`.
 
 ## Why this surface matters
 

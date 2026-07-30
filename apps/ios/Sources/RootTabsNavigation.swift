@@ -7,7 +7,6 @@ extension RootTabs {
         980
     }
 
-    static let sidebarSplitMinimumWidth: CGFloat = 292
     static let sidebarSplitIdealWidth: CGFloat = 316
     static let sidebarSplitMaximumWidth: CGFloat = 340
     static let sidebarDrawerMaximumWidth: CGFloat = 340
@@ -79,7 +78,7 @@ extension RootTabs {
             case .agents: "Agent roster and readiness."
             case .workboard: "Agent work queue and session handoff."
             case .skillWorkshop: "Review and apply proposed skills."
-            case .instances: "Latest presence from OpenClaw nodes."
+            case .instances: "Latest presence from RemoteClaw nodes."
             case .sessions: "Active sessions and defaults."
             case .dreaming: "Memory signals and background synthesis."
             case .usage: "API usage and costs."
@@ -182,7 +181,7 @@ extension RootTabs {
     }
 
     static func requestedInitialSidebarVisibility(arguments: [String]) -> Bool? {
-        guard let flagIndex = arguments.firstIndex(of: "--openclaw-sidebar-visibility") else {
+        guard let flagIndex = arguments.firstIndex(of: "--remoteclaw-sidebar-visibility") else {
             return nil
         }
         let valueIndex = arguments.index(after: flagIndex)

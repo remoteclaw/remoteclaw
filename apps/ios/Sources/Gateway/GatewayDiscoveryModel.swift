@@ -59,7 +59,7 @@ final class GatewayDiscoveryModel {
             let browser = GatewayDiscoveryBrowserSupport.makeBrowser(
                 serviceType: RemoteClawBonjour.gatewayServiceType,
                 domain: domain,
-                queueLabelPrefix: "org.remoteclaw.ios.gateway-discovery",
+                queueLabelPrefix: "org.remoteclaw.app.gateway-discovery",
                 onState: { [weak self] state in
                     guard let self else { return }
                     self.statesByDomain[domain] = state

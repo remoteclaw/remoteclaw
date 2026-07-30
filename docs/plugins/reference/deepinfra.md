@@ -12,7 +12,7 @@ Adds DeepInfra model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/deepinfra-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/deepinfra-provider`
 
 ## Surface
 

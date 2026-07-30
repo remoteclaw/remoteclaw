@@ -188,6 +188,10 @@ export class GatewayChatClient {
     this.client.stop();
   }
 
+  async subscribeSessionEvents() {
+    return await this.client.request("sessions.subscribe", {});
+  }
+
   async waitForReady() {
     await this.readyPromise;
   }

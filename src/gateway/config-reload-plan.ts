@@ -26,7 +26,7 @@ type ReloadRule = {
   actions?: ReloadAction[];
 };
 
-export type ConfigReloadMetadata = {
+type ConfigReloadMetadata = {
   kind: ReloadRule["kind"];
 };
 

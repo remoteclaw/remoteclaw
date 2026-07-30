@@ -856,7 +856,7 @@ lives on the [First-run FAQ](/help/faq-first-run).
 
     - If you use allowlists, add `web_search`/`web_fetch`/`x_search` or `group:web`.
     - `web_fetch` is enabled by default (unless explicitly disabled).
-    - If `tools.web.fetch.provider` is omitted, RemoteClaw auto-detects the first ready fetch fallback provider from available credentials. Today the bundled provider is Firecrawl.
+    - If `tools.web.fetch.provider` is omitted, RemoteClaw auto-detects the first ready fetch fallback provider from available credentials. The official Firecrawl plugin provides that fallback.
     - Daemons read env vars from `~/.remoteclaw/.env` (or the service environment).
 
     Docs: [Web tools](/tools/web).
@@ -1348,7 +1348,7 @@ lives on the [First-run FAQ](/help/faq-first-run).
 
     If `HEARTBEAT.md` exists but is effectively empty (only blank lines,
     Markdown/HTML comments, Markdown headings like `# Heading`, fence markers,
-    or empty checklist stubs), OpenClaw skips the heartbeat run to save API calls.
+    or empty checklist stubs), RemoteClaw skips the heartbeat run to save API calls.
     If the file is missing, the heartbeat still runs and the model decides what to do.
 
     Per-agent overrides use `agents.list[].heartbeat`. Docs: [Heartbeat](/gateway/heartbeat).
@@ -1648,12 +1648,12 @@ lives on the [Models FAQ](/help/faq-models).
 
   </Accordion>
 
-  <Accordion title="I closed my terminal on Windows - how do I restart OpenClaw?">
+  <Accordion title="I closed my terminal on Windows - how do I restart RemoteClaw?">
     There are **three Windows install modes**:
 
     **1) Windows Hub local setup:** the native app manages a local app-owned WSL Gateway.
 
-    Open **OpenClaw Companion** from the Start menu or tray, then use
+    Open **RemoteClaw Companion** from the Start menu or tray, then use
     **Gateway Setup** or the Connections tab.
 
     **2) Manual WSL2 Gateway:** the Gateway runs inside Linux.
@@ -1911,7 +1911,7 @@ lives on the [Models FAQ](/help/faq-models).
   <Accordion title="Are ClawHub skills and third-party plugins safe to install?">
     Treat third-party skills and plugins as code you are choosing to trust.
     ClawHub skill pages expose scan state before install, but scans are not a
-    complete security boundary. OpenClaw does not run built-in local
+    complete security boundary. RemoteClaw does not run built-in local
     dangerous-code blocking during plugin or skill install/update flows; use
     operator-owned `security.installPolicy` for local allow/block decisions.
 

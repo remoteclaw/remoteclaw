@@ -5,7 +5,7 @@ import SwiftUI
 extension AgentProTab {
     var rosterHeader: some View {
         VStack(alignment: .leading, spacing: 10) {
-            OpenClawAdaptiveHeaderRow(
+            RemoteClawAdaptiveHeaderRow(
                 title: self.headerTitle,
                 subtitle: "\(self.sortedAgents.count) total",
                 titleFont: .system(size: 28, weight: .bold),
@@ -13,7 +13,7 @@ extension AgentProTab {
                 subtitleLineLimit: 1)
             {
                 if let headerLeadingAction {
-                    OpenClawSidebarHeaderLeadingSlot(action: headerLeadingAction)
+                    RemoteClawSidebarHeaderLeadingSlot(action: headerLeadingAction)
                 }
             } accessory: {
                 HStack(spacing: 10) {
@@ -61,12 +61,12 @@ extension AgentProTab {
     private var gatewayPillButton: some View {
         if let openSettings {
             Button(action: openSettings) {
-                OpenClawGatewayCompactPill()
+                RemoteClawGatewayCompactPill()
             }
             .buttonStyle(.plain)
             .accessibilityHint("Opens Settings / Gateway")
         } else {
-            OpenClawGatewayCompactPill()
+            RemoteClawGatewayCompactPill()
         }
     }
 
@@ -303,7 +303,7 @@ extension AgentProTab {
         }
         .padding(.vertical, 14)
         .padding(.horizontal, 13)
-        .frame(minHeight: AgentLayout.rowMinHeight, alignment: .center)
+        .frame(maxWidth: .infinity, minHeight: AgentLayout.rowMinHeight, alignment: .leading)
         .contentShape(Rectangle())
         .onTapGesture {
             self.appModel.setSelectedAgentId(agent.id)
@@ -557,7 +557,7 @@ extension AgentProTab {
     }
 
     var liveGatewayConnected: Bool {
-        !self.appModel.isAppleReviewDemoModeEnabled &&
+        !self.appModel.isLocalGatewayFixtureEnabled &&
             self.gatewayConnected &&
             self.appModel.isOperatorGatewayConnected
     }

@@ -7,13 +7,11 @@ private struct KeychainEntry: Hashable {
     let account: String
 }
 
-private let gatewayService = "org.remoteclaw.gateway"
-private let nodeService = "org.remoteclaw.node"
-private let talkService = "org.remoteclaw.talk"
+private let gatewayService = "org.remoteclaw.app.gateway"
+private let nodeService = "org.remoteclaw.app.node"
 private let instanceIdEntry = KeychainEntry(service: nodeService, account: "instanceId")
 private let preferredGatewayEntry = KeychainEntry(service: gatewayService, account: "preferredStableID")
 private let lastGatewayEntry = KeychainEntry(service: gatewayService, account: "lastDiscoveredStableID")
-private let talkAcmeProviderEntry = KeychainEntry(service: talkService, account: "provider.apiKey.acme")
 private let bootstrapDefaultsKeys = [
     "node.instanceId",
     "gateway.preferredStableID",
@@ -186,18 +184,5 @@ private func withLastGatewaySnapshot(_ body: () -> Void) {
             #expect(defaults.object(forKey: "gateway.last.stableID") == nil)
             #expect(defaults.object(forKey: "gateway.last.host") == nil)
         }
-    }
-
-    @Test func talkProviderApiKey_genericRoundTrip() {
-        let keychainSnapshot = snapshotKeychain([talkAcmeProviderEntry])
-        defer { restoreKeychain(keychainSnapshot) }
-
-        _ = KeychainStore.delete(service: talkService, account: talkAcmeProviderEntry.account)
-
-        GatewaySettingsStore.saveTalkProviderApiKey("acme-key", provider: "acme")
-        #expect(GatewaySettingsStore.loadTalkProviderApiKey(provider: "acme") == "acme-key")
-
-        GatewaySettingsStore.saveTalkProviderApiKey(nil, provider: "acme")
-        #expect(GatewaySettingsStore.loadTalkProviderApiKey(provider: "acme") == nil)
     }
 }

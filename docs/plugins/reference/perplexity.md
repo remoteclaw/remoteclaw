@@ -12,7 +12,7 @@ Adds web search provider support.
 ## Distribution
 
 - Package: `@remoteclaw/perplexity-plugin`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/perplexity-plugin`
 
 ## Surface
 

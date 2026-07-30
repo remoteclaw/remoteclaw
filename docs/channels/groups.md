@@ -7,7 +7,7 @@ title: "Groups"
 sidebarTitle: "Groups"
 ---
 
-OpenClaw treats group chats consistently across surfaces: Discord, iMessage, Matrix, Microsoft Teams, QQBot, Signal, Slack, Telegram, WhatsApp, Zalo.
+RemoteClaw treats group chats consistently across surfaces: Discord, iMessage, Matrix, Microsoft Teams, QQBot, Signal, Slack, Telegram, WhatsApp, Zalo.
 
 For always-on rooms that should provide quiet context unless the agent explicitly sends a visible message, see [Ambient room events](/channels/ambient-room-events).
 
@@ -49,6 +49,8 @@ For normal group/channel requests, RemoteClaw defaults to `messages.groupChat.vi
 Use `messages.groupChat.visibleReplies: "message_tool"` when a shared room should let the agent decide when to speak by calling `message(action=send)`. This works best for group rooms backed by latest-generation, tool-reliable models such as GPT 5.5. If the model misses that tool and returns substantive final text, RemoteClaw keeps that final text private instead of posting it to the room.
 
 Use `"automatic"` for weaker models or runtimes that do not reliably understand tool-only delivery. In automatic mode, the agent's final assistant text is the visible source reply path, so a model that cannot consistently call `message(action=send)` can still answer normally.
+
+In automatic mode, normal text final replies are posted directly to the room. If the visible reply needs files, images, or other attachments, the agent may still use `message(action=send)` for that attachment instead of trying to force it through the final text reply.
 
 If the message tool is unavailable under the active tool policy, RemoteClaw falls
 back to automatic visible replies instead of silently suppressing the response.

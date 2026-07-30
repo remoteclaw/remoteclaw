@@ -24,6 +24,7 @@ describe("detectLinuxSdBackedStateDir", () => {
     const result = detectLinuxSdBackedStateDir("/home/pi/.remoteclaw", {
       platform: "linux",
       mountInfo,
+      resolveRealPath: (statePath) => statePath,
     });
 
     expect(result).toEqual({
@@ -51,6 +52,7 @@ describe("detectLinuxSdBackedStateDir", () => {
     const result = detectLinuxSdBackedStateDir("/home/user/.remoteclaw", {
       platform: "linux",
       mountInfo,
+      resolveRealPath: (statePath) => statePath,
       resolveDeviceRealPath: (devicePath) => {
         if (devicePath === "/dev/disk/by-uuid/abcd-1234") {
           return "/dev/mmcblk0p2";

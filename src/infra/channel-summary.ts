@@ -16,7 +16,7 @@ import { sanitizeForLog } from "../terminal/ansi.js";
 import { theme } from "../terminal/theme.js";
 import { formatTimeAgo } from "./format-time/format-relative.ts";
 
-export type ChannelSummaryOptions = {
+type ChannelSummaryOptions = {
   colorize?: boolean;
   includeAllowFrom?: boolean;
   sourceConfig?: RemoteClawConfig;

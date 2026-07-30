@@ -12,7 +12,7 @@ Adds web search provider support.
 ## Distribution
 
 - Package: `@remoteclaw/exa-plugin`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/exa-plugin`
 
 ## Surface
 

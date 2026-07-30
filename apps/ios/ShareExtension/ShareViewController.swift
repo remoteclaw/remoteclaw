@@ -17,7 +17,7 @@ final class ShareViewController: UIViewController {
         var attachments: [ShareAttachment]
     }
 
-    private let logger = Logger(subsystem: "org.remoteclaw.ios", category: "ShareExtension")
+    private let logger = Logger(subsystem: "org.remoteclaw.app", category: "ShareExtension")
     private var statusLabel: UILabel?
     private let draftTextView = UITextView()
     private let sendButton = UIButton(type: .system)
@@ -184,7 +184,8 @@ final class ShareViewController: UIViewController {
                 clientId: clientId,
                 clientMode: "node",
                 clientDisplayName: "RemoteClaw Share",
-                includeDeviceIdentity: false)
+                deviceIdentityProfile: .shareExtension,
+                includeDeviceIdentity: true)
         }
 
         do {

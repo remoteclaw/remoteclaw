@@ -1,6 +1,7 @@
 import Darwin
-import OpenClawKit
+import RemoteClawKit
 import SwiftUI
+import UserNotifications
 
 enum SettingsRoute: Hashable {
     case gateway
@@ -65,6 +66,63 @@ struct SettingsApprovalRow: View {
     }
 }
 
+enum SettingsNotificationStatus: Equatable {
+    case checking
+    case allowed
+    case notAllowed
+    case notSet
+    case unknown
+
+    init(_ status: UNAuthorizationStatus) {
+        switch status {
+        case .authorized, .provisional, .ephemeral:
+            self = .allowed
+        case .denied:
+            self = .notAllowed
+        case .notDetermined:
+            self = .notSet
+        @unknown default:
+            self = .unknown
+        }
+    }
+
+    var text: String {
+        switch self {
+        case .checking: "Checking"
+        case .allowed: "Allowed"
+        case .notAllowed: "Not Allowed"
+        case .notSet: "Not Set"
+        case .unknown: "Unknown"
+        }
+    }
+
+    var actionTitle: String {
+        switch self {
+        case .notSet, .checking:
+            "Request Access"
+        case .allowed, .notAllowed, .unknown:
+            "Open System Settings"
+        }
+    }
+
+    var actionIcon: String {
+        self == .allowed ? "gear" : "bell.badge"
+    }
+
+    var color: Color {
+        self == .allowed ? RemoteClawBrand.ok : .secondary
+    }
+
+    var shouldOpenNotificationSettings: Bool {
+        switch self {
+        case .allowed, .notAllowed, .unknown:
+            true
+        case .checking, .notSet:
+            false
+        }
+    }
+}
+
 enum SettingsDiagnosticIssue: String, Equatable, CaseIterable {
     case gatewayOffline
     case discoveryUnavailable
@@ -77,13 +135,13 @@ enum SettingsDiagnostics {
         gatewayConnected: Bool,
         discoveredGatewayCount: Int,
         talkConfigLoaded: Bool,
-        notificationStatusText: String) -> [SettingsDiagnosticIssue]
+        notificationsAllowed: Bool) -> [SettingsDiagnosticIssue]
     {
         var issues: [SettingsDiagnosticIssue] = []
         if !gatewayConnected { issues.append(.gatewayOffline) }
         if discoveredGatewayCount == 0 { issues.append(.discoveryUnavailable) }
         if gatewayConnected, !talkConfigLoaded { issues.append(.talkConfigMissing) }
-        if notificationStatusText != "Allowed" { issues.append(.notificationsUnavailable) }
+        if !notificationsAllowed { issues.append(.notificationsUnavailable) }
         return issues
     }
 
@@ -91,13 +149,13 @@ enum SettingsDiagnostics {
         gatewayConnected: Bool,
         discoveredGatewayCount: Int,
         talkConfigLoaded: Bool,
-        notificationStatusText: String) -> Int
+        notificationsAllowed: Bool) -> Int
     {
         self.issues(
             gatewayConnected: gatewayConnected,
             discoveredGatewayCount: discoveredGatewayCount,
             talkConfigLoaded: talkConfigLoaded,
-            notificationStatusText: notificationStatusText).count
+            notificationsAllowed: notificationsAllowed).count
     }
 
     static func timestamp(_ date: Date) -> String {
@@ -161,18 +219,18 @@ extension SettingsProTab {
 private struct SettingsGatewayStatesPreview: View {
     var body: some View {
         ZStack {
-            OpenClawProBackground()
+            RemoteClawProBackground()
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     self.stateSection("Connected") {
                         self.gatewayStatusCard(
                             title: "Gateway online",
-                            detail: "Connected to openclaw-gateway.tailnet.ts.net.",
+                            detail: "Connected to remoteclaw-gateway.tailnet.ts.net.",
                             value: "online",
-                            color: OpenClawBrand.ok)
+                            color: RemoteClawBrand.ok)
                         self.gatewayFactsCard(
                             address: "100.88.41.20:18789",
-                            server: "openclaw-gateway",
+                            server: "remoteclaw-gateway",
                             discovered: "3",
                             agent: "Aiden")
                     }
@@ -182,7 +240,7 @@ private struct SettingsGatewayStatesPreview: View {
                             title: "Checking gateway",
                             detail: "Refreshing connection, discovery, and device trust state.",
                             value: "loading",
-                            color: OpenClawBrand.accent)
+                            color: RemoteClawBrand.accent)
                         self.gatewayActionsCard(isBusy: true)
                     }
 
@@ -205,10 +263,10 @@ private struct SettingsGatewayStatesPreview: View {
                             title: "Tailscale warning",
                             detail: "Tailscale is off on this device. Turn it on, then try again.",
                             value: "network",
-                            color: OpenClawBrand.warn)
+                            color: RemoteClawBrand.warn)
                     }
                 }
-                .padding(.horizontal, OpenClawProMetric.pagePadding)
+                .padding(.horizontal, RemoteClawProMetric.pagePadding)
                 .padding(.vertical, 18)
             }
         }
@@ -318,7 +376,7 @@ private struct SettingsGatewayStatesPreview: View {
         kind: .pairingRequired,
         owner: .gateway,
         title: "Pairing required",
-        message: "Run /pair approve in your OpenClaw chat before this iPad can connect.",
+        message: "Run /pair approve in your RemoteClaw chat before this iPad can connect.",
         actionCommand: "/pair approve req-ipad-preview",
         requestId: "req-ipad-preview",
         retryable: false,

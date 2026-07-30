@@ -12,7 +12,7 @@ Adds Qianfan model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/qianfan-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/qianfan-provider`
 
 ## Surface
 

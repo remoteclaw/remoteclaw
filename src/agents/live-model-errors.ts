@@ -14,7 +14,6 @@
  */
 export const MODULE_ATTESTATIONS = {
   isModelNotFoundErrorMessage: "live",
-  isMiniMaxModelNotFoundErrorMessage: "live",
 } as const;
 export function isModelNotFoundErrorMessage(raw: string): boolean {
   const msg = raw.trim();
@@ -43,13 +42,4 @@ export function isModelNotFoundErrorMessage(raw: string): boolean {
     return true;
   }
   return false;
-}
-
-/** Returns whether a MiniMax HTML-style 404 body is a model-not-found signal. */
-export function isMiniMaxModelNotFoundErrorMessage(raw: string): boolean {
-  const msg = raw.trim();
-  if (!msg) {
-    return false;
-  }
-  return /\b404\b.*\bpage not found\b/i.test(msg);
 }

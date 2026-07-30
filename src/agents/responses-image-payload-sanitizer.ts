@@ -14,7 +14,6 @@ import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
  */
 export const MODULE_ATTESTATIONS = {
   sanitizeResponsesImagePayload: "live",
-  sanitizeInlineImageDataUrl: "live",
 } as const;
 
 const IMAGE_OMITTED_TEXT = "omitted image payload: invalid inline image data";
@@ -54,9 +53,4 @@ export function sanitizeResponsesImagePayload<T extends Record<string, unknown>>
     ...params,
     input: sanitizeValue(params.input),
   };
-}
-
-/** Sanitize one inline image data URL for Responses payload use. */
-export function sanitizeInlineImageDataUrl(imageUrl: string): string | undefined {
-  return sanitizeSharedInlineImageDataUrl(imageUrl);
 }

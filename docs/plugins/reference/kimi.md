@@ -12,7 +12,7 @@ Adds Kimi, Kimi Coding model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/kimi-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/kimi-provider`
 
 ## Surface
 

@@ -34,6 +34,7 @@ import type { ResolvedGatewayAuth } from "./auth.js";
 import { sendJson, setSseHeaders, writeDone } from "./http-common.js";
 import { handleGatewayPostJsonEndpoint } from "./http-endpoint-helpers.js";
 import {
+  isGatewaySessionKeyOverrideError,
   resolveGatewayRequestContext,
   resolveOpenAiCompatibleHttpOperatorScopes,
   resolveOpenAiCompatibleHttpSenderIsOwner,
@@ -461,14 +462,26 @@ export async function handleOpenAiHttpRequest(
   const model = typeof payload.model === "string" ? payload.model : "remoteclaw";
   const user = typeof payload.user === "string" ? payload.user : undefined;
 
-  const { sessionKey, messageChannel } = resolveGatewayRequestContext({
-    req,
-    model,
-    user,
-    sessionPrefix: "openai",
-    defaultMessageChannel: "webchat",
-    useMessageChannelHeader: true,
-  });
+  let gatewayContext: ReturnType<typeof resolveGatewayRequestContext>;
+  try {
+    gatewayContext = resolveGatewayRequestContext({
+      req,
+      model,
+      user,
+      sessionPrefix: "openai",
+      defaultMessageChannel: "webchat",
+      useMessageChannelHeader: true,
+    });
+  } catch (err) {
+    if (isGatewaySessionKeyOverrideError(err)) {
+      sendJson(res, 400, {
+        error: { message: err.message, type: "invalid_request_error" },
+      });
+      return true;
+    }
+    throw err;
+  }
+  const { sessionKey, messageChannel } = gatewayContext;
   const activeTurnContext = resolveActiveTurnContext(payload.messages);
   const prompt = buildAgentPrompt(payload.messages, activeTurnContext.activeUserMessageIndex);
   let images: ImageContent[] = [];

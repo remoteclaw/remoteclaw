@@ -943,6 +943,27 @@ describe("deliverOutboundPayloads", () => {
     expect(onError).toHaveBeenCalledWith(expect.any(Error), expect.anything());
   });
 
+  it("tells a bestEffort onError caller whether the payload reached the transport (#3063)", async () => {
+    // bestEffort resolves, so the annotated throw below never fires and a caller
+    // that re-classifies the failure — the queue's recovery pass does, to choose
+    // between replaying and quarantining — has only this channel. Without it
+    // every reported failure reads as "no send was ever made" and gets replayed.
+    const sendWhatsApp = vi.fn().mockRejectedValue(new Error("socket hang up"));
+    const onError = vi.fn();
+
+    await deliverOutboundPayloads({
+      cfg: {},
+      channel: "whatsapp",
+      to: "+1555",
+      payloads: [{ text: "a" }],
+      deps: { sendWhatsApp },
+      bestEffort: true,
+      onError,
+    });
+
+    expect(readPlatformSendAttempted(onError.mock.calls[0]?.[0])).toBe(true);
+  });
+
   it("annotates the rethrown error with how many payloads landed", async () => {
     // Crash recovery calls this function with skipQueue set, so it does its own
     // queue bookkeeping and the error is its only channel for "how far did the
@@ -1310,6 +1331,40 @@ describe("deliverOutboundPayloads", () => {
     expect(sendText).not.toHaveBeenCalled();
     expect(queueMocks.failUnknownDelivery).not.toHaveBeenCalled();
     expect(queueMocks.failDelivery).toHaveBeenCalledWith("mock-queue-id", expect.any(String));
+  });
+
+  it("reports a pre-send failure to a bestEffort onError caller as not attempted (#3063)", async () => {
+    // The other half of the annotation the recovery pass reads. The same
+    // pre-send failure as the test above, reported instead of thrown: the flag
+    // has to say false rather than simply be absent, or a caller cannot tell
+    // "the send never started" (replayable) from "the sender said nothing".
+    const sendText = vi.fn();
+    setActivePluginRegistry(
+      createTestRegistry([
+        {
+          pluginId: "matrix",
+          source: "test",
+          plugin: createOutboundTestPlugin({
+            id: "matrix",
+            outbound: { deliveryMode: "direct", sendText },
+          }),
+        },
+      ]),
+    );
+    const onError = vi.fn();
+
+    await deliverOutboundPayloads({
+      cfg: {},
+      channel: "matrix",
+      to: "!room:1",
+      payloads: [{ text: "   ", mediaUrl: "https://example.com/file.png" }],
+      bestEffort: true,
+      onError,
+    });
+
+    expect(sendText).not.toHaveBeenCalled();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(readPlatformSendAttempted(onError.mock.calls[0]?.[0])).toBe(false);
   });
 
   it("acks the queue entry when delivery is aborted", async () => {

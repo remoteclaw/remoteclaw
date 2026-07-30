@@ -551,7 +551,19 @@ export async function deliverOutboundPayloads(
       // Keep the cause: "partial delivery failure (bestEffort)" alone tells an
       // operator triaging the entry nothing about why it failed.
       firstPayloadError ??= described;
-      params.onError?.(err, payload);
+      // The only channel that carries how far THIS payload got out of a
+      // bestEffort send. The annotated `throw` below cannot: under bestEffort
+      // the core catches per-payload and this function RESOLVES, so there is no
+      // throw for a caller to read — which is why #3061 fixed the throwing path
+      // and left this one replaying (#3063). A caller that re-classifies the
+      // failure (the queue's recovery pass does, to choose between replaying and
+      // quarantining) otherwise sees a bare error and has to assume no send ever
+      // started. Annotated at the same statement as the classification above, so
+      // the two cannot disagree about one payload.
+      params.onError?.(
+        annotatePlatformSendAttempted(err, sendProgress.platformSendAttempted),
+        payload,
+      );
     },
   };
 

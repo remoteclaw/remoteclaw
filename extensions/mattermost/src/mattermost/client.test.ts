@@ -4,6 +4,7 @@ import {
   createMattermostClient,
   createMattermostPost,
   normalizeMattermostBaseUrl,
+  readMattermostError,
   updateMattermostPost,
 } from "./client.js";
 
@@ -163,6 +164,101 @@ describe("createMattermostClient", () => {
     });
     const result = await client.request<unknown>("/anything", { method: "DELETE" });
     expect(result).toBeUndefined();
+  });
+});
+
+// ── readMattermostError ──────────────────────────────────────────────
+
+describe("readMattermostError", () => {
+  it("extracts the message field from a JSON error body", async () => {
+    const res = new Response(JSON.stringify({ message: "Not Found", id: "api.404" }), {
+      headers: { "content-type": "application/json" },
+    });
+    await expect(readMattermostError(res)).resolves.toBe("Not Found");
+  });
+
+  it("stringifies a JSON error body that carries no message field", async () => {
+    const res = new Response(JSON.stringify({ id: "api.404" }), {
+      headers: { "content-type": "application/json" },
+    });
+    await expect(readMattermostError(res)).resolves.toBe('{"id":"api.404"}');
+  });
+
+  it("returns raw text for a non-JSON error body", async () => {
+    const res = new Response("upstream exploded", {
+      headers: { "content-type": "text/plain" },
+    });
+    await expect(readMattermostError(res)).resolves.toBe("upstream exploded");
+  });
+
+  it("falls back to raw text when a JSON-typed body does not parse", async () => {
+    const res = new Response("<html>502 Bad Gateway</html>", {
+      headers: { "content-type": "application/json" },
+    });
+    await expect(readMattermostError(res)).resolves.toBe("<html>502 Bad Gateway</html>");
+  });
+
+  it("handles a bodyless response", async () => {
+    const res = new Response(null, { status: 204, headers: { "content-type": "text/plain" } });
+    await expect(readMattermostError(res)).resolves.toBe("");
+  });
+
+  it("keeps the pre-existing throw on a bodyless response typed as JSON", async () => {
+    // Pins the no-body fast path. `res.json()` on an absent body rejects, exactly as it did before
+    // the bounded read landed — routing this case through the bounded branch instead would swallow
+    // it into "" via the JSON-parse fallback, which would be a silent behaviour change.
+    const res = new Response(null, {
+      status: 304,
+      headers: { "content-type": "application/json" },
+    });
+    await expect(readMattermostError(res)).rejects.toThrow(SyntaxError);
+  });
+
+  it("caps an oversized error body at 8 KiB", async () => {
+    const res = new Response("x".repeat(64 * 1024), {
+      headers: { "content-type": "text/plain" },
+    });
+    const detail = await readMattermostError(res);
+    expect(detail).toHaveLength(8 * 1024);
+  });
+
+  it("caps an oversized JSON error body and surfaces the truncated text", async () => {
+    // A hostile server can pad a JSON body past the cap; the truncated remainder no longer parses,
+    // so the raw-text fallback carries the (bounded) detail instead of buffering the whole body.
+    const res = new Response(JSON.stringify({ message: "x".repeat(64 * 1024) }), {
+      headers: { "content-type": "application/json" },
+    });
+    const detail = await readMattermostError(res);
+    expect(detail).toHaveLength(8 * 1024);
+  });
+
+  it("stops reading an unbounded error body instead of draining it", async () => {
+    let pulls = 0;
+    let cancelled = false;
+    const chunk = new TextEncoder().encode("x".repeat(4 * 1024));
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls += 1;
+        if (pulls > 1000) {
+          controller.close();
+          return;
+        }
+        controller.enqueue(chunk);
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const res = new Response(stream, { headers: { "content-type": "text/plain" } });
+
+    const detail = await readMattermostError(res);
+
+    expect(detail).toHaveLength(8 * 1024);
+    // A handful of 4 KiB pulls to fill the 8 KiB budget — not the endless stream the server
+    // offered. Bounded rather than exact: stream queue pre-fill can add one pull depending on
+    // microtask timing, and pinning that would test scheduling instead of the read.
+    expect(pulls).toBeLessThanOrEqual(4);
+    expect(cancelled).toBe(true);
   });
 });
 

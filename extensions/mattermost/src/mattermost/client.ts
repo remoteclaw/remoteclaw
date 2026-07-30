@@ -5,6 +5,10 @@ import {
 } from "remoteclaw/plugin-sdk/text-runtime";
 import { z } from "zod";
 import { fetchWithSsrFGuard } from "../../../../src/infra/net/fetch-guard.js";
+import { readResponseTextLimited } from "../../../../src/plugin-sdk/response-text-limit.js";
+
+/** Diagnostic budget for an error body; a configured server should never need more. */
+const MATTERMOST_ERROR_BODY_LIMIT_BYTES = 8 * 1024;
 
 export type MattermostFetch = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
@@ -77,14 +81,33 @@ function buildMattermostApiUrl(baseUrl: string, path: string): string {
 
 export async function readMattermostError(res: Response): Promise<string> {
   const contentType = res.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
-    const data = (await res.json()) as { message?: string } | undefined;
-    if (data?.message) {
-      return data.message;
+  // No readable body (204/304, or a synthesized bodyless Response): the stream reader has nothing
+  // to bound, so keep the original unbounded calls — they resolve immediately on an absent body.
+  if (!res.body) {
+    if (contentType.includes("application/json")) {
+      const data = (await res.json()) as { message?: string } | undefined;
+      if (data?.message) {
+        return data.message;
+      }
+      return JSON.stringify(data);
     }
-    return JSON.stringify(data);
+    return await res.text();
   }
-  return await res.text();
+  const text = await readResponseTextLimited(res, MATTERMOST_ERROR_BODY_LIMIT_BYTES);
+  if (contentType.includes("application/json")) {
+    try {
+      const data = JSON.parse(text) as { message?: string } | undefined;
+      if (data?.message) {
+        return data.message;
+      }
+      return JSON.stringify(data);
+    } catch {
+      // A truncated or non-conforming JSON error body still carries useful detail — surface it raw
+      // rather than losing the diagnostic.
+      return text;
+    }
+  }
+  return text;
 }
 
 export function createMattermostClient(params: {

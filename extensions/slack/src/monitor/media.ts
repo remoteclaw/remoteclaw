@@ -68,45 +68,6 @@ function createSlackMediaFetch(token: string): FetchLike {
   };
 }
 
-/**
- * Fetches a URL with Authorization header, handling cross-origin redirects.
- * Node.js fetch strips Authorization headers on cross-origin redirects for security.
- * Slack's file URLs redirect to CDN domains with pre-signed URLs that don't need the
- * Authorization header, so we handle the initial auth request manually.
- */
-export async function fetchWithSlackAuth(url: string, token: string): Promise<Response> {
-  const parsed = assertSlackFileUrl(url);
-
-  // Initial request with auth and manual redirect handling
-  const initialRes = await fetch(parsed.href, {
-    headers: { Authorization: `Bearer ${token}` },
-    redirect: "manual",
-  });
-
-  // If not a redirect, return the response directly
-  if (initialRes.status < 300 || initialRes.status >= 400) {
-    return initialRes;
-  }
-
-  // Handle redirect - the redirected URL should be pre-signed and not need auth
-  const redirectUrl = initialRes.headers.get("location");
-  if (!redirectUrl) {
-    return initialRes;
-  }
-
-  // Resolve relative URLs against the original
-  const resolvedUrl = new URL(redirectUrl, parsed.href);
-
-  // Only follow safe protocols (we do NOT include Authorization on redirects).
-  if (resolvedUrl.protocol !== "https:") {
-    return initialRes;
-  }
-
-  // Follow the redirect without the Authorization header
-  // (Slack's CDN URLs are pre-signed and don't need it)
-  return fetch(resolvedUrl.toString(), { redirect: "follow" });
-}
-
 const SLACK_MEDIA_SSRF_POLICY = {
   allowedHostnames: ["*.slack.com", "*.slack-edge.com", "*.slack-files.com"],
   allowRfc2544BenchmarkRange: true,

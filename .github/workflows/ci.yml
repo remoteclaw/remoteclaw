@@ -137,6 +137,28 @@ jobs:
       - name: Check policy-doctor bounded-write boundary
         run: node scripts/check-policy-doctor-boundary.mjs
 
+  raw-channel-fetch-gate:
+    # Security lint for the fork's most-exposed surface: channel/plugin runtime
+    # code must route outbound calls through fetchWithSsrFGuard() (DNS-pinned
+    # host, redirect:"manual", per-hop re-validation) rather than raw fetch(),
+    # except for callsites on the reviewed ledger in the script. The gate
+    # existed but ran in no CI job, so it never fired and its ledger rotted
+    # unnoticed (#3055). See § Fork-integrity gates.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Check raw channel fetch callsites
+        run: node scripts/check-no-raw-channel-fetch.mjs
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -393,6 +415,7 @@ jobs:
         throwing-stub-callers-gate,
         obsolescence-audit-gate,
         policy-doctor-boundary-gate,
+        raw-channel-fetch-gate,
         lint,
         build,
         packaged-boot-smoke,
@@ -406,7 +429,7 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

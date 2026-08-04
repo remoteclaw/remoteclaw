@@ -201,6 +201,23 @@ against regressions specific to the fork-sync lifecycle:
   a comment justifying why that callsite is not an SSRF vector. Wired in
   #3055 — the script existed from upstream but ran in no CI job, so it never
   fired and its ledger rotted unnoticed.
+- **plugin-inventory-gate** (`pnpm plugins:inventory:check`): the plugin docs
+  under `docs/plugins/` are generated from `extensions/*/package.json` +
+  `remoteclaw.plugin.json`; this gate fails when they drift. Regenerate with
+  `pnpm plugins:inventory:gen`. The generator shipped a `--check` mode from
+  upstream but ran in no lane and named a `pnpm plugins:inventory:gen` script
+  that did not exist, so the doc drifted to 129 entries — 101 naming plugins
+  this fork does not ship, each asserting *"included in RemoteClaw"* under an
+  unregistered `@remoteclaw/*` name (the #3075 surface) — alongside 89 orphaned
+  `reference/` pages. `--write` now also prunes reference pages whose plugin is
+  gone and `--check` fails on them, which is the half that catches the #3082
+  shape: delete an extension, and the docs referencing it go stale silently.
+  Hand-written prose in a reference page survives regeneration only when it sits
+  between the `<!-- remoteclaw-plugin-reference:manual-start -->` / `-end`
+  markers (there is a `## Surface`-anchored fallback, but it re-wraps rather
+  than replaces, so prefer real markers). `plugin-inventory.md` itself has **no**
+  manual-marker facility — every line of it is generated, so fork-authored prose
+  belongs in the generator template, not the doc. Wired in #3084.
 - **css-class-drift-gate** (`pnpm lint:ui:no-css-class-drift`, part of
   `pnpm check`): cross-references `class="..."` tokens in
   `ui/src/**/*.{ts,tsx,html}` against the CSS rule definitions reachable

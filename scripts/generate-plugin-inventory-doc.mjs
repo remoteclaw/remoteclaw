@@ -456,6 +456,29 @@ ${record.surface}${manualBlock ? `\n\n${manualBlock}` : ""}${relatedDocs ? `\n\n
 `;
 }
 
+function collectStaleReferencePages(records) {
+  const dir = path.join(ROOT, REFERENCE_DIR);
+  if (!fs.existsSync(dir)) {
+    return [];
+  }
+  const expected = new Set(
+    records.filter(hasGeneratedReferencePage).map((record) => `${record.id}.md`),
+  );
+  return fs
+    .readdirSync(dir)
+    .filter((entry) => entry.endsWith(".md") && !expected.has(entry))
+    .filter((entry) => fs.statSync(path.join(dir, entry)).isFile())
+    .toSorted((left, right) => left.localeCompare(right));
+}
+
+function pruneStaleReferencePages(records) {
+  const stale = collectStaleReferencePages(records);
+  for (const entry of stale) {
+    fs.rmSync(path.join(ROOT, REFERENCE_DIR, entry));
+  }
+  return stale;
+}
+
 function renderReferenceIndex(records) {
   const referenceCount = records.filter(hasGeneratedReferencePage).length;
   return `---
@@ -570,6 +593,47 @@ function readGeneratedDocs(records) {
   ];
 }
 
+// The install guidance is status-dependent: when nothing is published outside the
+// core package, the "install an official external package" walkthrough would both
+// contradict the inventory below it and hand operators an install command for a
+// package that is not published. Render the core-only variant instead.
+function renderInstallSection(groups) {
+  if (groups.external.length === 0) {
+    return `Every plugin in this inventory ships inside the \`remoteclaw\` npm package, so no
+separate plugin install is required — each entry's install route reads
+\`included in RemoteClaw\`. Restart the Gateway and inspect a plugin to confirm it
+loaded:
+
+\`\`\`bash
+remoteclaw gateway restart
+remoteclaw plugins inspect discord --runtime --json
+\`\`\`
+
+Follow the plugin's setup doc, such as [Discord](/channels/discord), to add
+credentials and channel config. See [Manage plugins](/plugins/manage-plugins) for
+update, uninstall, and publishing commands.`;
+  }
+
+  return `Use the install route in each entry to decide whether install is needed. Plugins
+that say \`included in RemoteClaw\` are already present in the core package.
+Official external packages need one install, then a Gateway restart.
+
+For example, Discord is an official external package:
+
+\`\`\`bash
+remoteclaw plugins install @remoteclaw/discord
+remoteclaw gateway restart
+remoteclaw plugins inspect discord --runtime --json
+\`\`\`
+
+During the launch cutover, ordinary bare package specs still install from npm.
+Use \`clawhub:@remoteclaw/discord\` or \`npm:@remoteclaw/discord\` when you need an
+explicit source. After install, follow the plugin's setup doc, such as
+[Discord](/channels/discord), to add credentials and channel config. See
+[Manage plugins](/plugins/manage-plugins) for update, uninstall, and publishing
+commands.`;
+}
+
 function renderDocument() {
   const records = collectPluginRecords();
   const groups = {
@@ -608,24 +672,7 @@ dependencies are available.
 
 ## Install a plugin
 
-Use the install route in each entry to decide whether install is needed. Plugins
-that say \`included in RemoteClaw\` are already present in the core package.
-Official external packages need one install, then a Gateway restart.
-
-For example, Discord is an official external package:
-
-\`\`\`bash
-remoteclaw plugins install @remoteclaw/discord
-remoteclaw gateway restart
-remoteclaw plugins inspect discord --runtime --json
-\`\`\`
-
-During the launch cutover, ordinary bare package specs still install from npm.
-Use \`clawhub:@remoteclaw/discord\` or \`npm:@remoteclaw/discord\` when you need an
-explicit source. After install, follow the plugin's setup doc, such as
-[Discord](/channels/discord), to add credentials and channel config. See
-[Manage plugins](/plugins/manage-plugins) for update, uninstall, and publishing
-commands.
+${renderInstallSection(groups)}
 
 Each entry lists the package, distribution route, and description.
 
@@ -663,6 +710,11 @@ function main(argv = process.argv.slice(2)) {
   if (write) {
     fs.writeFileSync(docPath, next, "utf8");
     writeGeneratedDocs(records);
+    // writeGeneratedDocs only ever writes pages for plugins that still exist, so
+    // removing a plugin used to leave its page behind and linked forever (#3084).
+    for (const entry of pruneStaleReferencePages(records)) {
+      console.log(`removed stale ${path.join(REFERENCE_DIR, entry)}`);
+    }
     return;
   }
 
@@ -678,6 +730,16 @@ function main(argv = process.argv.slice(2)) {
       console.error(`${relativePath} is stale. Run \`pnpm plugins:inventory:gen\`.`);
       process.exit(1);
     }
+  }
+  const stale = collectStaleReferencePages(records);
+  if (stale.length > 0) {
+    console.error(
+      `${stale.length} orphaned reference page(s) in ${REFERENCE_DIR} have no matching extensions/ plugin. Run \`pnpm plugins:inventory:gen\`.`,
+    );
+    for (const entry of stale) {
+      console.error(`  ${path.join(REFERENCE_DIR, entry)}`);
+    }
+    process.exit(1);
   }
 }
 

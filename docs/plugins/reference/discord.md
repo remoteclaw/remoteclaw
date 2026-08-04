@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw Discord channel plugin for channels, DMs, commands, and app events."
+summary: "Adds the Discord channel surface for sending and receiving RemoteClaw messages."
 read_when:
   - You are installing, configuring, or auditing the discord plugin
 title: "Discord plugin"
@@ -7,17 +7,13 @@ title: "Discord plugin"
 
 # Discord plugin
 
-RemoteClaw Discord channel plugin for channels, DMs, commands, and app events.
+Adds the Discord channel surface for sending and receiving RemoteClaw messages.
 
 ## Distribution
 
 - Package: `@remoteclaw/discord`
-- Install route: npm; ClawHub
+- Install route: included in RemoteClaw
 
 ## Surface
 
-channels: discord; contracts: transcriptSourceProviders; skills
-
-## Related docs
-
-- [discord](/channels/discord)
+channels: discord

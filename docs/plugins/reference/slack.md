@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw Slack channel plugin for channels, DMs, commands, and app events."
+summary: "Adds the Slack channel surface for sending and receiving RemoteClaw messages."
 read_when:
   - You are installing, configuring, or auditing the slack plugin
 title: "Slack plugin"
@@ -7,17 +7,13 @@ title: "Slack plugin"
 
 # Slack plugin
 
-RemoteClaw Slack channel plugin for channels, DMs, commands, and app events.
+Adds the Slack channel surface for sending and receiving RemoteClaw messages.
 
 ## Distribution
 
 - Package: `@remoteclaw/slack`
-- Install route: npm; ClawHub
+- Install route: included in RemoteClaw
 
 ## Surface
 
-channels: slack; skills
-
-## Related docs
-
-- [slack](/channels/slack)
+channels: slack

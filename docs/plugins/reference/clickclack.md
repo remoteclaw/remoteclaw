@@ -1,18 +1,18 @@
 ---
-summary: "Adds the ClickClack channel surface for sending and receiving RemoteClaw messages."
+summary: "Adds the Clickclack channel surface for sending and receiving RemoteClaw messages."
 read_when:
   - You are installing, configuring, or auditing the clickclack plugin
-title: "ClickClack plugin"
+title: "Clickclack plugin"
 ---
 
-# ClickClack plugin
+# Clickclack plugin
 
-Adds the ClickClack channel surface for sending and receiving RemoteClaw messages.
+Adds the Clickclack channel surface for sending and receiving RemoteClaw messages.
 
 ## Distribution
 
 - Package: `@remoteclaw/clickclack`
-- Install route: npm; ClawHub: `clawhub:@remoteclaw/clickclack`
+- Install route: included in RemoteClaw
 
 ## Surface
 

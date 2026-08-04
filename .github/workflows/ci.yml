@@ -159,6 +159,31 @@ jobs:
       - name: Check raw channel fetch callsites
         run: node scripts/check-no-raw-channel-fetch.mjs
 
+  plugin-inventory-gate:
+    # docs/plugins/plugin-inventory.md, docs/plugins/reference.md, and
+    # docs/plugins/reference/*.md are generated from extensions/*/package.json +
+    # remoteclaw.plugin.json. The generator shipped a --check mode from upstream
+    # but ran in no CI lane, so the committed inventory drifted to 129 entries
+    # (101 of them naming plugins this fork does not ship, each asserting
+    # "included in RemoteClaw" under an unregistered @remoteclaw/* name — the
+    # #3075 surface) while 89 reference pages sat orphaned. PR #3082 deleted
+    # extensions/raft and passed every lane green with the inventory still
+    # linking the removed page. See #3084 and § Fork-integrity gates.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Check generated plugin inventory
+        run: pnpm plugins:inventory:check
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -416,6 +441,7 @@ jobs:
         obsolescence-audit-gate,
         policy-doctor-boundary-gate,
         raw-channel-fetch-gate,
+        plugin-inventory-gate,
         lint,
         build,
         packaged-boot-smoke,
@@ -429,7 +455,7 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

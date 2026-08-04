@@ -17,7 +17,3 @@ Adds the Telegram channel surface for sending and receiving RemoteClaw messages.
 ## Surface
 
 channels: telegram
-
-## Related docs
-
-- [telegram](/channels/telegram)

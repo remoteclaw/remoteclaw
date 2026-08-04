@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw Tlon/Urbit channel plugin for chat workflows."
+summary: "Adds the Tlon channel surface for sending and receiving RemoteClaw messages."
 read_when:
   - You are installing, configuring, or auditing the tlon plugin
 title: "Tlon plugin"
@@ -7,16 +7,16 @@ title: "Tlon plugin"
 
 # Tlon plugin
 
-RemoteClaw Tlon/Urbit channel plugin for chat workflows.
+Adds the Tlon channel surface for sending and receiving RemoteClaw messages.
 
 ## Distribution
 
 - Package: `@remoteclaw/tlon`
-- Install route: npm; ClawHub
+- Install route: included in RemoteClaw
 
 ## Surface
 
-channels: tlon; skills
+channels: tlon
 
 ## Related docs
 

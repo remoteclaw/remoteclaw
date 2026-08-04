@@ -5,6 +5,7 @@ import {
   buildGatewayDiscoveryTarget,
   serializeGatewayDiscoveryBeacon,
 } from "../../infra/gateway-discovery-targets.js";
+import { isUnsafeSshHost } from "../../infra/ssh-host-safety.js";
 
 /** Infers a user@host SSH target from a configured remote websocket URL. */
 export function inferSshTargetFromRemoteUrl(rawUrl?: string | null): string | null {
@@ -21,7 +22,10 @@ export function inferSshTargetFromRemoteUrl(rawUrl?: string | null): string | nu
   } catch {
     return null;
   }
-  if (!host) {
+  // `new URL("wss://-oProxyCommand=x:18789").hostname` is "-oproxycommand=x":
+  // the WHATWG host parser permits a leading '-', so the hostname must be
+  // validated here rather than trusted because it came from a parsed URL.
+  if (!host || isUnsafeSshHost(host)) {
     return null;
   }
   const user = normalizeOptionalString(process.env.USER) ?? "";
@@ -30,7 +34,9 @@ export function inferSshTargetFromRemoteUrl(rawUrl?: string | null): string | nu
 
 function buildSshTarget(input: { user?: string; host?: string; port?: number }): string | null {
   const host = normalizeOptionalString(input.host) ?? "";
-  if (!host) {
+  // ssh_config can rewrite HostName, so re-validate rather than assume the
+  // resolved host inherits the safety of the target it was resolved from.
+  if (!host || isUnsafeSshHost(host)) {
     return null;
   }
   const user = normalizeOptionalString(input.user) ?? "";

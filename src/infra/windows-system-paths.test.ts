@@ -49,13 +49,54 @@ describe("resolveWindowsSystemRoot", () => {
     ["POSIX absolute path (no drive letter)", "/usr/share/windows"],
     ["empty string", ""],
     ["whitespace only", "   "],
+    // `path.win32.normalize` collapses `..` BEFORE the shape checks run, so a
+    // traversal emerges as a clean absolute drive-rooted non-UNC path that
+    // satisfies every other guard. These must be rejected on the raw value.
+    ["parent-segment traversal", "C:\\Windows\\..\\Users\\pub\\evil"],
+    ["forward-slash traversal", "C:/Windows/../Users/pub/evil"],
+    ["mixed-separator traversal", "C:\\Windows/../Users\\pub\\evil"],
+    ["traversal landing beside the drive root", "C:\\Windows\\..\\evil"],
+    ["traversal clamped at the drive root", "C:\\Windows\\..\\..\\..\\..\\Users"],
+    ["traversal with a trailing separator", "C:\\Windows\\..\\Users\\pub\\evil\\"],
+    // Not raw-value cases: these two collapse to shapes the pre-existing checks
+    // already reject (bare drive root, relative path). They pin that overlap, and
+    // would still pass with the raw-value guard removed.
+    ["traversal collapsing to the bare drive root", "C:\\Windows\\.."],
+    ["leading traversal, which stays relative", "..\\Windows"],
   ])("rejects %s and falls back to the default root", (_label, raw) => {
     expect(resolveWindowsSystemRoot(env({ SystemRoot: raw }))).toBe(DEFAULT_ROOT);
+  });
+
+  // The traversal guard matches whole `..` segments, not the substring — dots are
+  // legal inside a Windows directory name. The `...` row documents segment-exactness
+  // rather than a real-world root: `path.win32.normalize` treats `...` as a literal
+  // segment, though Windows itself strips trailing dots so such a directory cannot
+  // normally be created.
+  it.each([
+    ["a directory name containing dots", "C:\\Win..dows", "C:\\Win..dows"],
+    ["a trailing-dots directory name", "D:\\WinNT..", "D:\\WinNT.."],
+    ["a literal three-dot segment", "C:\\Windows\\...", "C:\\Windows\\..."],
+  ])("accepts %s", (_label, raw, expected) => {
+    expect(resolveWindowsSystemRoot(env({ SystemRoot: raw }))).toBe(expected);
   });
 
   it("falls through a rejected SystemRoot to a valid WINDIR", () => {
     expect(
       resolveWindowsSystemRoot(env({ SystemRoot: "\\\\evil\\share", WINDIR: "D:\\WinNT" })),
+    ).toBe("D:\\WinNT");
+  });
+
+  it("rejects a traversal in WINDIR too, not just SystemRoot", () => {
+    expect(resolveWindowsSystemRoot(env({ WINDIR: "C:\\Windows\\..\\Users\\pub\\evil" }))).toBe(
+      DEFAULT_ROOT,
+    );
+  });
+
+  it("falls through a traversal SystemRoot to a valid WINDIR", () => {
+    expect(
+      resolveWindowsSystemRoot(
+        env({ SystemRoot: "C:\\Windows\\..\\Users\\pub\\evil", WINDIR: "D:\\WinNT" }),
+      ),
     ).toBe("D:\\WinNT");
   });
 });
@@ -107,8 +148,16 @@ describe("named binary resolvers", () => {
     );
   });
 
-  it("keeps a hostile SystemRoot out of every resolved binary path", () => {
-    const hostile = env({ SystemRoot: "\\\\attacker\\share" });
+  // Every pinned binary is joined onto the one resolved root, so a single bad
+  // root redirects all of them at once.
+  it.each([
+    ["UNC", "\\\\attacker\\share"],
+    ["traversal", "C:\\Windows\\..\\Users\\pub\\evil"],
+  ])("keeps a hostile %s SystemRoot out of every resolved binary path", (_label, raw) => {
+    const hostile = env({ SystemRoot: raw });
+    expect(resolveWindowsSystem32Path("netstat.exe", hostile)).toBe(
+      "C:\\Windows\\System32\\netstat.exe",
+    );
     expect(resolveWindowsCmdExePath(hostile)).toBe("C:\\Windows\\System32\\cmd.exe");
     expect(resolveWindowsPowerShellPath(hostile)).toBe(
       "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",

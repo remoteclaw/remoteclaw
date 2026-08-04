@@ -30,6 +30,13 @@ function getEnvValueCaseInsensitive(
   return actualKey ? env[actualKey] : undefined;
 }
 
+// Segment-exact, not a substring test: dots are legal inside a Windows directory
+// name (`C:\Win..dows`), and `...` is a literal segment to `path.win32.normalize`,
+// not a parent reference.
+function hasParentTraversalSegment(rawPath: string): boolean {
+  return rawPath.split(/[\\/]/u).includes("..");
+}
+
 function normalizeWindowsSystemRoot(raw: string | undefined): string | null {
   const trimmed = raw?.trim();
   if (
@@ -37,10 +44,15 @@ function normalizeWindowsSystemRoot(raw: string | undefined): string | null {
     trimmed.includes("\0") ||
     trimmed.includes("\r") ||
     trimmed.includes("\n") ||
-    trimmed.includes(";")
+    trimmed.includes(";") ||
+    hasParentTraversalSegment(trimmed)
   ) {
     return null;
   }
+  // The traversal check above deliberately precedes this: `normalize` collapses
+  // `..`, so `C:\Windows\..\Users\pub\evil` would reach the checks below as
+  // `C:\Users\pub\evil` — absolute, drive-rooted and non-UNC — and satisfy every
+  // one of them, redirecting every pinned spawn at once.
   const normalized = path.win32.normalize(trimmed);
   // Reject relative roots and UNC paths — a remote share must never win here.
   if (!path.win32.isAbsolute(normalized) || normalized.startsWith("\\\\")) {

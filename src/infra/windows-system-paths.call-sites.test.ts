@@ -13,7 +13,7 @@
 // green, and yields `C:\Windows\System32\wmic.exe` — a path that exists on no Windows
 // install. This suite fails on exactly that swap (#3092).
 //
-// Why a source scan rather than 27 behavioural harnesses: no workflow runs a Windows
+// Why a source scan rather than 28 behavioural harnesses: no workflow runs a Windows
 // runner (`git grep -l "windows-latest" .github/workflows/` is empty), most of these
 // sites sit behind `process.platform === "win32"` guards deep in daemon/clipboard/
 // encoding paths, and the property under test is a *static* binary->resolver mapping.
@@ -58,7 +58,7 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
   "src/agents/date-time.ts": [POWERSHELL],
   "src/cli/ports.ts": [`${SYSTEM32}\\netstat.exe`],
   "src/cli/update-cli/restart-helper.ts": [CMD_EXE],
-  "src/commands/onboard-helpers.ts": [`${SYSTEM32}\\where.exe`],
+  "src/commands/onboard-helpers.ts": [`${SYSTEM32}\\rundll32.exe`, `${SYSTEM32}\\where.exe`],
   "src/daemon/launchd.ts": [CMD_EXE],
   "src/daemon/program-args.ts": [`${SYSTEM32}\\where.exe`],
   "src/daemon/schtasks-exec.ts": [`${SYSTEM32}\\schtasks.exe`],
@@ -80,9 +80,11 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
   "src/process/kill-tree.ts": [`${SYSTEM32}\\taskkill.exe`],
 };
 
-// #3088 pinned 27 executable-position sites. Stated independently of the table above
-// so a merge that drops rows cannot quietly shrink the covered surface.
-const EXPECTED_CALL_SITE_COUNT = 27;
+// #3088 pinned 27 executable-position sites; #3099 added the 28th — the `rundll32.exe`
+// in `onboard-helpers.ts`, which replaced a `cmd /c start` that re-parsed the URL through
+// the shell. Stated independently of the table above so a merge that drops rows cannot
+// quietly shrink the covered surface.
+const EXPECTED_CALL_SITE_COUNT = 28;
 
 const RESOLVER_NAMES = [
   "resolveWindowsSystem32Path",

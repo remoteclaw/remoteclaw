@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import type { PluginRegistry } from "../plugins/registry.js";
-import type { PluginRuntime } from "../plugins/runtime/types.js";
+import type { PluginRuntime, SubagentGetSessionMessagesParams } from "../plugins/runtime/types.js";
 import type { PluginDiagnostic } from "../plugins/types.js";
 import type { GatewayRequestContext, GatewayRequestOptions } from "./server-methods/types.js";
 
@@ -46,6 +46,20 @@ function getLastDispatchedContext(): GatewayRequestContext | undefined {
   return call?.context;
 }
 
+function getLastDispatchedParams(method: string): Record<string, unknown> {
+  const call = handleGatewayRequest.mock.calls.at(-1)?.[0];
+  if (call?.req.method !== method) {
+    throw new Error(
+      `Expected the last gateway dispatch to be ${method}, got ${String(call?.req.method)}`,
+    );
+  }
+  const params = call.req.params;
+  if (!params || typeof params !== "object") {
+    throw new Error(`Expected the ${method} dispatch to carry params`);
+  }
+  return params as Record<string, unknown>;
+}
+
 async function importServerPluginsModule(): Promise<ServerPluginsModule> {
   return import("./server-plugins.js");
 }
@@ -72,6 +86,13 @@ function createSubagentRuntime(serverPlugins: ServerPluginsModule): PluginRuntim
     throw new Error("Expected loadGatewayPlugins to provide subagent runtime");
   }
   return call.runtimeOptions.subagent;
+}
+
+async function createSubagentRuntimeWithFallbackContext(): Promise<PluginRuntime["subagent"]> {
+  const serverPlugins = await importServerPluginsModule();
+  const runtime = createSubagentRuntime(serverPlugins);
+  serverPlugins.setFallbackGatewayContext(createTestContext("subagent-limit-clamp"));
+  return runtime;
 }
 
 beforeEach(() => {
@@ -208,5 +229,78 @@ describe("loadGatewayPlugins", () => {
       | (GatewayRequestContext & { marker: string })
       | undefined;
     expect(dispatched?.marker).toBe("after-mutation");
+  });
+
+  // The clamp is reachable only through loadGatewayPlugins —
+  // createGatewaySubagentRuntime is deliberately private — so these cases assert
+  // on the params the mocked server-methods dispatch receives for "sessions.get".
+  describe("subagent getSessionMessages limit clamp", () => {
+    test.each([
+      {
+        name: "clamps an over-max limit down to the 1000 maximum",
+        limit: 5_000,
+        expected: 1_000,
+      },
+      {
+        name: "floors a zero limit up to 1",
+        limit: 0,
+        expected: 1,
+      },
+      {
+        name: "floors a negative limit up to 1",
+        limit: -10,
+        expected: 1,
+      },
+      {
+        name: "truncates a fractional limit toward zero",
+        limit: 10.7,
+        expected: 10,
+      },
+      {
+        name: "passes an in-range limit through unchanged",
+        limit: 50,
+        expected: 50,
+      },
+    ])("$name", async ({ limit, expected }) => {
+      const runtime = await createSubagentRuntimeWithFallbackContext();
+
+      await runtime.getSessionMessages({ sessionKey: "s-limit", limit });
+
+      const params = getLastDispatchedParams("sessions.get");
+      expect(params.key).toBe("s-limit");
+      expect(params.limit).toBe(expected);
+    });
+
+    test.each([
+      {
+        name: "omits the limit key when limit is explicitly undefined",
+        params: { sessionKey: "s-limit", limit: undefined },
+      },
+      {
+        name: "omits the limit key when limit is absent",
+        params: { sessionKey: "s-limit" },
+      },
+      {
+        name: "omits the limit key when limit is NaN",
+        params: { sessionKey: "s-limit", limit: Number.NaN },
+      },
+      {
+        name: "omits the limit key when limit is Infinity",
+        params: { sessionKey: "s-limit", limit: Number.POSITIVE_INFINITY },
+      },
+    ] satisfies { name: string; params: SubagentGetSessionMessagesParams }[])(
+      "$name",
+      async ({ params }) => {
+        const runtime = await createSubagentRuntimeWithFallbackContext();
+
+        await runtime.getSessionMessages(params);
+
+        const dispatched = getLastDispatchedParams("sessions.get");
+        expect(dispatched.key).toBe("s-limit");
+        // Key absence, not `undefined`: `toBeUndefined()` would also pass for a
+        // forwarded `limit: undefined`, which is what the clamp avoids emitting.
+        expect("limit" in dispatched).toBe(false);
+      },
+    );
   });
 });

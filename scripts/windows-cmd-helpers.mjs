@@ -1,4 +1,8 @@
 // Windows cmd.exe quoting helpers for npm/pnpm command shims.
+//
+// The %SystemRoot% resolution below is a hand-synced twin of
+// `src/infra/windows-system-paths.ts`, which carries the rationale for the
+// hardening and for why the two cannot share code. Change one, change the other.
 import path from "node:path";
 
 const WINDOWS_UNSAFE_CMD_CHARS_RE = /[&|<>%\r\n]/;
@@ -14,6 +18,12 @@ function getEnvValueCaseInsensitive(env, expectedKey) {
   return actualKey ? env[actualKey] : undefined;
 }
 
+// Segment-exact, not a substring test: dots are legal inside a Windows directory
+// name (`C:\Win..dows`).
+function hasParentTraversalSegment(rawPath) {
+  return rawPath.split(/[\\/]/u).includes("..");
+}
+
 function normalizeWindowsSystemRoot(raw) {
   const trimmed = raw?.trim();
   if (
@@ -21,10 +31,13 @@ function normalizeWindowsSystemRoot(raw) {
     trimmed.includes("\0") ||
     trimmed.includes("\r") ||
     trimmed.includes("\n") ||
-    trimmed.includes(";")
+    trimmed.includes(";") ||
+    hasParentTraversalSegment(trimmed)
   ) {
     return null;
   }
+  // `normalize` collapses `..` — that is why the traversal check runs above it,
+  // against the raw value.
   const normalized = path.win32.normalize(trimmed);
   if (!path.win32.isAbsolute(normalized) || normalized.startsWith("\\\\")) {
     return null;

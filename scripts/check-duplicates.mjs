@@ -20,7 +20,7 @@ const targets = [
   "test",
   "skills",
   "remoteclaw.mjs",
-  "config/knip.config.ts",
+  "knip.config.ts",
   "tsdown.config.ts",
   "vitest.config.ts",
 ];

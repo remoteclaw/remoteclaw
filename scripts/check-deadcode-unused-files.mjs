@@ -29,7 +29,7 @@ export const KNIP_HEARTBEAT_MS = 60_000;
 export const KNIP_MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 const KNIP_ARGS = [
   "--config",
-  "config/knip.config.ts",
+  "knip.config.ts",
   "--production",
   "--no-progress",
   "--reporter",

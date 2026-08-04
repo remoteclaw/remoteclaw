@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct OpenClawDocsScreen: View {
+struct RemoteClawDocsScreen: View {
     private let docsURL = URL(string: "https://docs.remoteclaw.org")!
     private let gatewayURL = URL(string: "https://docs.remoteclaw.org/gateway")!
     private let pairingURL = URL(string: "https://docs.remoteclaw.org/channels/pairing")!

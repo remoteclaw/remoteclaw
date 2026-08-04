@@ -10,7 +10,9 @@ import {
   resolveNpmIntegrityDriftWithDefaultMessage,
 } from "./npm-integrity.js";
 import {
+  findUnclaimedNpmScope,
   formatPrereleaseResolutionError,
+  formatUnclaimedNpmScopeError,
   isPrereleaseResolutionAllowed,
   parseRegistryNpmSpec,
 } from "./npm-registry-spec.js";
@@ -125,6 +127,24 @@ export async function installFromNpmSpecArchive<TResult extends { ok: boolean }>
         error: "unsupported npm spec",
       };
     }
+    // Fail closed BEFORE any registry traffic. This is the single point every
+    // registry-resolving caller funnels through — plugin install, plugin update,
+    // onboarding, and hook packs — so the refusal cannot be bypassed by a caller
+    // that forgets to run the spec validator first. A spec in an unclaimed
+    // first-party scope cannot be ours, and packing it would hand whoever squatted
+    // the scope in-process execution on the gateway host.
+    //
+    // Deliberately not bypassable via `dangerouslyForceUnsafeInstall`: that flag
+    // means "I reviewed the scanner findings and accept them", which an operator
+    // cannot do for a package whose provenance is the thing in question.
+    const unclaimedScope = findUnclaimedNpmScope(params.spec);
+    if (unclaimedScope) {
+      return {
+        ok: false,
+        error: formatUnclaimedNpmScopeError({ spec: params.spec, scope: unclaimedScope }),
+      };
+    }
+
     // Pack before checking prerelease policy so dist-tag and range specs are
     // evaluated against the version the registry actually resolved.
     const packedResult = await packNpmSpecToArchive({

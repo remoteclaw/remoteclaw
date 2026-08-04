@@ -22,7 +22,7 @@ vi.mock("./install-source-utils.js", async () => {
 });
 
 describe("installFromNpmSpecArchive", () => {
-  const baseSpec = "@remoteclaw/test@1.0.0";
+  const baseSpec = "@example/test@1.0.0";
   const baseArchivePath = "/tmp/remoteclaw-test.tgz";
 
   const mockPackedSuccess = (overrides?: {
@@ -84,7 +84,7 @@ describe("installFromNpmSpecArchive", () => {
 
     const result = await installFromNpmSpecArchive({
       tempDirPrefix: "remoteclaw-test-",
-      spec: "@remoteclaw/test@1.0.0",
+      spec: "@example/test@1.0.0",
       timeoutMs: 1000,
       installFromArchive,
     });
@@ -120,8 +120,49 @@ describe("installFromNpmSpecArchive", () => {
     expect(installFromArchive).not.toHaveBeenCalled();
   });
 
+  it("refuses specs in an unclaimed first-party scope before touching the registry", async () => {
+    const installFromArchive = vi.fn(async () => ({ ok: true as const }));
+
+    const result = await installFromNpmSpecArchive({
+      tempDirPrefix: "remoteclaw-test-",
+      // The exact spec this project's own docs told operators to run.
+      spec: "@remoteclaw/discord",
+      timeoutMs: 1000,
+      installFromArchive,
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected the unclaimed-scope guard to refuse");
+    }
+    expect(result.error).toContain("not registered");
+    expect(result.error).toContain("dependency confusion");
+    // The whole point: no registry traffic and no extraction. If `npm pack` ran, a
+    // squatter's tarball would already be on disk before any later gate could object.
+    expect(packNpmSpecToArchive).not.toHaveBeenCalled();
+    expect(installFromArchive).not.toHaveBeenCalled();
+  });
+
+  it("still resolves look-alike specs outside the unclaimed scope", async () => {
+    // Guards against over-blocking: the unscoped package is genuinely ours, and
+    // neighbouring scopes belong to other publishers.
+    mockPackedSuccess({ resolvedSpec: "remoteclaw@1.0.0", name: "remoteclaw", version: "1.0.0" });
+    const installFromArchive = vi.fn(async () => ({ ok: true as const }));
+
+    const result = await installFromNpmSpecArchive({
+      tempDirPrefix: "remoteclaw-test-",
+      spec: "remoteclaw@1.0.0",
+      timeoutMs: 1000,
+      installFromArchive,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(packNpmSpecToArchive).toHaveBeenCalledTimes(1);
+    expect(installFromArchive).toHaveBeenCalledTimes(1);
+  });
+
   it("returns resolution metadata and installer result on success", async () => {
-    mockPackedSuccess({ name: "@remoteclaw/test", version: "1.0.0" });
+    mockPackedSuccess({ name: "@example/test", version: "1.0.0" });
     const installFromArchive = vi.fn(async () => ({ ok: true as const, target: "done" }));
 
     const result = await runInstall({
@@ -131,7 +172,7 @@ describe("installFromNpmSpecArchive", () => {
 
     const okResult = expectWrappedOkResult(result, { ok: true, target: "done" });
     expect(okResult.integrityDrift).toBeUndefined();
-    expect(okResult.npmResolution.resolvedSpec).toBe("@remoteclaw/test@1.0.0");
+    expect(okResult.npmResolution.resolvedSpec).toBe("@example/test@1.0.0");
     const resolvedAt = okResult.npmResolution.resolvedAt;
     if (!resolvedAt) {
       throw new Error("expected npm resolution timestamp");
@@ -171,7 +212,7 @@ describe("installFromNpmSpecArchive", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "aborted: npm package integrity drift detected for @remoteclaw/test@1.0.0",
+      error: "aborted: npm package integrity drift detected for @example/test@1.0.0",
     });
     expect(installFromArchive).not.toHaveBeenCalled();
   });
@@ -189,10 +230,10 @@ describe("installFromNpmSpecArchive", () => {
 
     expect(result).toEqual({
       ok: false,
-      error: "aborted: npm package integrity drift detected for @remoteclaw/test@1.0.0",
+      error: "aborted: npm package integrity drift detected for @example/test@1.0.0",
     });
     expect(warn).toHaveBeenCalledWith(
-      "Integrity drift detected for @remoteclaw/test@1.0.0: expected sha512-old, got sha512-new",
+      "Integrity drift detected for @example/test@1.0.0: expected sha512-old, got sha512-new",
     );
     expect(installFromArchive).not.toHaveBeenCalled();
   });
@@ -215,7 +256,7 @@ describe("installFromNpmSpecArchive", () => {
       ok: true,
       archivePath: baseArchivePath,
       metadata: {
-        resolvedSpec: "@remoteclaw/test@latest",
+        resolvedSpec: "@example/test@latest",
         integrity: "sha512-same",
         version: "1.1.0-beta.1",
       },
@@ -224,7 +265,7 @@ describe("installFromNpmSpecArchive", () => {
 
     const result = await installFromNpmSpecArchive({
       tempDirPrefix: "remoteclaw-test-",
-      spec: "@remoteclaw/test@latest",
+      spec: "@example/test@latest",
       timeoutMs: 1000,
       installFromArchive,
     });
@@ -242,7 +283,7 @@ describe("installFromNpmSpecArchive", () => {
       ok: true,
       archivePath: baseArchivePath,
       metadata: {
-        resolvedSpec: "@remoteclaw/test@beta",
+        resolvedSpec: "@example/test@beta",
         integrity: "sha512-same",
         version: "1.1.0-beta.1",
       },
@@ -251,7 +292,7 @@ describe("installFromNpmSpecArchive", () => {
 
     const result = await installFromNpmSpecArchive({
       tempDirPrefix: "remoteclaw-test-",
-      spec: "@remoteclaw/test@beta",
+      spec: "@example/test@beta",
       timeoutMs: 1000,
       installFromArchive,
     });
@@ -271,7 +312,7 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
       ok: true,
       archivePath: "/tmp/remoteclaw-plugin.tgz",
       metadata: {
-        resolvedSpec: "@remoteclaw/voice-call@1.0.0",
+        resolvedSpec: "@example/voice-call@1.0.0",
         integrity: "sha512-same",
       },
     });
@@ -282,7 +323,7 @@ describe("installFromNpmSpecArchiveWithInstaller", () => {
 
     const result = await installFromNpmSpecArchiveWithInstaller({
       tempDirPrefix: "remoteclaw-test-",
-      spec: "@remoteclaw/voice-call@1.0.0",
+      spec: "@example/voice-call@1.0.0",
       timeoutMs: 1000,
       installFromArchive,
       archiveInstallParams: { pluginId: "voice-call" },
@@ -315,7 +356,7 @@ describe("finalizeNpmSpecArchiveInstall", () => {
       ok: true,
       installResult: { ok: false, error: "install failed" },
       npmResolution: {
-        resolvedSpec: "@remoteclaw/test@1.0.0",
+        resolvedSpec: "@example/test@1.0.0",
         integrity: "sha512-same",
         resolvedAt: "2026-01-01T00:00:00.000Z",
       },
@@ -331,7 +372,7 @@ describe("finalizeNpmSpecArchiveInstall", () => {
       ok: true,
       installResult: { ok: true, pluginId: "voice-call" },
       npmResolution: {
-        resolvedSpec: "@remoteclaw/voice-call@1.0.0",
+        resolvedSpec: "@example/voice-call@1.0.0",
         integrity: "sha512-same",
         resolvedAt: "2026-01-01T00:00:00.000Z",
       },
@@ -345,7 +386,7 @@ describe("finalizeNpmSpecArchiveInstall", () => {
       ok: true,
       pluginId: "voice-call",
       npmResolution: {
-        resolvedSpec: "@remoteclaw/voice-call@1.0.0",
+        resolvedSpec: "@example/voice-call@1.0.0",
         integrity: "sha512-same",
         resolvedAt: "2026-01-01T00:00:00.000Z",
       },

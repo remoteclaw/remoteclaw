@@ -273,8 +273,6 @@ Each entry lists the package, distribution route, and description.
 
 - **[qwen](/plugins/reference/qwen)** (`@remoteclaw/qwen-provider`) - npm; ClawHub: `clawhub:@remoteclaw/qwen-provider`. Adds Qwen, Qwen Cloud, Model Studio, DashScope, Qwen Oauth, Qwen Portal, Qwen CLI model provider support to RemoteClaw.
 
-- **[raft](/plugins/reference/raft)** (`@remoteclaw/raft`) - npm; ClawHub. RemoteClaw Raft channel plugin for secure CLI wake bridges.
-
 - **[searxng](/plugins/reference/searxng)** (`@remoteclaw/searxng-plugin`) - npm; ClawHub: `clawhub:@remoteclaw/searxng-plugin`. Adds web search provider support.
 
 - **[signal](/plugins/reference/signal)** (`@remoteclaw/signal`) - npm; ClawHub: `clawhub:@remoteclaw/signal`. Adds the Signal channel surface for sending and receiving RemoteClaw messages.

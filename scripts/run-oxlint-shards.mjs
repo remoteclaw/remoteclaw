@@ -18,7 +18,7 @@ const PROCESS_GROUP_EXIT_POLL_MS = 25;
 const DEFAULT_SPLIT_CORE_SHARD_CONCURRENCY = 4;
 const FAST_LOCAL_CHECK_MIN_CPUS = 12;
 const FAST_LOCAL_CHECK_MIN_MEMORY_BYTES = 48 * 1024 ** 3;
-const EXTENSION_TS_CONFIG = "config/tsconfig/oxlint.extensions.json";
+const EXTENSION_TS_CONFIG = "tsconfig.oxlint.extensions.json";
 const EXTENSIONS_DIR = "extensions";
 const OXLINT_SOURCE_FILE_PATTERN = /\.[cm]?[jt]sx?$/;
 const PARENT_TERMINATION_SIGNALS = ["SIGINT", "SIGTERM"];
@@ -27,11 +27,11 @@ let parentTerminationSignal = null;
 let parentTerminationForceKill = null;
 let parentSignalForwardingInstalled = false;
 
+const CORE_TS_CONFIG = "tsconfig.oxlint.core.json";
 const CORE_SHARD = {
   name: "core",
-  args: ["--tsconfig", "config/tsconfig/oxlint.core.json", "src", "ui", "packages"],
+  args: ["--tsconfig", CORE_TS_CONFIG, "src", "ui", "packages"],
 };
-const CORE_TS_CONFIG = "config/tsconfig/oxlint.core.json";
 const CORE_SPLIT_TARGETS = ["ui", "packages"];
 const EXTENSIONS_SHARD = {
   name: "extensions",
@@ -39,7 +39,7 @@ const EXTENSIONS_SHARD = {
 };
 const SCRIPTS_SHARD = {
   name: "scripts",
-  args: ["--tsconfig", "config/tsconfig/oxlint.scripts.json", "scripts"],
+  args: ["--tsconfig", "tsconfig.oxlint.scripts.json", "scripts"],
 };
 
 /**

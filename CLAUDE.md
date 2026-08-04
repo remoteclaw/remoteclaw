@@ -221,6 +221,60 @@ against regressions specific to the fork-sync lifecycle:
   suggests the crab. Runs inside the `lint` CI job (via `pnpm check`), not as a
   standalone job. See that allowlist's header for how to add a new legitimate
   fixture.
+- **tooling-config-refs-gate** (`pnpm lint:no-dangling-tooling-config-refs`,
+  part of `pnpm check`): every config-file path literal in `scripts/` must
+  resolve to a real file. Upstream keeps tooling configs under `config/`; this
+  fork keeps them at the repo root, and six references were ported with the
+  upstream paths intact — `run-oxlint-shards.mjs` and `check-changed.mjs`
+  pointed at `config/tsconfig/oxlint.*.json`, `check-deadcode-unused-files.mjs`
+  and `check-duplicates.mjs` at `config/knip.config.ts`. None of those
+  directories exist. Nothing noticed, because each affected script was itself
+  invoked by no package script and no workflow (#3076). A dangling config path
+  is the quietest way for a gate to stop gating: the script still exists, its
+  name still reads authoritative, and the path to an enforcing run is broken
+  invisibly. Reviewed exceptions live on `KNOWN_MISSING_CONFIG_REFS` in
+  `scripts/check-tooling-config-refs.mjs`, pinned to `file:line` so a moved
+  callsite re-fails instead of silently inheriting its exception, and a paid-off
+  entry fails as STALE so the ledger drains. Every entry needs a tracking issue.
+  Runs inside the `lint` CI job (via `pnpm check`), not as a standalone job.
+- **scripts-typecheck-gate** (`pnpm typecheck:scripts`, part of `pnpm check`):
+  `tsconfig.json` includes only `src/ ui/ extensions/ packages/`, so none of the
+  111 TypeScript files under `scripts/` were ever typechecked — release checks,
+  CI helpers, catalog and inventory generators, build-entry computation. Two
+  defects landed there invisibly in the last upstream sync and were caught by
+  hand (#3076). `scripts/tsconfig.json` already existed and was correctly
+  shaped; it was referenced by nothing. This lane runs it through
+  `scripts/run-tsgo.mjs` and diffs the result against
+  `.scripts-typecheck-baseline` rather than demanding zero, because the
+  accumulated backlog is 69 errors across 32 files. New errors fail; so does a
+  baseline line whose error has been fixed, so the ledger cannot outlive its
+  debt. Diagnostics are recorded per `file + TS code + message` — positions are
+  omitted so unrelated edits do not churn the file — and scoped to `scripts/`,
+  since everything pulled in transitively is already covered by `pnpm tsgo`.
+  Refresh with `pnpm typecheck:scripts:update` after *fixing* errors, never to
+  absorb a new one.
+
+### Dead-code detection
+
+`scripts/check-deadcode-unused-files.mjs` + `scripts/deadcode-unused-files.allowlist.mjs`
+are the real dead-code gate: knip pinned to 6.8.0, compared against a
+checked-in allowlist, failing on both a new unreviewed unused file and a stale
+allowlist entry. Run it with `pnpm deadcode:unused-files`.
+
+It is **not** yet a required CI gate. It currently reports ~860 unreviewed
+unused files, because knip's `--production` entry configuration does not see
+this fork's dynamic surfaces (most of `ui/src/ui/**` and much of `extensions/**`
+are flagged). Wiring it green today would mean baselining that volume of
+mis-tuned signal behind a check that then reads as coverage — the exact
+illusion #3076 exists to remove. Tuning `knip.config.ts` for the fork comes
+first; wiring follows.
+
+What was removed in #3076: `deadcode:ci` and the three `deadcode:report:ci:*`
+scripts. Each was `… > .artifacts/deadcode/*.txt 2>&1 || true` — structurally
+incapable of failing — and `grep -rn 'deadcode' .github/workflows/` was empty,
+so they wrote artifacts for a job that never existed. The honest local commands
+(`deadcode:knip`, `deadcode:ts-prune`, `deadcode:ts-unused`, `deadcode:report`)
+are unchanged and still propagate their exit codes.
 
 ### Release publishing
 

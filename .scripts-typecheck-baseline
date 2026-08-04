@@ -1,0 +1,72 @@
+# Baseline for `pnpm typecheck:scripts` (scripts/check-scripts-typecheck.mjs).
+#
+# Pre-existing scripts/ typecheck errors, grandfathered so the lane can be
+# required-and-green while still failing on NEW breakage. This is a debt
+# ledger, not an escape hatch: shrink it by fixing errors and deleting their
+# lines. Regenerate with: node scripts/check-scripts-typecheck.mjs --update
+#
+# Format: <count><TAB><file><TAB><TS code><TAB><message>
+# Source positions are deliberately omitted so unrelated edits above an error
+# do not churn the ledger.
+1	scripts/anthropic-prompt-probe.ts	TS2307	Cannot find module '../src/agents/model-selection.js' or its corresponding type declarations.
+1	scripts/anthropic-prompt-probe.ts	TS2307	Cannot find module '../src/commands/auth-token.js' or its corresponding type declarations.
+1	scripts/anthropic-prompt-probe.ts	TS2322	Type 'unknown' is not assignable to type 'string | undefined'.
+1	scripts/anthropic-prompt-probe.ts	TS2339	Property 'token' does not exist on type 'AuthProfileCredential'.
+1	scripts/anthropic-prompt-probe.ts	TS2345	Argument of type '{}' is not assignable to parameter of type 'string'.
+1	scripts/anthropic-prompt-probe.ts	TS2345	Argument of type 'unknown' is not assignable to parameter of type 'string | undefined'.
+1	scripts/anthropic-prompt-probe.ts	TS2724	'"../src/agents/agent-scope.js"' has no exported member named 'resolveDefaultAgentDir'. Did you mean 'resolveDefaultAgentId'?
+1	scripts/anthropic-prompt-probe.ts	TS2769	No overload matches this call.
+1	scripts/bench-gateway-restart.ts	TS2307	Cannot find module './lib/gateway-bench-child.ts' or its corresponding type declarations.
+1	scripts/bench-gateway-startup.ts	TS2307	Cannot find module './lib/gateway-bench-child.ts' or its corresponding type declarations.
+1	scripts/check-codex-app-server-protocol.ts	TS2307	Cannot find module './lib/codex-app-server-protocol-source.js' or its corresponding type declarations.
+1	scripts/check-live-cache.ts	TS2307	Cannot find module '../src/agents/live-cache-regression-runner.js' or its corresponding type declarations.
+1	scripts/check-live-cache.ts	TS2307	Cannot find module '../src/agents/live-cache-test-support.js' or its corresponding type declarations.
+1	scripts/check-no-monolithic-plugin-sdk-entry-imports.ts	TS2307	Cannot find module './check-file-utils.js' or its corresponding type declarations.
+1	scripts/check-no-monolithic-plugin-sdk-entry-imports.ts	TS7006	Parameter 'filePath' implicitly has an 'any' type.
+1	scripts/control-ui-mock-dev.ts	TS2307	Cannot find module 'vite' or its corresponding type declarations.
+1	scripts/control-ui-mock-dev.ts	TS7006	Parameter '_req' implicitly has an 'any' type.
+1	scripts/control-ui-mock-dev.ts	TS7006	Parameter 'html' implicitly has an 'any' type.
+1	scripts/control-ui-mock-dev.ts	TS7006	Parameter 'res' implicitly has an 'any' type.
+1	scripts/control-ui-mock-dev.ts	TS7006	Parameter 'server' implicitly has an 'any' type.
+1	scripts/dev/gateway-smoke.ts	TS2345	Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+1	scripts/dev/ios-node-e2e.ts	TS2304	Cannot find name 'randomUUID'.
+1	scripts/dev/test-device-pair-telegram.ts	TS2307	Cannot find module '../../extensions/telegram/runtime-api.js' or its corresponding type declarations.
+1	scripts/fixtures/packed-plugin-sdk-type-smoke.ts	TS2307	Cannot find module 'remoteclaw/plugin-sdk/channel-entry-contract' or its corresponding type declarations.
+1	scripts/fixtures/packed-plugin-sdk-type-smoke.ts	TS2307	Cannot find module 'remoteclaw/plugin-sdk/config-contracts' or its corresponding type declarations.
+1	scripts/fixtures/packed-plugin-sdk-type-smoke.ts	TS2307	Cannot find module 'remoteclaw/plugin-sdk/provider-entry' or its corresponding type declarations.
+1	scripts/generate-config-doc-baseline.ts	TS2724	'"../src/config/doc-baseline.js"' has no exported member named 'writeConfigDocBaselineArtifacts'. Did you mean 'writeConfigDocBaselineStatefile'?
+1	scripts/generate-plugin-sdk-api-baseline.ts	TS2307	Cannot find module '../src/plugin-sdk/api-baseline.ts' or its corresponding type declarations.
+1	scripts/generate-runtime-sidecar-paths-baseline.ts	TS2307	Cannot find module '../src/plugins/runtime-sidecar-paths-baseline.js' or its corresponding type declarations.
+1	scripts/gh-read.ts	TS2554	Expected 2 arguments, but got 1.
+1	scripts/lib/android-version.ts	TS2307	Cannot find module './npm-publish-plan.mjs' or its corresponding type declarations.
+1	scripts/lib/ios-version.ts	TS2307	Cannot find module './npm-publish-plan.mjs' or its corresponding type declarations.
+1	scripts/lib/openclaw-release-clawhub-plan.ts	TS2339	Property 'bootstrapCandidates' does not exist on type 'PluginReleasePlan'.
+2	scripts/lib/openclaw-release-clawhub-plan.ts	TS2339	Property 'missingTrustedPublisher' does not exist on type 'PluginReleasePlan'.
+1	scripts/lib/plugin-clawhub-release.ts	TS2307	Cannot find module '../../packages/plugin-package-contract/src/index.ts' or its corresponding type declarations.
+2	scripts/lib/plugin-clawhub-release.ts	TS2322	Type 'import("scripts/lib/plugin-npm-release").PublishablePluginPackage[]' is not assignable to type 'import("scripts/lib/plugin-clawhub-release").PublishablePluginPackage[]'.
+1	scripts/lib/plugin-clawhub-release.ts	TS2339	Property 'publishToClawHub' does not exist on type '{ publishToNpm?: boolean | undefined; }'.
+1	scripts/lib/plugin-clawhub-release.ts	TS7006	Parameter 'issue' implicitly has an 'any' type.
+1	scripts/lib/plugin-npm-release.ts	TS2307	Cannot find module '../../packages/plugin-package-contract/src/index.ts' or its corresponding type declarations.
+1	scripts/lib/plugin-npm-release.ts	TS2307	Cannot find module '../openclaw-npm-release-check.ts' or its corresponding type declarations.
+1	scripts/lib/plugin-npm-release.ts	TS2307	Cannot find module './npm-publish-plan.mjs' or its corresponding type declarations.
+1	scripts/lib/plugin-npm-release.ts	TS7006	Parameter 'error' implicitly has an 'any' type.
+1	scripts/lib/plugin-npm-release.ts	TS7006	Parameter 'issue' implicitly has an 'any' type.
+1	scripts/lib/release-beta-verifier.ts	TS2322	Type 'string | undefined' is not assignable to type 'string'.
+1	scripts/lib/release-beta-verifier.ts	TS2554	Expected 0-1 arguments, but got 2.
+1	scripts/live-docker-normalize-config.ts	TS2305	Module '"../src/config/config.js"' has no exported member 'replaceConfigFile'.
+1	scripts/openclaw-prepack.ts	TS7016	Could not find a declaration file for module './package-changelog.mjs'. 'scripts/package-changelog.mjs' implicitly has an 'any' type.
+1	scripts/plugin-clawhub-release-check.ts	TS2305	Module '"./lib/plugin-clawhub-release.ts"' has no exported member 'assertPluginReleaseVersionFloors'.
+1	scripts/plugin-clawhub-release-check.ts	TS2554	Expected 0-1 arguments, but got 2.
+1	scripts/print-cli-backend-live-metadata.ts	TS2307	Cannot find module '../extensions/anthropic/cli-backend.ts' or its corresponding type declarations.
+1	scripts/print-cli-backend-live-metadata.ts	TS2307	Cannot find module '../extensions/google/cli-backend.ts' or its corresponding type declarations.
+1	scripts/print-cli-backend-live-metadata.ts	TS2307	Cannot find module '../src/agents/cli-backends.js' or its corresponding type declarations.
+1	scripts/protocol-gen-swift.ts	TS2322	Type '({ branchName: string; caseName: string; literal: string | number | boolean | null; } | undefined)[]' is not assignable to type '{ branchName: string; caseName: string; literal: string | number | boolean | null; }[]'.
+2	scripts/qa-e2e.ts	TS2307	Cannot find module '../extensions/qa-lab/api.js' or its corresponding type declarations.
+2	scripts/qa-lab-up.ts	TS2307	Cannot find module '../extensions/qa-lab/src/cli.runtime.ts' or its corresponding type declarations.
+1	scripts/test-env-mutation-report.ts	TS2307	Cannot find module './check-file-utils.js' or its corresponding type declarations.
+1	scripts/test-env-mutation-report.ts	TS2345	Argument of type 'string | null' is not assignable to parameter of type 'string'.
+1	scripts/test-env-mutation-report.ts	TS7006	Parameter 'filePath' implicitly has an 'any' type.
+1	scripts/test-live-media.ts	TS2307	Cannot find module '../src/secrets/provider-env-vars.js' or its corresponding type declarations.
+4	scripts/test-shell-completion.ts	TS2554	Expected 0-1 arguments, but got 2.
+1	scripts/write-cli-startup-metadata.ts	TS2307	Cannot find module '../src/cli/program/root-help.js' or its corresponding type declarations.
+1	scripts/write-cli-startup-metadata.ts	TS2353	Object literal may only specify known properties, and 'loadPaths' does not exist in type 'PluginsConfig'.

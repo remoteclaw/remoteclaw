@@ -5,6 +5,10 @@ import { runCommandWithTimeout } from "../process/exec.js";
 import { fileExists } from "./archive.js";
 import { assertCanonicalPathWithinBase } from "./install-safe-path.js";
 import { createNpmProjectInstallEnv } from "./npm-install-env.js";
+import {
+  findUnclaimedNpmScopeForPackageName,
+  formatUnclaimedNpmScopeDependencyError,
+} from "./npm-registry-spec.js";
 
 const INSTALL_BASE_CHANGED_ERROR_MESSAGE = "install base directory changed during install";
 const INSTALL_BASE_CHANGED_ABORT_WARNING =
@@ -22,6 +26,56 @@ type HiddenProjectConfigFile = {
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+/**
+ * Collects declared dependency names that sit in an npm scope nobody has registered.
+ *
+ * `npm install` below resolves the staged package's own dependencies from the public
+ * registry. That is the same dependency-confusion exposure as installing the package
+ * directly, but it is reached from *every* install lane — including local path and
+ * archive installs, which never touch the npm-spec guard. It also lands after the
+ * code-safety scan has already run against the pre-copy source, so anything fetched
+ * here is never scanned.
+ */
+async function findUnclaimedScopeDependencies(
+  stageDir: string,
+): Promise<{ scope: string; names: string[] } | null> {
+  let manifest: Record<string, unknown>;
+  try {
+    const parsed = JSON.parse(
+      await fs.readFile(path.join(stageDir, "package.json"), "utf-8"),
+    ) as unknown;
+    if (!isObjectRecord(parsed)) {
+      return null;
+    }
+    manifest = parsed;
+  } catch {
+    // An unreadable manifest means npm install will fail on its own terms; this
+    // guard has nothing to say about it.
+    return null;
+  }
+
+  const declared = new Set<string>();
+  for (const field of ["dependencies", "optionalDependencies", "peerDependencies"]) {
+    const value = manifest[field];
+    if (isObjectRecord(value)) {
+      for (const name of Object.keys(value)) {
+        declared.add(name);
+      }
+    }
+  }
+
+  let scope: string | null = null;
+  const names: string[] = [];
+  for (const name of declared) {
+    const match = findUnclaimedNpmScopeForPackageName(name);
+    if (match) {
+      scope ??= match;
+      names.push(name);
+    }
+  }
+  return scope ? { scope, names: names.toSorted() } : null;
 }
 
 async function sanitizeManifestForNpmInstall(targetDir: string): Promise<void> {
@@ -230,6 +284,15 @@ export async function installPackageDir(params: {
   }
 
   if (params.hasDeps) {
+    const unclaimed = await findUnclaimedScopeDependencies(stageDir);
+    if (unclaimed) {
+      return await fail(
+        formatUnclaimedNpmScopeDependencyError({
+          dependencies: unclaimed.names,
+          scope: unclaimed.scope,
+        }),
+      );
+    }
     try {
       await sanitizeManifestForNpmInstall(stageDir);
       const hiddenProjectNpmConfig = await hideProjectNpmConfigForInstall(stageDir);

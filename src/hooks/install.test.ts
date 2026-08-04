@@ -32,7 +32,7 @@ const tarTraversalBuffer = fs.readFileSync(path.join(fixturesDir, "tar-traversal
 const tarEvilIdBuffer = fs.readFileSync(path.join(fixturesDir, "tar-evil-id.tar"));
 const tarReservedIdBuffer = fs.readFileSync(path.join(fixturesDir, "tar-reserved-id.tar"));
 const npmPackHooksBuffer = await createTarGzHookPackBuffer({
-  packageName: "@remoteclaw/test-hooks",
+  packageName: "@example/test-hooks",
   hookName: "one-hook",
   hookDescription: "One hook",
   heading: "One Hook",
@@ -441,8 +441,8 @@ describe("installHooksFromNpmSpec", () => {
           code: 0,
           stdout: JSON.stringify([
             {
-              id: "@remoteclaw/test-hooks@0.0.1",
-              name: "@remoteclaw/test-hooks",
+              id: "@example/test-hooks@0.0.1",
+              name: "@example/test-hooks",
               version: "0.0.1",
               filename: packedName,
               integrity: "sha512-hook-test",
@@ -460,7 +460,7 @@ describe("installHooksFromNpmSpec", () => {
 
     const hooksDir = path.join(stateDir, "hooks");
     const result = await installHooksFromNpmSpec({
-      spec: "@remoteclaw/test-hooks@0.0.1",
+      spec: "@example/test-hooks@0.0.1",
       hooksDir,
       logger: { info: () => {}, warn: () => {} },
     });
@@ -469,13 +469,13 @@ describe("installHooksFromNpmSpec", () => {
       return;
     }
     expect(result.hookPackId).toBe("test-hooks");
-    expect(result.npmResolution?.resolvedSpec).toBe("@remoteclaw/test-hooks@0.0.1");
+    expect(result.npmResolution?.resolvedSpec).toBe("@example/test-hooks@0.0.1");
     expect(result.npmResolution?.integrity).toBe("sha512-hook-test");
     expect(fs.existsSync(path.join(result.targetDir, "hooks", "one-hook", "HOOK.md"))).toBe(true);
 
     expectSingleNpmPackIgnoreScriptsCall({
       calls: run.mock.calls,
-      expectedSpec: "@remoteclaw/test-hooks@0.0.1",
+      expectedSpec: "@example/test-hooks@0.0.1",
     });
 
     expect(packTmpDir).not.toBe("");
@@ -486,11 +486,32 @@ describe("installHooksFromNpmSpec", () => {
     await expectUnsupportedNpmSpec((spec) => installHooksFromNpmSpec({ spec }));
   });
 
+  it("refuses hook packs from the unclaimed first-party scope", async () => {
+    // Hook packs reach the registry through installFromValidatedNpmSpecArchive, a
+    // different entry point from plugin installs. Both funnel through the same pack
+    // site, which is why the guard lives there rather than in one caller.
+    const run = vi.mocked(runCommandWithTimeout);
+    run.mockReset();
+
+    const result = await installHooksFromNpmSpec({
+      spec: "@remoteclaw/test-hooks@0.0.1",
+      logger: { info: () => {}, warn: () => {} },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected the unclaimed-scope guard to refuse");
+    }
+    expect(result.error).toContain("not registered");
+    expect(result.error).toContain("dependency confusion");
+    expect(run).not.toHaveBeenCalled();
+  });
+
   it("aborts when integrity drift callback rejects the fetched artifact", async () => {
     const run = vi.mocked(runCommandWithTimeout);
     mockNpmPackMetadataResult(run, {
-      id: "@remoteclaw/test-hooks@0.0.1",
-      name: "@remoteclaw/test-hooks",
+      id: "@example/test-hooks@0.0.1",
+      name: "@example/test-hooks",
       version: "0.0.1",
       filename: "test-hooks-0.0.1.tgz",
       integrity: "sha512-new",
@@ -499,7 +520,7 @@ describe("installHooksFromNpmSpec", () => {
 
     const onIntegrityDrift = vi.fn(async () => false);
     const result = await installHooksFromNpmSpec({
-      spec: "@remoteclaw/test-hooks@0.0.1",
+      spec: "@example/test-hooks@0.0.1",
       expectedIntegrity: "sha512-old",
       onIntegrityDrift,
     });
@@ -514,8 +535,8 @@ describe("installHooksFromNpmSpec", () => {
   it("rejects bare npm specs that resolve to prerelease versions", async () => {
     const run = vi.mocked(runCommandWithTimeout);
     mockNpmPackMetadataResult(run, {
-      id: "@remoteclaw/test-hooks@0.0.2-beta.1",
-      name: "@remoteclaw/test-hooks",
+      id: "@example/test-hooks@0.0.2-beta.1",
+      name: "@example/test-hooks",
       version: "0.0.2-beta.1",
       filename: "test-hooks-0.0.2-beta.1.tgz",
       integrity: "sha512-beta",
@@ -523,13 +544,13 @@ describe("installHooksFromNpmSpec", () => {
     });
 
     const result = await installHooksFromNpmSpec({
-      spec: "@remoteclaw/test-hooks",
+      spec: "@example/test-hooks",
       logger: { info: () => {}, warn: () => {} },
     });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain("prerelease version 0.0.2-beta.1");
-      expect(result.error).toContain('"@remoteclaw/test-hooks@beta"');
+      expect(result.error).toContain('"@example/test-hooks@beta"');
     }
   });
 });

@@ -26,7 +26,11 @@ import {
   finalizeNpmSpecArchiveInstall,
   installFromNpmSpecArchiveWithInstaller,
 } from "../infra/npm-pack-install.js";
-import { validateRegistryNpmSpec } from "../infra/npm-registry-spec.js";
+import {
+  findUnclaimedNpmScope,
+  formatUnclaimedNpmScopeError,
+  validateRegistryNpmSpec,
+} from "../infra/npm-registry-spec.js";
 import { extensionUsesSkippedScannerPath, isPathInside } from "../security/scan-paths.js";
 import * as skillScanner from "../security/skill-scanner.js";
 import { CONFIG_DIR, resolveUserPath } from "../utils.js";
@@ -55,6 +59,7 @@ export const PLUGIN_INSTALL_ERROR_CODE = {
   EMPTY_REMOTECLAW_EXTENSIONS: "empty_remoteclaw_extensions",
   INVALID_REMOTECLAW_EXTENSIONS: "invalid_remoteclaw_extensions",
   NPM_PACKAGE_NOT_FOUND: "npm_package_not_found",
+  UNCLAIMED_NPM_SCOPE: "unclaimed_npm_scope",
   PLUGIN_ID_MISMATCH: "plugin_id_mismatch",
   SECURITY_SCAN_BLOCKED: "security_scan_blocked",
   SECURITY_SCAN_FAILED: "security_scan_failed",
@@ -625,6 +630,21 @@ export async function installPluginFromNpmSpec(params: {
       ok: false,
       error: specError,
       code: PLUGIN_INSTALL_ERROR_CODE.INVALID_NPM_SPEC,
+    };
+  }
+
+  // NOT the security boundary — that is the pack site (installFromNpmSpecArchive),
+  // which refuses this spec whether or not this block exists. What this adds is the
+  // typed classification: every other rejection in this function returns a
+  // PLUGIN_INSTALL_ERROR_CODE, and a caller inspecting `code` should be able to tell
+  // "refused, the scope is unowned" from "npm 404" — they are different situations
+  // with different remedies, and only one of them changes if a squatter publishes.
+  const unclaimedScope = findUnclaimedNpmScope(spec);
+  if (unclaimedScope) {
+    return {
+      ok: false,
+      error: formatUnclaimedNpmScopeError({ spec, scope: unclaimedScope }),
+      code: PLUGIN_INSTALL_ERROR_CODE.UNCLAIMED_NPM_SCOPE,
     };
   }
 

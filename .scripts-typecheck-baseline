@@ -40,8 +40,6 @@
 1	scripts/gh-read.ts	TS2554	Expected 2 arguments, but got 1.
 1	scripts/lib/android-version.ts	TS2307	Cannot find module './npm-publish-plan.mjs' or its corresponding type declarations.
 1	scripts/lib/ios-version.ts	TS2307	Cannot find module './npm-publish-plan.mjs' or its corresponding type declarations.
-1	scripts/lib/openclaw-release-clawhub-plan.ts	TS2339	Property 'bootstrapCandidates' does not exist on type 'PluginReleasePlan'.
-2	scripts/lib/openclaw-release-clawhub-plan.ts	TS2339	Property 'missingTrustedPublisher' does not exist on type 'PluginReleasePlan'.
 1	scripts/lib/plugin-clawhub-release.ts	TS2307	Cannot find module '../../packages/plugin-package-contract/src/index.ts' or its corresponding type declarations.
 2	scripts/lib/plugin-clawhub-release.ts	TS2322	Type 'import("scripts/lib/plugin-npm-release").PublishablePluginPackage[]' is not assignable to type 'import("scripts/lib/plugin-clawhub-release").PublishablePluginPackage[]'.
 1	scripts/lib/plugin-clawhub-release.ts	TS2339	Property 'publishToClawHub' does not exist on type '{ publishToNpm?: boolean | undefined; }'.

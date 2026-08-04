@@ -16,10 +16,11 @@ import {
 import { loadConfig, writeConfigFile } from "../../config/config.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import { resolveSessionTranscriptsDirForAgent } from "../../config/sessions/paths.js";
+import { resolveOwnedStateRoots } from "../../config/trash-roots.js";
 import { sameFileIdentity } from "../../infra/file-identity.js";
+import { movePathToTrash } from "../../infra/fs-safe-trash.js";
 import { SafeOpenError, readLocalFileSafely } from "../../infra/fs-safe.js";
 import { isNotFoundPathError, isPathInside } from "../../infra/path-guards.js";
-import { movePathToTrash } from "../../infra/trash.js";
 import { normalizeAgentId } from "../../routing/session-key.js";
 import { resolveUserPath } from "../../utils.js";
 import {
@@ -376,7 +377,10 @@ function respondAgentNotFound(respond: RespondFn, agentId: string): void {
   respond(false, undefined, errorShape(ErrorCodes.INVALID_REQUEST, `agent "${agentId}" not found`));
 }
 
-async function moveToTrashBestEffort(pathname: string): Promise<void> {
+// `allowedRoots` is required rather than optional: this deletes over a gateway
+// RPC, which is the most exposed trash sink in the tree, and roots must be known
+// independently of `pathname` to bound anything at all (#3102).
+async function moveToTrashBestEffort(pathname: string, allowedRoots: string[]): Promise<void> {
   if (!pathname) {
     return;
   }
@@ -386,9 +390,10 @@ async function moveToTrashBestEffort(pathname: string): Promise<void> {
     return;
   }
   try {
-    await movePathToTrash(pathname);
+    await movePathToTrash(pathname, { allowedRoots });
   } catch {
-    // Best-effort: path may already be gone or trash unavailable.
+    // Best-effort: path may already be gone, trash unavailable, or the target
+    // rejected as out of bounds. Refusing to delete leaves the path in place.
   }
 }
 
@@ -580,7 +585,16 @@ export const agentsHandlers: GatewayRequestHandlers = {
       // The workspace is user-owned (a project/git dir the user points RemoteClaw
       // at) — never trash it on delete. Only remove RemoteClaw-owned state
       // (agent dir + session transcripts).
-      await Promise.all([moveToTrashBestEffort(agentDir), moveToTrashBestEffort(sessionsDir)]);
+      //
+      // `agentDir` is config-declared and may point outside every owned root, so
+      // its declared parent is admitted too; the containment check still rejects
+      // an agentDir that is a symlink escaping that parent. `sessionsDir` is
+      // always under the state dir, so the owned roots suffice.
+      const ownedRoots = resolveOwnedStateRoots();
+      await Promise.all([
+        moveToTrashBestEffort(agentDir, [...ownedRoots, path.dirname(path.resolve(agentDir))]),
+        moveToTrashBestEffort(sessionsDir, ownedRoots),
+      ]);
     }
 
     respond(true, { ok: true, agentId, removedBindings: result.removedBindings }, undefined);

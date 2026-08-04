@@ -14,7 +14,7 @@ vi.mock("../config/config.js", async (importOriginal) => {
   };
 });
 
-vi.mock("../infra/trash.js", () => ({
+vi.mock("../infra/fs-safe-trash.js", () => ({
   movePathToTrash: vi.fn(async (targetPath: string) => targetPath),
 }));
 
@@ -23,7 +23,7 @@ vi.mock("./profile-paths.js", () => ({
 }));
 
 import { loadConfig, writeConfigFile } from "../config/config.js";
-import { movePathToTrash } from "../infra/trash.js";
+import { movePathToTrash } from "../infra/fs-safe-trash.js";
 import { resolveRemoteClawUserDataDir } from "./profile-paths.js";
 
 function createCtx(resolved: BrowserServerState["resolved"]) {

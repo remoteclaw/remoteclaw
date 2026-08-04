@@ -3,6 +3,9 @@ import fsPromises from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
+// `../infra/fs-safe.js` is mocked below; this is the real implementation the
+// containment suite drives through that mock.
+import { movePathToTrash as realMovePathToTrash } from "../infra/fs-safe-trash.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { withEnvAsync } from "../test-utils/env.js";
 import { withMockedPlatform } from "../test-utils/vitest-spies.js";
@@ -21,7 +24,9 @@ import {
 } from "./onboard-helpers.js";
 
 const mocks = vi.hoisted(() => ({
-  movePathToTrash: vi.fn(async (targetPath: string) => `${targetPath}.trashed`),
+  movePathToTrash: vi.fn(
+    async (targetPath: string, _options?: { allowedRoots?: string[] }) => `${targetPath}.trashed`,
+  ),
   runCommandWithTimeout: vi.fn<
     (
       argv: string[],
@@ -220,39 +225,40 @@ describe("moveToTrash", () => {
     const sourcePath = expectedTrashSourcePath(targetPath);
 
     try {
-      await moveToTrash(targetPath, runtime);
+      await moveToTrash(targetPath, runtime, { allowedRoots: [testRoot] });
     } finally {
       fs.rmSync(testRoot, { recursive: true, force: true });
     }
 
     expect(mocks.movePathToTrash).toHaveBeenCalledWith(sourcePath, {
-      allowedRoots: [path.dirname(sourcePath)],
+      allowedRoots: [testRoot],
     });
     expect(mocks.runCommandWithTimeout).not.toHaveBeenCalled();
     expect(runtime.log).toHaveBeenCalledWith(`Moved to Trash: ${targetPath}`);
   });
 
-  it("allows fs-safe trash to move a symlink whose target resolves outside the parent", async () => {
+  it("forwards the caller's roots verbatim instead of widening them for a symlink", async () => {
+    // The removed implementation pushed `dirname(realpath(target))` onto the
+    // roots whenever the target was a symlink, which admitted the escape
+    // destination and made the containment check unable to reject (#3102).
     const testRoot = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-trash-symlink-"));
+    const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-trash-outside-"));
+    const outsideTarget = path.join(outsideDir, "payload.txt");
     const targetPath = path.join(testRoot, "target-link");
-    const outsideTarget = path.join(os.tmpdir(), "remoteclaw-trash-symlink-target");
-    fs.writeFileSync(targetPath, "link placeholder");
-    vi.spyOn(fsPromises, "lstat").mockResolvedValue({
-      isSymbolicLink: () => true,
-    } as fs.Stats);
-    vi.spyOn(fsPromises, "realpath").mockImplementation(async (candidate) =>
-      String(candidate) === path.dirname(targetPath) ? path.dirname(targetPath) : outsideTarget,
-    );
+    fs.writeFileSync(outsideTarget, "do not touch\n");
+    fs.symlinkSync(outsideTarget, targetPath);
     const runtime = { log: vi.fn() } as unknown as RuntimeEnv;
+    const sourcePath = expectedTrashSourcePath(targetPath);
 
     try {
-      await moveToTrash(targetPath, runtime);
+      await moveToTrash(targetPath, runtime, { allowedRoots: [testRoot] });
     } finally {
       fs.rmSync(testRoot, { recursive: true, force: true });
+      fs.rmSync(outsideDir, { recursive: true, force: true });
     }
 
-    expect(mocks.movePathToTrash).toHaveBeenCalledWith(targetPath, {
-      allowedRoots: [path.dirname(targetPath), path.dirname(outsideTarget)],
+    expect(mocks.movePathToTrash).toHaveBeenCalledWith(sourcePath, {
+      allowedRoots: [testRoot],
     });
   });
 
@@ -273,7 +279,7 @@ describe("moveToTrash", () => {
     const runtime = { log: vi.fn() } as unknown as RuntimeEnv;
 
     try {
-      await moveToTrash(targetPath, runtime);
+      await moveToTrash(targetPath, runtime, { allowedRoots: [realParent] });
     } finally {
       fs.rmSync(testRoot, { recursive: true, force: true });
     }
@@ -281,6 +287,106 @@ describe("moveToTrash", () => {
     expect(mocks.movePathToTrash).toHaveBeenCalledWith(sourcePath, {
       allowedRoots: [realParent],
     });
+  });
+});
+
+// The suite above asserts the arguments handed to a mocked mover. These run the
+// REAL `movePathToTrash` behind the same mock, so the containment check actually
+// executes: before #3102 the roots were derived from the target and no input
+// could reach the throw, so a rejecting case could not be written at all.
+describe("handleReset containment", () => {
+  function arrangeResetFixture(): {
+    homeDir: string;
+    stateDir: string;
+    outsideDir: string;
+    env: Record<string, string>;
+  } {
+    const homeDir = fs.mkdtempSync(path.join(os.tmpdir(), "remoteclaw-reset-containment-"));
+    const stateDir = path.join(homeDir, ".remoteclaw");
+    const outsideDir = path.join(homeDir, "outside");
+    fs.mkdirSync(stateDir, { recursive: true });
+    fs.mkdirSync(outsideDir, { recursive: true });
+    return {
+      homeDir,
+      stateDir,
+      outsideDir,
+      // HOME also steers resolveTrashDir(), so successful moves land inside the
+      // fixture rather than the developer's real Trash.
+      env: {
+        HOME: homeDir,
+        USERPROFILE: homeDir,
+        REMOTECLAW_HOME: homeDir,
+        REMOTECLAW_STATE_DIR: stateDir,
+        XDG_DATA_HOME: path.join(homeDir, ".local", "share"),
+      },
+    };
+  }
+
+  // Drives the real mover through the mock and keeps every rejection, so a test
+  // can assert the containment guard fired rather than some incidental failure
+  // that the caller's catch-all would swallow identically.
+  function useRealMoverRecordingRejections(): unknown[] {
+    const rejections: unknown[] = [];
+    mocks.movePathToTrash.mockImplementation(async (targetPath, options) => {
+      try {
+        return await realMovePathToTrash(targetPath, options);
+      } catch (error) {
+        rejections.push(error);
+        throw error;
+      }
+    });
+    return rejections;
+  }
+
+  it.skipIf(process.platform === "win32")(
+    "refuses a config path that symlinks out of every owned root",
+    async () => {
+      const rejections = useRealMoverRecordingRejections();
+      const { homeDir, stateDir, outsideDir, env } = arrangeResetFixture();
+      const escapeTarget = path.join(outsideDir, "loot.json");
+      const configPath = path.join(stateDir, "remoteclaw.json");
+      fs.writeFileSync(escapeTarget, "keep\n");
+      fs.symlinkSync(escapeTarget, configPath);
+      const runtime = { log: vi.fn() } as unknown as RuntimeEnv;
+
+      try {
+        await withEnvAsync(env, async () => await handleReset("config", stateDir, runtime));
+
+        expect(rejections.map(String)).toEqual([
+          expect.stringContaining("refusing to trash a path outside the allowed roots"),
+        ]);
+        expect(fs.lstatSync(configPath).isSymbolicLink()).toBe(true);
+        expect(fs.readFileSync(escapeTarget, "utf8")).toBe("keep\n");
+        expect(runtime.log).toHaveBeenCalledWith(
+          expect.stringContaining("Failed to move to Trash (manual delete):"),
+        );
+      } finally {
+        fs.rmSync(homeDir, { recursive: true, force: true });
+      }
+    },
+  );
+
+  it("still trashes an in-bounds config path", async () => {
+    const rejections = useRealMoverRecordingRejections();
+    const { homeDir, stateDir, env } = arrangeResetFixture();
+    const configPath = path.join(stateDir, "remoteclaw.json");
+    fs.writeFileSync(configPath, "{}\n");
+    const runtime = { log: vi.fn() } as unknown as RuntimeEnv;
+
+    try {
+      await withEnvAsync(env, async () => await handleReset("config", stateDir, runtime));
+
+      const trashDir =
+        process.platform === "linux"
+          ? path.join(homeDir, ".local", "share", "Trash", "files")
+          : path.join(homeDir, ".Trash");
+      expect(rejections).toEqual([]);
+      expect(fs.existsSync(configPath)).toBe(false);
+      expect(runtime.log).toHaveBeenCalledWith(expect.stringContaining("Moved to Trash:"));
+      expect(fs.readdirSync(trashDir)).toHaveLength(1);
+    } finally {
+      fs.rmSync(homeDir, { recursive: true, force: true });
+    }
   });
 });
 

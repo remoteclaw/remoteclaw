@@ -1,6 +1,6 @@
 import fs from "node:fs";
+import { movePathToTrash } from "../infra/fs-safe-trash.js";
 import { SsrFBlockedError } from "../infra/net/ssrf.js";
-import { movePathToTrash } from "../infra/trash.js";
 import { isCdpHttpReachable, isCdpReady } from "./cdp-reachability.js";
 import { fetchJson, fetchOk } from "./cdp.helpers.js";
 import { appendCdpPath, createTargetViaCdp, normalizeCdpWsUrl } from "./cdp.js";

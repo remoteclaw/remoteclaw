@@ -8,6 +8,7 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { resolveConfigPath } from "../config/config.js";
 import { resolveStateDir } from "../config/paths.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
+import { resolveOwnedStateRoots } from "../config/trash-roots.js";
 import { callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
 import { isValidIPv4 } from "../gateway/net.js";
@@ -295,7 +296,23 @@ export async function ensureWorkspaceAndSessions(
   runtime.log(`Sessions OK: ${shortenHomePath(sessionsDir)}`);
 }
 
-export async function moveToTrash(pathname: string, runtime: RuntimeEnv): Promise<void> {
+export type MoveToTrashOptions = {
+  /**
+   * Directories the fully-resolved target must live under. Required, and the
+   * caller must know them independently of the target: roots derived from the
+   * target canonicalize wherever the target canonicalizes, so the containment
+   * check is trivially true and cannot reject (#3102). Source them from
+   * `resolveOwnedStateRoots()`, plus — only for a user-configured target that
+   * may legitimately live anywhere — that target's declared parent.
+   */
+  allowedRoots: string[];
+};
+
+export async function moveToTrash(
+  pathname: string,
+  runtime: RuntimeEnv,
+  options: MoveToTrashOptions,
+): Promise<void> {
   if (!pathname) {
     return;
   }
@@ -307,51 +324,43 @@ export async function moveToTrash(pathname: string, runtime: RuntimeEnv): Promis
   try {
     const targetPath = path.resolve(pathname);
     const sourcePath = await resolveMoveToTrashSourcePath(targetPath);
-    await movePathToTrash(sourcePath, {
-      allowedRoots: await resolveMoveToTrashAllowedRoots(sourcePath),
-    });
+    await movePathToTrash(sourcePath, { allowedRoots: options.allowedRoots });
     runtime.log(`Moved to Trash: ${shortenHomePath(pathname)}`);
   } catch {
+    // Also the path a containment rejection takes: refusing to delete leaves the
+    // path in place and tells the user to remove it by hand.
     runtime.log(`Failed to move to Trash (manual delete): ${shortenHomePath(pathname)}`);
   }
 }
 
 // Mirror the canonicalization movePathToTrash performs internally, so the
-// allowed roots below are derived from the same parent the rename will use.
+// containment check sees the same parent the rename will use.
 async function resolveMoveToTrashSourcePath(targetPath: string): Promise<string> {
   return path.join(await fs.realpath(path.dirname(targetPath)), path.basename(targetPath));
 }
 
-// These roots are derived from the target, so they do NOT bound where a reset
-// can reach — a config path that is itself a symlink into /etc still resolves
-// inside its own canonical parent. They exist to satisfy the fs-safe contract
-// and to keep a link whose target lives elsewhere from being read as an escape.
-// Bounding reset to known-owned directories would need roots sourced from
-// resolveConfigDir()/resolveStateDir() instead.
-async function resolveMoveToTrashAllowedRoots(sourcePath: string): Promise<string[]> {
-  const allowedRoots = [path.dirname(sourcePath)];
-  const stat = await fs.lstat(sourcePath);
-  if (stat.isSymbolicLink()) {
-    try {
-      allowedRoots.push(path.dirname(await fs.realpath(sourcePath)));
-    } catch {
-      // Broken symlink: the lexical parent is the only root that applies.
-    }
-  }
-  return [...new Set(allowedRoots)];
-}
-
 export async function handleReset(scope: ResetScope, workspaceDir: string, runtime: RuntimeEnv) {
-  await moveToTrash(resolveConfigPath(), runtime);
+  // Roots come from the config/state resolvers, never from the reset target: a
+  // config path that is itself a symlink into /etc resolves inside its own
+  // canonical parent, so target-derived roots let it through (#3102).
+  const ownedRoots = resolveOwnedStateRoots();
+  await moveToTrash(resolveConfigPath(), runtime, { allowedRoots: ownedRoots });
   if (scope === "config") {
     return;
   }
-  await moveToTrash(path.join(resolveConfigDir(), "credentials"), runtime);
+  await moveToTrash(path.join(resolveConfigDir(), "credentials"), runtime, {
+    allowedRoots: ownedRoots,
+  });
   // Reset removes the entire agents tree (every agent's sessions, workspace cache, etc.).
   // Per-agent dirs are created by setup/add commands, so this is the correct scope.
-  await moveToTrash(path.join(resolveStateDir(), "agents"), runtime);
+  await moveToTrash(path.join(resolveStateDir(), "agents"), runtime, { allowedRoots: ownedRoots });
   if (scope === "full") {
-    await moveToTrash(workspaceDir, runtime);
+    // The workspace is user-configured and may legitimately sit outside every
+    // owned root, so the only bound available is its own declared parent. That
+    // still rejects a workspace path that is a symlink pointing out of it.
+    await moveToTrash(workspaceDir, runtime, {
+      allowedRoots: [...ownedRoots, path.dirname(path.resolve(workspaceDir))],
+    });
   }
 }
 

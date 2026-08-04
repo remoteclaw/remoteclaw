@@ -105,7 +105,7 @@ vi.mock("./profile-paths.js", () => ({
   resolveRemoteClawUserDataDir: vi.fn(() => chromeUserDataDir.dir),
 }));
 
-vi.mock("../infra/trash.js", () => ({
+vi.mock("../infra/fs-safe-trash.js", () => ({
   movePathToTrash: vi.fn(async (targetPath: string) => targetPath),
 }));
 

@@ -28,7 +28,9 @@ const mocks = vi.hoisted(() => ({
     scope: "global",
     agents: [],
   })),
-  movePathToTrash: vi.fn(async () => "/trashed"),
+  movePathToTrash: vi.fn(
+    async (_targetPath: string, _options?: { allowedRoots?: string[] }) => "/trashed",
+  ),
   fsAccess: vi.fn(async () => {}),
   fsMkdir: vi.fn(async () => undefined),
   fsAppendFile: vi.fn(async () => {}),
@@ -77,12 +79,15 @@ vi.mock("../../config/sessions/paths.js", () => ({
   resolveSessionTranscriptsDirForAgent: mocks.resolveSessionTranscriptsDirForAgent,
 }));
 
-vi.mock("../../infra/trash.js", () => ({
+vi.mock("../../infra/fs-safe-trash.js", () => ({
   movePathToTrash: mocks.movePathToTrash,
 }));
 
 vi.mock("../../utils.js", () => ({
   resolveUserPath: (p: string) => `/resolved${p.startsWith("/") ? "" : "/"}${p}`,
+  // `config/trash-roots.js` reads this to bound the delete; the mock must keep
+  // it defined or the owned-root lookup throws inside the RPC.
+  resolveConfigDir: () => "/state/remoteclaw",
 }));
 
 vi.mock("../session-utils.js", () => ({
@@ -463,6 +468,27 @@ describe("agents.delete", () => {
     expect(trashedPaths).toContain("/agents/test-agent");
     expect(trashedPaths).toContain("/transcripts/test-agent");
     expect(trashedPaths).not.toContain("/workspace/test-agent");
+  });
+
+  it("bounds both trashed dirs with roots it did not derive from them (#3102)", async () => {
+    const { promise } = makeCall("agents.delete", { agentId: "test-agent" });
+    await promise;
+
+    const calls = mocks.movePathToTrash.mock.calls as unknown as Array<
+      [string, { allowedRoots: string[] }]
+    >;
+    const rootsFor = (target: string) =>
+      calls.find(([pathname]) => pathname === target)?.[1]?.allowedRoots ?? [];
+
+    // The owned roots come from `resolveOwnedStateRoots()`; `/state/remoteclaw`
+    // is the mocked `resolveConfigDir()`. `sessionsDir` gets nothing else — it
+    // always lives under the state dir.
+    expect(rootsFor("/transcripts/test-agent")).toContain("/state/remoteclaw");
+    expect(rootsFor("/transcripts/test-agent")).not.toContain("/transcripts");
+    // `agentDir` is config-declared, so its declared parent is admitted too —
+    // but never the agent dir itself, which would be trivially satisfied.
+    expect(rootsFor("/agents/test-agent")).toContain("/agents");
+    expect(rootsFor("/agents/test-agent")).not.toContain("/agents/test-agent");
   });
 
   it("skips file deletion when deleteFiles is false", async () => {

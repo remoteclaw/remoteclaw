@@ -1,7 +1,9 @@
+import path from "node:path";
 import { resolveAgentDir, resolveAgentWorkspaceDir } from "../agents/agent-scope.js";
 import { writeConfigFile } from "../config/config.js";
 import { logConfigUpdated } from "../config/logging.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
+import { resolveOwnedStateRoots } from "../config/trash-roots.js";
 import { normalizeAgentId } from "../routing/session-key.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { defaultRuntime } from "../runtime.js";
@@ -74,8 +76,16 @@ export async function agentsDeleteCommand(
   // The workspace directory is user-owned — a project/git dir the user points
   // RemoteClaw at, which RemoteClaw never created. Deleting an agent must NOT
   // trash it. Only remove RemoteClaw-owned state (agent dir + session transcripts).
-  await moveToTrash(agentDir, quietRuntime);
-  await moveToTrash(sessionsDir, quietRuntime);
+  //
+  // `agentDir` is config-declared (`agents.<id>.agentDir`) and may point outside
+  // every owned root, so its declared parent is admitted too; the containment
+  // check still rejects an agentDir that is a symlink escaping that parent.
+  // `sessionsDir` is always under the state dir, so the owned roots suffice.
+  const ownedRoots = resolveOwnedStateRoots();
+  await moveToTrash(agentDir, quietRuntime, {
+    allowedRoots: [...ownedRoots, path.dirname(path.resolve(agentDir))],
+  });
+  await moveToTrash(sessionsDir, quietRuntime, { allowedRoots: ownedRoots });
 
   if (opts.json) {
     runtime.log(

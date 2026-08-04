@@ -1,6 +1,8 @@
+import { logDebug } from "../logger.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 import { normalizeStringEntries, uniqueStrings } from "../shared/string-normalization.js";
+import { isArgvOptionLike } from "./argv-safety.js";
 import { parseStrictInteger } from "./parse-finite-number.js";
 import { isTailnetIPv4 } from "./tailnet.js";
 import { resolveWideAreaDiscoveryDomain } from "./widearea-dns.js";
@@ -110,8 +112,33 @@ function decodeDnsSdEscapes(value: string): string {
   return Buffer.from(bytes).toString("utf8");
 }
 
+// Both discovery paths hand a parsed value straight to an argv operand slot —
+// `dns-sd -L <instance>` and `dig … <ptrName> SRV` — and in both cases the value
+// is supplied by whoever answered on the network: an mDNS instance name is
+// publishable by any LAN peer, a PTR answer by any DNS server that responds.
+//
+// Neither tool accepts "--", so a hostile value cannot be neutralized in place;
+// it is dropped instead. Dropping is per record, so one hostile publisher costs
+// only its own entry and cannot suppress discovery of well-behaved peers.
+function dropArgvOptionLike(values: readonly string[], kind: string): string[] {
+  const safe: string[] = [];
+  for (const value of values) {
+    if (isArgvOptionLike(value)) {
+      // JSON.stringify so a value carrying newlines cannot forge log lines.
+      logDebug(
+        `bonjour discovery: dropped ${kind} that argv would parse as an option: ${JSON.stringify(
+          value,
+        )}`,
+      );
+      continue;
+    }
+    safe.push(value);
+  }
+  return safe;
+}
+
 function parseDigShortLines(stdout: string): string[] {
-  return normalizeStringEntries(stdout.split("\n"));
+  return dropArgvOptionLike(normalizeStringEntries(stdout.split("\n")), "DNS answer");
 }
 
 function parseDigTxt(stdout: string): string[] {
@@ -232,7 +259,10 @@ function parseDnsSdBrowse(stdout: string): string[] {
       instances.add(decodeDnsSdEscapes(match[1].trim()));
     }
   }
-  return Array.from(instances.values());
+  // Filtered after decodeDnsSdEscapes, never on the wire form: the escape
+  // sequence "\045evil" decodes to "-evil", so a check upstream of the decode
+  // would pass the very value that reaches argv.
+  return dropArgvOptionLike(Array.from(instances.values()), "mDNS instance name");
 }
 
 function parseDnsSdResolve(stdout: string, instanceName: string): GatewayBonjourBeacon | null {

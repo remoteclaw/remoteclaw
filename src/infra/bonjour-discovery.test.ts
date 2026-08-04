@@ -341,6 +341,196 @@ describe("bonjour-discovery", () => {
     expect(calls.map((c) => c.argv[0])).toContain("dig");
   });
 
+  // Producer-side argv guard (#3101). An mDNS instance name is publishable by
+  // any LAN peer and a PTR answer by any responding DNS server; both land in an
+  // argv operand slot where a leading '-' is read as a flag. Neither dns-sd nor
+  // dig accepts "--", so the hostile record is dropped rather than neutralized.
+  it("never lets a dash-prefixed mDNS instance name reach dns-sd argv", async () => {
+    const calls: string[][] = [];
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      if (argv[0] === "dns-sd" && argv[1] === "-B") {
+        return {
+          stdout: [
+            "Add 2 3 local. _remoteclaw-gw._tcp. -f/etc/passwd",
+            // The same attack smuggled through a dns-sd octal escape: "\045" is
+            // '-', so this decodes to "-oEscaped" and is caught only if the guard
+            // runs after decodeDnsSdEscapes. Kept distinct from the literal case
+            // above so the Set cannot dedupe the two into one assertion.
+            "Add 2 3 local. _remoteclaw-gw._tcp. \\045oEscaped",
+            "Add 2 3 local. _remoteclaw-gw._tcp. Laptop Gateway",
+            "",
+          ].join("\n"),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (argv[0] === "dns-sd" && argv[1] === "-L") {
+        return {
+          stdout: [
+            `${argv[2]}._remoteclaw-gw._tcp. can be reached at laptop.local:18789`,
+            "txtvers=1 gatewayPort=18789",
+            "",
+          ].join("\n"),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 800,
+      domains: ["local."],
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+
+    const resolveArgs = collectMatching(
+      calls,
+      (c) => c[0] === "dns-sd" && c[1] === "-L",
+      (c) => c[2] ?? "",
+    );
+    // The assertion that bites: nothing option-shaped occupies the operand slot.
+    expect(resolveArgs.filter((arg) => arg.startsWith("-"))).toEqual([]);
+    expect(resolveArgs).toEqual(["Laptop Gateway"]);
+
+    // Over-rejection guard: one hostile publisher must not suppress its
+    // well-behaved neighbours, or the fix is worse than the bug.
+    expect(beacons.map((b) => b.instanceName)).toEqual(["Laptop Gateway"]);
+  });
+
+  // The regression a too-eager guard would cause. RFC 6763 §4.1.1 instance names
+  // are free-form UTF-8, so a guard rejecting '-' anywhere (or non-ASCII, or
+  // spaces, the way the SSH host denylist does) would silently stop discovering
+  // most real gateways while still reading as "hardened".
+  it("still passes well-formed instance names through to dns-sd unchanged", async () => {
+    const wellFormed = [
+      "Laptop Gateway", // spaces
+      "peters-mac-studio-1", // interior and trailing hyphens
+      "Peter’s Mac Studio", // non-ASCII punctuation
+      "studio.local", // dots
+      "gw_01", // underscore
+    ];
+
+    const calls: string[][] = [];
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      if (argv[0] === "dns-sd" && argv[1] === "-B") {
+        return {
+          stdout: [
+            ...wellFormed.map((name) => `Add 2 3 local. _remoteclaw-gw._tcp. ${name}`),
+            "",
+          ].join("\n"),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (argv[0] === "dns-sd" && argv[1] === "-L") {
+        return {
+          stdout: [`${argv[2]}._remoteclaw-gw._tcp. can be reached at host.local:18789`, ""].join(
+            "\n",
+          ),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 800,
+      domains: ["local."],
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+
+    const resolveArgs = collectMatching(
+      calls,
+      (c) => c[0] === "dns-sd" && c[1] === "-L",
+      (c) => c[2] ?? "",
+    );
+    expect(resolveArgs).toEqual(wellFormed);
+    expect(beacons.map((b) => b.instanceName)).toEqual(wellFormed);
+  });
+
+  it("never lets a dash-prefixed PTR answer reach dig argv", async () => {
+    const calls: string[][] = [];
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+    const serviceBase = `_remoteclaw-gw._tcp.${zone}`;
+    const goodService = `studio-gateway.${serviceBase}`;
+
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      const cmd = argv[0];
+
+      if (cmd === "dns-sd" && argv[1] === "-B") {
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      if (cmd === "tailscale" && argv[1] === "status") {
+        return {
+          stdout: JSON.stringify({ Self: { TailscaleIPs: ["100.69.232.64"] } }),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (cmd === "dig") {
+        const qname = argv[argv.length - 2] ?? "";
+        const qtype = argv[argv.length - 1] ?? "";
+        if (qtype === "PTR" && qname === serviceBase) {
+          // A hostile DNS server answering the PTR probe with a flag.
+          return {
+            stdout: `-f/etc/passwd\n${goodService}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        if (qtype === "SRV" && qname === goodService) {
+          return {
+            stdout: `0 0 18789 studio.${zone}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 1200,
+      domains: [WIDE_AREA_DOMAIN],
+      wideAreaDomain: WIDE_AREA_DOMAIN,
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+
+    // dig takes the query name as an operand; nothing there may start with '-'.
+    const digOperands = collectMatching(
+      calls,
+      (c) => c[0] === "dig",
+      (c) => c[c.length - 2] ?? "",
+    );
+    expect(digOperands.filter((arg) => arg.startsWith("-"))).toEqual([]);
+
+    // The clean PTR from the same answer set still resolves.
+    expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
+  });
+
   it("normalizes domains and respects domains override", async () => {
     const calls: string[][] = [];
     const run = vi.fn(async (argv: string[]) => {

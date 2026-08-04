@@ -1,4 +1,5 @@
 import { spawn } from "node:child_process";
+import { resolveWindowsSystem32Path } from "../infra/windows-system-paths.js";
 
 const DEFAULT_GRACE_MS = 3000;
 const MAX_GRACE_MS = 60_000;
@@ -104,7 +105,7 @@ function signalProcessTreeUnix(
 
 function runTaskkill(args: string[]): void {
   try {
-    spawn("taskkill", args, {
+    spawn(resolveWindowsSystem32Path("taskkill.exe"), args, {
       stdio: "ignore",
       detached: true,
       windowsHide: true,

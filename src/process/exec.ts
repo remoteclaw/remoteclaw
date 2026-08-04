@@ -9,6 +9,7 @@ import {
   decodeWindowsOutputBuffer,
   resolveWindowsConsoleEncoding,
 } from "../infra/windows-encoding.js";
+import { resolveWindowsCmdExePath } from "../infra/windows-system-paths.js";
 import { logDebug, logError } from "../logger.js";
 import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { resolveCommandStdio } from "./spawn-utils.js";
@@ -107,7 +108,10 @@ function resolveChildProcessInvocation(params: {
   const useCmdWrapper = isWindowsBatchCommand(resolvedCommand);
 
   return {
-    command: useCmdWrapper ? (process.env.ComSpec ?? "cmd.exe") : resolvedCommand,
+    // ComSpec stays the primary (it is the documented Windows override), but the
+    // fallback is pinned rather than a bare name so an unset ComSpec cannot fall
+    // through to a %PATH% lookup (CWE-426).
+    command: useCmdWrapper ? (process.env.ComSpec ?? resolveWindowsCmdExePath()) : resolvedCommand,
     args: useCmdWrapper
       ? ["/d", "/s", "/c", buildCmdExeCommandLine(resolvedCommand, finalArgv.slice(1))]
       : finalArgv.slice(1),

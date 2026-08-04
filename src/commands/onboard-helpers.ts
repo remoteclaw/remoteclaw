@@ -13,6 +13,7 @@ import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
 import { pickPrimaryLanIPv4, isValidIPv4 } from "../gateway/net.js";
 import { isSafeExecutableValue } from "../infra/safe-executable-value.js";
 import { pickPrimaryTailnetIPv4 } from "../infra/tailnet.js";
+import { resolveWindowsSystem32Path } from "../infra/windows-system-paths.js";
 import { isWSL } from "../infra/wsl.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import type { RuntimeEnv } from "../runtime.js";
@@ -340,7 +341,10 @@ export async function detectBinary(name: string): Promise<boolean> {
     }
   }
 
-  const command = process.platform === "win32" ? ["where", name] : ["/usr/bin/env", "which", name];
+  const command =
+    process.platform === "win32"
+      ? [resolveWindowsSystem32Path("where.exe"), name]
+      : ["/usr/bin/env", "which", name];
   try {
     const result = await runCommandWithTimeout(command, { timeoutMs: 2000 });
     return result.code === 0 && result.stdout.trim().length > 0;

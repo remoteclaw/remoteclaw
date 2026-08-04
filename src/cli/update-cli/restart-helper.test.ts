@@ -4,6 +4,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { resolveWindowsCmdExePath } from "../../infra/windows-system-paths.js";
 import { prepareRestartScript, runRestartScript } from "./restart-helper.js";
 
 vi.mock("node:child_process", async () => {
@@ -559,11 +560,15 @@ exit 0
 
       await runRestartScript(scriptPath);
 
-      expect(spawn).toHaveBeenCalledWith("cmd.exe", ["/d", "/s", "/c", scriptPath], {
-        detached: true,
-        stdio: "ignore",
-        windowsHide: true,
-      });
+      expect(spawn).toHaveBeenCalledWith(
+        resolveWindowsCmdExePath(),
+        ["/d", "/s", "/c", scriptPath],
+        {
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
+        },
+      );
       expect(mockChild.on).toHaveBeenCalledWith("error", expect.any(Function));
       expect(mockChild.unref).toHaveBeenCalledTimes(1);
     });
@@ -576,11 +581,15 @@ exit 0
 
       await runRestartScript(scriptPath);
 
-      expect(spawn).toHaveBeenCalledWith("cmd.exe", ["/d", "/s", "/c", `"${scriptPath}"`], {
-        detached: true,
-        stdio: "ignore",
-        windowsHide: true,
-      });
+      expect(spawn).toHaveBeenCalledWith(
+        resolveWindowsCmdExePath(),
+        ["/d", "/s", "/c", `"${scriptPath}"`],
+        {
+          detached: true,
+          stdio: "ignore",
+          windowsHide: true,
+        },
+      );
     });
 
     it("does not throw when spawn fails synchronously", async () => {

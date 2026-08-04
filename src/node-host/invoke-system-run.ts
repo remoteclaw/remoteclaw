@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import type { GatewayClient } from "../gateway/client.js";
 import { sanitizeSystemRunEnvOverrides } from "../infra/host-env-security.js";
+import { resolveWindowsCmdExePath } from "../infra/windows-system-paths.js";
 import type {
   ExecEventPayload,
   ExecFinishedEventParams,
@@ -21,7 +22,8 @@ function resolveSystemRunCommand(opts: {
     return { ok: true, argv, shellCommand: null, cmdText: argv.join(" ") };
   }
   if (typeof raw === "string" && raw.trim()) {
-    const shell = process.platform === "win32" ? ["cmd.exe", "/c", raw] : ["sh", "-lc", raw];
+    const shell =
+      process.platform === "win32" ? [resolveWindowsCmdExePath(), "/c", raw] : ["sh", "-lc", raw];
     return { ok: true, argv: shell, shellCommand: raw, cmdText: raw };
   }
   return { ok: false, message: "command required" };

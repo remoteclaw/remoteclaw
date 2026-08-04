@@ -4,6 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { captureFullEnv } from "../test-utils/env.js";
+import { resolveWindowsCmdExePath } from "./windows-system-paths.js";
 
 const spawnMock = vi.hoisted(() => vi.fn());
 const resolvePreferredRemoteClawTmpDirMock = vi.hoisted(() => vi.fn(() => os.tmpdir()));
@@ -106,7 +107,7 @@ describe("relaunchGatewayScheduledTask", () => {
     expect(result.tried).toContain('schtasks /Run /TN "RemoteClaw Gateway (work)"');
     expect(result.tried).toContain(`cmd.exe /d /s /c ${seenCommandArg}`);
     const spawnCall = requireFirstMockCall(spawnMock, "restart helper spawn");
-    expect(spawnCall[0]).toBe("cmd.exe");
+    expect(spawnCall[0]).toBe(resolveWindowsCmdExePath());
     expect(spawnCall[1]).toStrictEqual(["/d", "/s", "/c", seenCommandArg]);
     expect(spawnCall[2]).toStrictEqual({
       detached: true,
@@ -200,7 +201,7 @@ describe("relaunchGatewayScheduledTask", () => {
     if (typeof commandArg !== "string") {
       throw new Error("expected quoted restart helper path");
     }
-    expect(spawnCall[0]).toBe("cmd.exe");
+    expect(spawnCall[0]).toBe(resolveWindowsCmdExePath());
     expect(commandArgs).toStrictEqual(["/d", "/s", "/c", commandArg]);
     expect(commandArg.startsWith('"')).toBe(true);
     expect(commandArg.endsWith('"')).toBe(true);

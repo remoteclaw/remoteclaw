@@ -1,5 +1,6 @@
 // Kill tree tests cover process tree termination and platform-specific fallbacks.
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { resolveWindowsSystem32Path } from "../infra/windows-system-paths.js";
 import { withMockedPlatform } from "../test-utils/vitest-spies.js";
 
 const { spawnMock } = vi.hoisted(() => ({
@@ -21,7 +22,8 @@ let signalProcessTree: typeof import("./kill-tree.js").signalProcessTree;
 
 function expectTaskkillCall(index: number, args: string[]) {
   expect(spawnMock.mock.calls[index]).toStrictEqual([
-    "taskkill",
+    // Pinned to %SystemRoot%\System32 so %PATH% cannot hijack it (CWE-426).
+    resolveWindowsSystem32Path("taskkill.exe"),
     args,
     {
       detached: true,

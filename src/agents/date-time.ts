@@ -3,6 +3,7 @@
  */
 import { execFileSync } from "node:child_process";
 import { resolveDateTimestampMs } from "@remoteclaw/normalization-core/number-coercion";
+import { resolveWindowsPowerShellPath } from "../infra/windows-system-paths.js";
 
 export const MODULE_ATTESTATIONS = {
   resolveUserTimezone: "live",
@@ -165,7 +166,7 @@ function detectSystemTimeFormat(): boolean {
   if (process.platform === "win32") {
     try {
       const result = execFileSync(
-        "powershell",
+        resolveWindowsPowerShellPath(),
         ["-Command", "(Get-Culture).DateTimeFormat.ShortTimePattern"],
         { encoding: "utf8", timeout: 1000 },
       ).trim();

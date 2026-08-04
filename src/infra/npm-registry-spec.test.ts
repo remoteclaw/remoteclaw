@@ -2,13 +2,18 @@
 import { describe, expect, it } from "vitest";
 import {
   compareRemoteClawReleaseVersions,
+  findUnclaimedNpmScope,
+  findUnclaimedNpmScopeForPackageName,
   formatPrereleaseResolutionError,
+  formatUnclaimedNpmScopeDependencyError,
+  formatUnclaimedNpmScopeError,
   isExactSemverVersion,
   isRemoteClawOrgNpmSpec,
   isRemoteClawStableCorrectionVersion,
   isPrereleaseSemverVersion,
   isPrereleaseResolutionAllowed,
   parseRegistryNpmSpec,
+  UNCLAIMED_FIRST_PARTY_NPM_SCOPES,
   validateRegistryNpmSpec,
 } from "./npm-registry-spec.js";
 
@@ -220,5 +225,84 @@ describe("npm prerelease resolution policy", () => {
         resolvedVersion,
       }),
     ).toContain(expected);
+  });
+});
+
+describe("unclaimed first-party npm scope guard", () => {
+  it.each([
+    "@remoteclaw/discord",
+    "@remoteclaw/slack",
+    "@remoteclaw/whatsapp",
+    "@remoteclaw/discord@1.2.3",
+    "@remoteclaw/discord@latest",
+  ])("refuses %s because the scope is not registered", (spec) => {
+    expect(findUnclaimedNpmScope(spec)).toBe("@remoteclaw");
+  });
+
+  it.each([
+    // The unscoped package IS published by this project — blocking it would be a
+    // self-inflicted outage, so the guard must match the scope segment, not a substring.
+    "remoteclaw",
+    "remoteclaw@1.2.3",
+    "remoteclaw-plugin-yuanbao@2.15.0",
+    // Adjacent scopes belong to other people; over-blocking them is not ours to do.
+    "@remoteclaw-community/discord",
+    // Real third-party catalog entries must keep resolving.
+    "@wecom/wecom-remoteclaw-plugin@2026.5.7",
+    "@tencent-weixin/remoteclaw-weixin@2.4.3",
+  ])("allows %s", (spec) => {
+    expect(findUnclaimedNpmScope(spec)).toBeNull();
+  });
+
+  it("returns null for specs that do not parse, leaving rejection to the validator", () => {
+    expect(findUnclaimedNpmScope("https://evil.example/pkg.tgz")).toBeNull();
+    expect(findUnclaimedNpmScope("@remoteclaw/discord@^1.0.0")).toBeNull();
+    expect(findUnclaimedNpmScope(undefined)).toBeNull();
+    // ...but the validator still rejects them, so nothing is admitted by the pair.
+    expect(validateRegistryNpmSpec("https://evil.example/pkg.tgz")).not.toBeNull();
+    expect(validateRegistryNpmSpec("@remoteclaw/discord@^1.0.0")).not.toBeNull();
+  });
+
+  it("keeps the scope list explicit so registering a scope is a reviewed change", () => {
+    expect(UNCLAIMED_FIRST_PARTY_NPM_SCOPES).toEqual(["@remoteclaw"]);
+  });
+
+  it("explains why the install was refused and how to proceed", () => {
+    const message = formatUnclaimedNpmScopeError({
+      spec: "@remoteclaw/discord",
+      scope: "@remoteclaw",
+    });
+    expect(message).toContain("@remoteclaw/discord");
+    expect(message).toContain("not registered");
+    expect(message).toContain("dependency confusion");
+    // The two routes an operator actually has: bundled channel, or a local build.
+    expect(message).toContain("already bundled");
+    expect(message).toContain("remoteclaw plugins install ./my-plugin");
+  });
+});
+
+describe("unclaimed scope guard for declared dependencies", () => {
+  it.each(["@remoteclaw/telemetry-core", "@remoteclaw/anything"])(
+    "flags dependency name %s",
+    (name) => {
+      expect(findUnclaimedNpmScopeForPackageName(name)).toBe("@remoteclaw");
+    },
+  );
+
+  it.each(["remoteclaw", "@remoteclaw-community/x", "left-pad", "@wecom/plugin"])(
+    "leaves dependency name %s alone",
+    (name) => {
+      expect(findUnclaimedNpmScopeForPackageName(name)).toBeNull();
+    },
+  );
+
+  it("names the offending dependencies and why they are refused", () => {
+    const message = formatUnclaimedNpmScopeDependencyError({
+      dependencies: ["@remoteclaw/a", "@remoteclaw/b"],
+      scope: "@remoteclaw",
+    });
+    expect(message).toContain("@remoteclaw/a, @remoteclaw/b");
+    expect(message).toContain("not registered");
+    expect(message).toContain("dependency confusion");
   });
 });

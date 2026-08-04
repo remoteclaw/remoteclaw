@@ -714,6 +714,74 @@ describe("installPluginFromArchive", () => {
 });
 
 describe("installPluginFromDir", () => {
+  it("still installs an @remoteclaw/* package from a local directory", async () => {
+    // The other half of the unclaimed-scope guard: only *registry* resolution is
+    // refused. Every bundled channel is named @remoteclaw/*, so installing one from
+    // disk must keep working — otherwise the guard would break the very route its
+    // own error message recommends.
+    const { pluginDir, extensionsDir } = setupInstallPluginFromDirFixture();
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(pluginDir, "package.json"), "utf-8"),
+    ) as Record<string, unknown>;
+    expect(manifest.name).toBe("@remoteclaw/test-plugin");
+
+    vi.mocked(runCommandWithTimeout).mockResolvedValue({
+      code: 0,
+      stdout: "",
+      stderr: "",
+      signal: null,
+      killed: false,
+      termination: "exit",
+    });
+
+    const { result } = await installFromDirWithWarnings({ pluginDir, extensionsDir });
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) {
+      throw new Error(`expected local install to succeed, got: ${result.error}`);
+    }
+    expect(result.pluginId).toBe("test-plugin");
+    expect(fs.existsSync(path.join(extensionsDir, "test-plugin", "package.json"))).toBe(true);
+  });
+
+  it("refuses a local package that depends on the unclaimed scope, without running npm", async () => {
+    // The npm-spec guard does not cover this: `npm install` resolves the package's
+    // OWN dependencies from the registry, and it runs after the code-safety scan has
+    // already inspected the pre-copy source. Reached from every lane, including the
+    // local-path install the scope-refusal message recommends.
+    const { pluginDir, extensionsDir } = setupPluginInstallDirs();
+    fs.mkdirSync(path.join(pluginDir, "dist"), { recursive: true });
+    fs.writeFileSync(
+      path.join(pluginDir, "package.json"),
+      JSON.stringify({
+        name: "@vendor/looks-legitimate",
+        version: "1.0.0",
+        remoteclaw: { extensions: ["./dist/index.js"] },
+        dependencies: { "@remoteclaw/telemetry-core": "^1.0.0" },
+      }),
+      "utf-8",
+    );
+    fs.writeFileSync(path.join(pluginDir, "dist", "index.js"), "export {};\n", "utf-8");
+
+    const run = vi.mocked(runCommandWithTimeout);
+    run.mockReset();
+
+    const result = await installPluginFromDir({
+      dirPath: pluginDir,
+      extensionsDir,
+      logger: { info: () => {}, warn: () => {} },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected the dependency guard to refuse");
+    }
+    expect(result.error).toContain("@remoteclaw/telemetry-core");
+    expect(result.error).toContain("not registered");
+    expect(run).not.toHaveBeenCalled();
+    expect(fs.existsSync(path.join(extensionsDir, "looks-legitimate"))).toBe(false);
+  });
+
   function expectInstalledAsMemoryCognee(
     result: Awaited<ReturnType<typeof installPluginFromDir>>,
     extensionsDir: string,
@@ -1017,8 +1085,8 @@ describe("installPluginFromNpmSpec", () => {
           code: 0,
           stdout: JSON.stringify([
             {
-              id: "@remoteclaw/voice-call@0.0.1",
-              name: "@remoteclaw/voice-call",
+              id: "@example/voice-call@0.0.1",
+              name: "@example/voice-call",
               version: "0.0.1",
               filename: packedName,
               integrity: "sha512-plugin-test",
@@ -1035,7 +1103,7 @@ describe("installPluginFromNpmSpec", () => {
     });
 
     const result = await installPluginFromNpmSpec({
-      spec: "@remoteclaw/voice-call@0.0.1",
+      spec: "@example/voice-call@0.0.1",
       extensionsDir,
       logger: { info: () => {}, warn: () => {} },
     });
@@ -1043,12 +1111,12 @@ describe("installPluginFromNpmSpec", () => {
     if (!result.ok) {
       return;
     }
-    expect(result.npmResolution?.resolvedSpec).toBe("@remoteclaw/voice-call@0.0.1");
+    expect(result.npmResolution?.resolvedSpec).toBe("@example/voice-call@0.0.1");
     expect(result.npmResolution?.integrity).toBe("sha512-plugin-test");
 
     expectSingleNpmPackIgnoreScriptsCall({
       calls: run.mock.calls,
-      expectedSpec: "@remoteclaw/voice-call@0.0.1",
+      expectedSpec: "@example/voice-call@0.0.1",
     });
 
     expect(packTmpDir).not.toBe("");
@@ -1064,11 +1132,42 @@ describe("installPluginFromNpmSpec", () => {
     }
   });
 
+  it.each([
+    "@remoteclaw/discord",
+    "@remoteclaw/slack",
+    "@remoteclaw/whatsapp",
+    "@remoteclaw/discord@1.2.3",
+  ])("refuses %s: the scope is unclaimed, so the registry cannot be serving ours", async (spec) => {
+    const run = vi.mocked(runCommandWithTimeout);
+    run.mockReset();
+
+    const result = await installPluginFromNpmSpec({
+      spec,
+      logger: { info: () => {}, warn: () => {} },
+    });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) {
+      throw new Error("expected the unclaimed-scope guard to refuse");
+    }
+    expect(result.code).toBe(PLUGIN_INSTALL_ERROR_CODE.UNCLAIMED_NPM_SCOPE);
+    expect(result.error).toContain("not registered");
+    expect(result.error).toContain("dependency confusion");
+    // No subprocess at all: the refusal lands before `npm pack` is spawned. This is
+    // the property that survives a squatter registering the scope — an install that
+    // fails only because the registry currently 404s is not a control.
+    expect(run).not.toHaveBeenCalled();
+  });
+
+  // The other half of this property — that an @remoteclaw/* package still installs
+  // from a local directory — is asserted in the installPluginFromDir describe above,
+  // where the dependency-install subprocess is mocked appropriately.
+
   it("aborts when integrity drift callback rejects the fetched artifact", async () => {
     const run = vi.mocked(runCommandWithTimeout);
     mockNpmPackMetadataResult(run, {
-      id: "@remoteclaw/voice-call@0.0.1",
-      name: "@remoteclaw/voice-call",
+      id: "@example/voice-call@0.0.1",
+      name: "@example/voice-call",
       version: "0.0.1",
       filename: "voice-call-0.0.1.tgz",
       integrity: "sha512-new",
@@ -1077,7 +1176,7 @@ describe("installPluginFromNpmSpec", () => {
 
     const onIntegrityDrift = vi.fn(async () => false);
     const result = await installPluginFromNpmSpec({
-      spec: "@remoteclaw/voice-call@0.0.1",
+      spec: "@example/voice-call@0.0.1",
       expectedIntegrity: "sha512-old",
       onIntegrityDrift,
     });
@@ -1101,7 +1200,7 @@ describe("installPluginFromNpmSpec", () => {
     });
 
     const result = await installPluginFromNpmSpec({
-      spec: "@remoteclaw/not-found",
+      spec: "@example/not-found",
       logger: { info: () => {}, warn: () => {} },
     });
     expect(result.ok).toBe(false);
@@ -1113,8 +1212,8 @@ describe("installPluginFromNpmSpec", () => {
   it("rejects bare npm specs that resolve to prerelease versions", async () => {
     const run = vi.mocked(runCommandWithTimeout);
     mockNpmPackMetadataResult(run, {
-      id: "@remoteclaw/voice-call@0.0.2-beta.1",
-      name: "@remoteclaw/voice-call",
+      id: "@example/voice-call@0.0.2-beta.1",
+      name: "@example/voice-call",
       version: "0.0.2-beta.1",
       filename: "voice-call-0.0.2-beta.1.tgz",
       integrity: "sha512-beta",
@@ -1122,13 +1221,13 @@ describe("installPluginFromNpmSpec", () => {
     });
 
     const result = await installPluginFromNpmSpec({
-      spec: "@remoteclaw/voice-call",
+      spec: "@example/voice-call",
       logger: { info: () => {}, warn: () => {} },
     });
     expect(result.ok).toBe(false);
     if (!result.ok) {
       expect(result.error).toContain("prerelease version 0.0.2-beta.1");
-      expect(result.error).toContain('"@remoteclaw/voice-call@beta"');
+      expect(result.error).toContain('"@example/voice-call@beta"');
     }
   });
 
@@ -1145,8 +1244,8 @@ describe("installPluginFromNpmSpec", () => {
           code: 0,
           stdout: JSON.stringify([
             {
-              id: "@remoteclaw/voice-call@0.0.2-beta.1",
-              name: "@remoteclaw/voice-call",
+              id: "@example/voice-call@0.0.2-beta.1",
+              name: "@example/voice-call",
               version: "0.0.2-beta.1",
               filename: packedName,
               integrity: "sha512-beta",
@@ -1167,7 +1266,7 @@ describe("installPluginFromNpmSpec", () => {
       version: "0.0.1",
     });
     const result = await installPluginFromNpmSpec({
-      spec: "@remoteclaw/voice-call@beta",
+      spec: "@example/voice-call@beta",
       extensionsDir,
       logger: { info: () => {}, warn: () => {} },
     });
@@ -1176,10 +1275,10 @@ describe("installPluginFromNpmSpec", () => {
       return;
     }
     expect(result.npmResolution?.version).toBe("0.0.2-beta.1");
-    expect(result.npmResolution?.resolvedSpec).toBe("@remoteclaw/voice-call@0.0.2-beta.1");
+    expect(result.npmResolution?.resolvedSpec).toBe("@example/voice-call@0.0.2-beta.1");
     expectSingleNpmPackIgnoreScriptsCall({
       calls: run.mock.calls,
-      expectedSpec: "@remoteclaw/voice-call@beta",
+      expectedSpec: "@example/voice-call@beta",
     });
     expect(packTmpDir).not.toBe("");
   });

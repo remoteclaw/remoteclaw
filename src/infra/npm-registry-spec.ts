@@ -135,6 +135,85 @@ export function isRemoteClawOrgNpmSpec(rawSpec: string | undefined): boolean {
   return parsed?.name.startsWith("@remoteclaw/") === true;
 }
 
+/**
+ * npm scopes this project's docs and channel catalog present as first-party, but
+ * which are NOT registered on the public npm registry.
+ *
+ * A scope nobody owns is a dependency-confusion vector. Our own documentation tells
+ * operators to run `remoteclaw plugins install @remoteclaw/<channel>`; whoever
+ * registers the scope first serves that install, and installed plugins run in-process
+ * with full host capability (no sandbox). So resolution from these scopes fails closed.
+ *
+ * The refusal is scope-wide rather than an allowlist of the names we document: those
+ * names are precisely what a squatter would publish, so allowlisting them would
+ * allowlist the attack. It is also narrower than it looks — only *registry* resolution
+ * is refused. Local path, directory, and tarball installs never consult this list, so
+ * the in-tree `@remoteclaw/*` extensions still install from disk.
+ *
+ * Remove a scope from this list once it is actually registered and its packages are
+ * published by this project. At that point the durable control is `expectedIntegrity`
+ * pinning, which the third-party catalog entries already carry.
+ *
+ * Distinct from `isRemoteClawOrgNpmSpec` above, which asks whether a spec is *ours* —
+ * an ownership question that stays true after the scope is registered. This asks
+ * whether the scope is *unowned on the registry*, which is what gates installs. The two
+ * agree today only by coincidence; do not collapse them.
+ */
+export const UNCLAIMED_FIRST_PARTY_NPM_SCOPES: readonly string[] = ["@remoteclaw"];
+
+/**
+ * Returns the unclaimed first-party scope a spec resolves into, or null when the spec
+ * is safe to resolve from the registry.
+ *
+ * Matches the scope segment only, so the unscoped `remoteclaw` package — which this
+ * project does publish — is unaffected. Unparseable specs return null; they are
+ * rejected separately by `validateRegistryNpmSpec`.
+ */
+export function findUnclaimedNpmScope(rawSpec: string | undefined): string | null {
+  const parsed = rawSpec ? parseRegistryNpmSpec(rawSpec) : null;
+  return parsed ? findUnclaimedNpmScopeForPackageName(parsed.name) : null;
+}
+
+/**
+ * Scope check for a bare package name, as it appears as a key in a `dependencies`
+ * map — where there is no selector to parse.
+ *
+ * Needed because `npm install` resolves a package's own declared dependencies from
+ * the registry, which is the same exposure as installing the package directly: a
+ * plugin depending on `@remoteclaw/anything` would pull a squatted package into its
+ * `node_modules` and import it in-process.
+ */
+export function findUnclaimedNpmScopeForPackageName(name: string): string | null {
+  const trimmed = name.trim();
+  return UNCLAIMED_FIRST_PARTY_NPM_SCOPES.find((scope) => trimmed.startsWith(`${scope}/`)) ?? null;
+}
+
+/** Formats the refusal shown when an installed package declares an unclaimed-scope dependency. */
+export function formatUnclaimedNpmScopeDependencyError(params: {
+  dependencies: readonly string[];
+  scope: string;
+}): string {
+  const list = params.dependencies.join(", ");
+  return (
+    `Refusing to install dependencies for this package: it requires ${list} from the ` +
+    `"${params.scope}" npm scope, which is not registered. Whoever claims that scope would ` +
+    `supply the code, and it would run in-process with no sandbox (dependency confusion). ` +
+    `Ask the package author to depend on a package published under a scope they control.`
+  );
+}
+
+/** Formats the operator-facing refusal shown when a spec targets an unclaimed scope. */
+export function formatUnclaimedNpmScopeError(params: { spec: string; scope: string }): string {
+  return (
+    `Refusing to resolve "${params.spec}" from the public npm registry: the "${params.scope}" ` +
+    `scope is not registered, so any package published under it is not ours and installing it ` +
+    `would run unverified code in-process (dependency confusion). Channels that ship with ` +
+    `RemoteClaw are already bundled — enable the channel in your config instead of installing ` +
+    `it. To install a plugin you built yourself, pass its path or tarball, for example ` +
+    `"remoteclaw plugins install ./my-plugin".`
+  );
+}
+
 /** Validates a registry-only npm spec and returns a user-facing error when rejected. */
 export function validateRegistryNpmSpec(rawSpec: string): string | null {
   const parsed = parseRegistryNpmSpecInternal(rawSpec);

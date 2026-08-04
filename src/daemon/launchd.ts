@@ -2,7 +2,11 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { parseStrictInteger, parseStrictPositiveInteger } from "../infra/parse-finite-number.js";
 import { cleanStaleGatewayProcessesSync } from "../infra/restart-stale-pids.js";
-import { resolveWindowsCmdExePath } from "../infra/windows-system-paths.js";
+import {
+  formatRejectedWindowsShellOverride,
+  selectWindowsShellPath,
+} from "../infra/windows-system-paths.js";
+import { logError } from "../logger.js";
 import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { sanitizeForLog } from "../terminal/ansi.js";
 import {
@@ -106,9 +110,13 @@ async function execLaunchctl(
   args: string[],
 ): Promise<{ stdout: string; stderr: string; code: number }> {
   const isWindows = process.platform === "win32";
-  // ComSpec stays the primary override; the fallback is pinned so an unset
-  // ComSpec cannot fall through to a %PATH% lookup (CWE-426).
-  const file = isWindows ? (process.env.ComSpec ?? resolveWindowsCmdExePath()) : "launchctl";
+  // ComSpec stays the documented Windows override, but it is validated rather than
+  // trusted — an unusable value falls back to the pinned `cmd.exe` and is reported.
+  const shell = isWindows ? selectWindowsShellPath() : null;
+  if (shell?.rejectedComSpec !== undefined) {
+    logError(formatRejectedWindowsShellOverride(shell));
+  }
+  const file = shell ? shell.path : "launchctl";
   const fileArgs = isWindows ? ["/d", "/s", "/c", "launchctl", ...args] : args;
   return await execFileUtf8(file, fileArgs, isWindows ? { windowsHide: true } : {});
 }

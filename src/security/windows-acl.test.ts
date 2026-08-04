@@ -427,13 +427,24 @@ Successfully processed 1 files`;
         stderr: "",
       });
 
+      // An explicit empty env, not an absent one: it makes the resolved path a literal
+      // this suite can state, rather than whatever %SystemRoot% the host running the
+      // tests happens to export.
       const result = await inspectWindowsAcl("C:\\test\\file.txt", {
         exec: mockExec,
+        env: {},
       });
       expectInspectSuccess(result, 2);
       // /sid is passed so that account names are printed as SIDs, making the
       // audit locale-independent (fixes #35834).
-      expect(mockExec).toHaveBeenCalledWith("icacls.exe", ["C:\\test\\file.txt", "/sid"]);
+      //
+      // Pinned to the default root, NOT bare `icacls.exe`. This file used to carry its
+      // own resolver, which returned the bare name whenever the caller's env had no
+      // SystemRoot — a %PATH% lookup at exactly the moment ACLs are being read (#3112).
+      expect(mockExec).toHaveBeenCalledWith("C:\\Windows\\System32\\icacls.exe", [
+        "C:\\test\\file.txt",
+        "/sid",
+      ]);
     });
 
     it("classifies *S-1-5-18 (SID form of SYSTEM from /sid) as trusted", async () => {
@@ -478,8 +489,18 @@ Successfully processed 1 files`;
       expectInspectSuccess(result, 2);
       expect(result.trusted).toHaveLength(2);
       expect(result.untrustedGroup).toHaveLength(0);
-      expect(mockExec).toHaveBeenNthCalledWith(1, "icacls.exe", ["C:\\test\\file.txt", "/sid"]);
-      expect(mockExec).toHaveBeenNthCalledWith(2, "whoami.exe", ["/user", "/fo", "csv", "/nh"]);
+      // Both pinned to the default root — the env above carries no SystemRoot, and the
+      // pre-#3112 resolver degraded to a bare name in exactly that case.
+      expect(mockExec).toHaveBeenNthCalledWith(1, "C:\\Windows\\System32\\icacls.exe", [
+        "C:\\test\\file.txt",
+        "/sid",
+      ]);
+      expect(mockExec).toHaveBeenNthCalledWith(2, "C:\\Windows\\System32\\whoami.exe", [
+        "/user",
+        "/fo",
+        "csv",
+        "/nh",
+      ]);
     });
 
     it("returns error state on exec failure", async () => {
@@ -540,21 +561,48 @@ Successfully processed 1 files`;
           stderr: "",
         });
 
+      // A NON-default root. This case used to pass `C:\Windows`, which is byte-identical
+      // to the fallback — so it could not tell "read SystemRoot" apart from "used the
+      // default" and would have stayed green with the env lookup deleted.
       const result = await inspectWindowsAcl("C:\\test\\file.txt", {
         exec: mockExec,
-        env: { SystemRoot: "C:\\Windows" },
+        env: { SystemRoot: "D:\\WinNT" },
       });
 
       expectInspectSuccess(result, 1);
-      expect(mockExec).toHaveBeenNthCalledWith(1, "C:\\Windows\\System32\\icacls.exe", [
+      expect(mockExec).toHaveBeenNthCalledWith(1, "D:\\WinNT\\System32\\icacls.exe", [
         "C:\\test\\file.txt",
         "/sid",
       ]);
-      expect(mockExec).toHaveBeenNthCalledWith(2, "C:\\Windows\\System32\\whoami.exe", [
+      expect(mockExec).toHaveBeenNthCalledWith(2, "D:\\WinNT\\System32\\whoami.exe", [
         "/user",
         "/fo",
         "csv",
         "/nh",
+      ]);
+    });
+
+    // The file-local resolver this converged onto had no validation at all: no `..`
+    // rejection, no UNC rejection, no drive-letter-root requirement. Sharing the hardened
+    // resolver is what makes these rows assertable here rather than only in its own suite.
+    it.each([
+      ["a traversal", "C:\\Windows\\..\\Users\\pub\\evil"],
+      ["a UNC share", "\\\\attacker\\share\\Windows"],
+      ["a PATH-separator injection", "C:\\Windows;C:\\Evil"],
+    ])("refuses %s in SystemRoot and falls back to the default root", async (_label, hostile) => {
+      const mockExec = vi.fn().mockResolvedValue({
+        stdout: "C:\\test\\file.txt BUILTIN\\Administrators:(F)",
+        stderr: "",
+      });
+
+      await inspectWindowsAcl("C:\\test\\file.txt", {
+        exec: mockExec,
+        env: { SystemRoot: hostile },
+      });
+
+      expect(mockExec).toHaveBeenCalledWith("C:\\Windows\\System32\\icacls.exe", [
+        "C:\\test\\file.txt",
+        "/sid",
       ]);
     });
   });
@@ -662,9 +710,32 @@ Successfully processed 1 files`;
         env,
       });
       expect(result).not.toBeNull();
-      expect(result?.command).toBe("icacls");
+      // The env above carries no SystemRoot, so this is the default-root pin. It is the
+      // argv `security/fix.ts` executes while rewriting ACLs — a bare `icacls` here would
+      // hand that spawn to %PATH% at the worst possible moment (#3112).
+      expect(result?.command).toBe("C:\\Windows\\System32\\icacls.exe");
       expect(result?.args).toContain("C:\\test\\file.txt");
       expect(result?.args).toContain("/inheritance:r");
+    });
+
+    it("pins the executed command onto a non-default SystemRoot", () => {
+      const result = createIcaclsResetCommand("C:\\test\\file.txt", {
+        isDir: false,
+        env: { USERNAME: "TestUser", USERDOMAIN: "WORKGROUP", SystemRoot: "D:\\WinNT" },
+      });
+      expect(result?.command).toBe("D:\\WinNT\\System32\\icacls.exe");
+    });
+
+    // `display` is copy-paste guidance for an operator's own shell, not an argv this
+    // process spawns, so it deliberately stays bare. Asserted so the split reads as a
+    // decision rather than as a site somebody forgot.
+    it("keeps the display string bare while the executed command is pinned", () => {
+      const result = createIcaclsResetCommand("C:\\test\\file.txt", {
+        isDir: false,
+        env: { USERNAME: "TestUser", USERDOMAIN: "WORKGROUP", SystemRoot: "D:\\WinNT" },
+      });
+      expect(result?.display.startsWith("icacls ")).toBe(true);
+      expect(result?.display).not.toContain("D:\\WinNT");
     });
 
     it("returns command with system username when env is empty (falls back to os.userInfo)", () => {
@@ -676,7 +747,7 @@ Successfully processed 1 files`;
       });
       // Should return a valid command using the system username
       expect(result).not.toBeNull();
-      expect(result?.command).toBe("icacls");
+      expect(result?.command).toBe("C:\\Windows\\System32\\icacls.exe");
       expect(result?.args).toContain(`${MOCK_USERNAME}:F`);
     });
 

@@ -1,5 +1,5 @@
 import os from "node:os";
-import path from "node:path";
+import { resolveWindowsSystem32Path } from "../infra/windows-system-paths.js";
 import { createSubsystemLogger } from "../logging/subsystem.js";
 import { runExec } from "../process/exec.js";
 import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
@@ -114,15 +114,6 @@ function buildTrustedPrincipals(env?: NodeJS.ProcessEnv): Set<string> {
     trusted.add(userSid);
   }
   return trusted;
-}
-
-function resolveWindowsSystemCommand(command: string, env?: NodeJS.ProcessEnv): string {
-  const root =
-    env?.SystemRoot?.trim() ||
-    env?.SYSTEMROOT?.trim() ||
-    env?.windir?.trim() ||
-    env?.WINDIR?.trim();
-  return root ? path.win32.join(root, "System32", command) : command;
 }
 
 function classifyPrincipal(
@@ -300,7 +291,7 @@ async function resolveCurrentUserSid(
   env?: NodeJS.ProcessEnv,
 ): Promise<string | null> {
   try {
-    const { stdout, stderr } = await exec(resolveWindowsSystemCommand("whoami.exe", env), [
+    const { stdout, stderr } = await exec(resolveWindowsSystem32Path("whoami.exe", env), [
       "/user",
       "/fo",
       "csv",
@@ -327,7 +318,7 @@ export async function inspectWindowsAcl(
     // Windows (Russian, Chinese, etc.) where icacls prints Cyrillic / CJK
     // characters that may be garbled when Node reads them in the wrong code
     // page.  Fixes #35834.
-    const { stdout, stderr } = await exec(resolveWindowsSystemCommand("icacls.exe", opts?.env), [
+    const { stdout, stderr } = await exec(resolveWindowsSystem32Path("icacls.exe", opts?.env), [
       targetPath,
       "/sid",
     ]);
@@ -398,7 +389,12 @@ export function createIcaclsResetCommand(
     `*S-1-5-18:${grant}`,
   ];
   return {
-    command: "icacls",
+    // Pinned, not bare: this argv is executed (`security/fix.ts`) while the tool is
+    // rewriting ACLs with `/inheritance:r /grant:r`, so a planted `icacls.exe` earlier
+    // in %PATH% would run at exactly the moment permissions are being handed out.
+    // `display` stays bare on purpose — it is copy-paste guidance for an operator's own
+    // shell, not an argv this process spawns.
+    command: resolveWindowsSystem32Path("icacls.exe", opts.env),
     args,
     display: formatIcaclsResetCommand(targetPath, opts),
   };

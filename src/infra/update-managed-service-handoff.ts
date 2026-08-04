@@ -17,6 +17,7 @@ import {
 } from "./update-control-plane-sentinel.js";
 import { MANAGED_SERVICE_UPDATE_HANDOFF_TEMP_PREFIX } from "./update-managed-service-handoff-cleanup.js";
 import type { UpdateRestartSentinelMeta } from "./update-restart-sentinel-payload.js";
+import { resolveWindowsSystem32Path } from "./windows-system-paths.js";
 
 const PARENT_EXIT_GRACE_MS = 60_000;
 const SYSTEMD_RUN_CANDIDATE_PATHS = ["/usr/bin/systemd-run", "/bin/systemd-run"] as const;
@@ -217,7 +218,14 @@ function startGatewayServiceBestEffort() {
     }
   } else if (recovery.kind === "schtasks") {
     target = recovery.taskName;
-    status = runServiceCommand("schtasks.exe", ["/Run", "/TN", recovery.taskName]);
+    // recovery.runner is the absolute %SystemRoot%\System32\schtasks.exe pinned by the
+    // parent when it wrote this script. Fail closed rather than degrading to a bare
+    // name: a %PATH% lookup here is exactly the untrusted-search-path this avoids.
+    if (typeof recovery.runner !== "string" || recovery.runner.length === 0) {
+      appendLog("gateway service recovery skipped: schtasks runner path missing target=" + target);
+      return;
+    }
+    status = runServiceCommand(recovery.runner, ["/Run", "/TN", recovery.taskName]);
   } else {
     return;
   }
@@ -365,7 +373,7 @@ export function formatManagedServiceUpdateCommand(params?: {
 type GatewayServiceRecovery =
   | { kind: "systemd"; unit: string }
   | { kind: "launchd"; uid: number; label: string; plistPath: string }
-  | { kind: "schtasks"; taskName: string };
+  | { kind: "schtasks"; taskName: string; runner: string };
 
 function resolveGatewayServiceRecovery(
   supervisor: RespawnSupervisor | null | undefined,
@@ -397,7 +405,10 @@ function resolveGatewayServiceRecovery(
     const taskName =
       env.REMOTECLAW_WINDOWS_TASK_NAME?.trim() ||
       resolveGatewayWindowsTaskName(env.REMOTECLAW_PROFILE);
-    return { kind: "schtasks", taskName };
+    // Resolve here, in the parent, and carry the absolute path into the emitted
+    // handoff script. A binary named inside generated script content is invisible to
+    // every source scan of this repo, so the pinning has to happen at emission time.
+    return { kind: "schtasks", taskName, runner: resolveWindowsSystem32Path("schtasks.exe", env) };
   }
   return undefined;
 }

@@ -33,6 +33,7 @@ import {
   resolveWindowsPowerShellPath,
   resolveWindowsSystem32Path,
   resolveWindowsWmicPath,
+  selectWindowsShellPath,
 } from "./windows-system-paths.js";
 
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -57,7 +58,9 @@ const WMIC = `${SYSTEM32}\\wbem\\WMIC.exe`;
 const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
   "src/agents/date-time.ts": [POWERSHELL],
   "src/cli/ports.ts": [`${SYSTEM32}\\netstat.exe`],
-  "src/cli/update-cli/restart-helper.ts": [CMD_EXE],
+  // The schtasks.exe entry is interpolated into emitted PowerShell, not spawned as argv
+  // from this module — see `selectWindowsShellPath` note below on emitted-script pinning.
+  "src/cli/update-cli/restart-helper.ts": [`${SYSTEM32}\\schtasks.exe`, CMD_EXE],
   "src/commands/onboard-helpers.ts": [`${SYSTEM32}\\rundll32.exe`, `${SYSTEM32}\\where.exe`],
   "src/daemon/launchd.ts": [CMD_EXE],
   "src/daemon/program-args.ts": [`${SYSTEM32}\\where.exe`],
@@ -72,31 +75,48 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
     `${SYSTEM32}\\netstat.exe`,
     `${SYSTEM32}\\netstat.exe`,
   ],
+  // The schtasks.exe entry is the runner path carried into the emitted handoff script.
+  "src/infra/update-managed-service-handoff.ts": [`${SYSTEM32}\\schtasks.exe`],
   "src/infra/windows-encoding.ts": [CMD_EXE, POWERSHELL],
   "src/infra/windows-port-pids.ts": [POWERSHELL, `${SYSTEM32}\\netstat.exe`, POWERSHELL, WMIC],
   "src/infra/windows-task-restart.ts": [CMD_EXE],
   "src/node-host/invoke-system-run.ts": [CMD_EXE],
   "src/process/exec.ts": [CMD_EXE],
   "src/process/kill-tree.ts": [`${SYSTEM32}\\taskkill.exe`],
+  "src/security/windows-acl.ts": [
+    `${SYSTEM32}\\whoami.exe`,
+    `${SYSTEM32}\\icacls.exe`,
+    `${SYSTEM32}\\icacls.exe`,
+  ],
 };
 
 // #3088 pinned 27 executable-position sites; #3099 added the 28th — the `rundll32.exe`
 // in `onboard-helpers.ts`, which replaced a `cmd /c start` that re-parsed the URL through
-// the shell. Stated independently of the table above so a merge that drops rows cannot
-// quietly shrink the covered surface.
-const EXPECTED_CALL_SITE_COUNT = 28;
+// the shell. #3112 added the last five: `windows-acl.ts` had a third, unhardened copy of
+// the resolver (whoami + icacls) plus a bare `icacls` on the ACL-reset path, and two
+// `schtasks.exe` spawns named inside *emitted script content* — one in the detached update
+// handoff, one in the update restart helper's PowerShell — were pinned at emission time.
+// Stated independently of the table above so a merge that drops rows cannot quietly shrink
+// the covered surface.
+const EXPECTED_CALL_SITE_COUNT = 33;
 
+// `selectWindowsShellPath` is the fifth name because #3100 moved the `%ComSpec%` decision
+// behind it: `exec.ts` and `launchd.ts` used to call `resolveWindowsCmdExePath` directly as
+// the right-hand side of a `??`, which honoured a set-but-hostile ComSpec unchecked. Listing
+// it here is what keeps both of those spawn sites in the inventory rather than dropping them
+// as "no resolver mentioned" — the failure mode #3112 named for unscanned files.
 const RESOLVER_NAMES = [
   "resolveWindowsSystem32Path",
   "resolveWindowsCmdExePath",
   "resolveWindowsPowerShellPath",
   "resolveWindowsWmicPath",
+  "selectWindowsShellPath",
 ] as const;
 
 // Ordered so `resolveWindowsSystem32Path` (which takes the executable name) is
 // distinguishable from the fixed-target resolvers.
 const CALL_RE =
-  /\bresolveWindows(?:(System32Path)\(\s*"([^"]*)"|(CmdExePath)\(|(PowerShellPath)\(|(WmicPath)\()/gu;
+  /\b(?:resolveWindows(?:(System32Path)\(\s*"([^"]*)"|(CmdExePath)\(|(PowerShellPath)\(|(WmicPath)\()|(selectWindowsShellPath)\()/gu;
 
 /** Drop comments so a commented-out call, or a resolver named in prose, is not scanned. */
 function stripComments(source: string): string {
@@ -133,7 +153,7 @@ function listProductionSources(dir: string): string[] {
 
 /** Resolve the absolute path a single scanned call site produces. */
 function resolveScannedCall(match: RegExpExecArray): string {
-  const [, system32, executableName, cmdExe, powerShell] = match;
+  const [, system32, executableName, cmdExe, powerShell, wmic] = match;
   if (system32) {
     return resolveWindowsSystem32Path(executableName ?? "", TEST_ENV);
   }
@@ -143,7 +163,13 @@ function resolveScannedCall(match: RegExpExecArray): string {
   if (powerShell) {
     return resolveWindowsPowerShellPath(TEST_ENV);
   }
-  return resolveWindowsWmicPath(TEST_ENV);
+  if (wmic) {
+    return resolveWindowsWmicPath(TEST_ENV);
+  }
+  // TEST_ENV carries no ComSpec, so this is the pinned branch. The override branch is
+  // behavioural and lives in `exec.windows.test.ts`; here it would make the inventory
+  // depend on whatever ComSpec the host running the suite happens to have.
+  return selectWindowsShellPath(TEST_ENV).path;
 }
 
 type ScannedFile = { relPath: string; code: string; paths: string[] };

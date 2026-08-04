@@ -388,6 +388,41 @@ exit 0
       await cleanupScript(scriptPath);
     });
 
+    // The PowerShell body names schtasks.exe twice — once as a ProcessStartInfo.FileName
+    // and once behind the `&` call operator. Both used to be bare names resolved through
+    // the *script's* %PATH% when it finally runs, which no source scan can see (#3112 §4).
+    it("pins schtasks.exe in the emitted PowerShell on Windows", async () => {
+      Object.defineProperty(process, "platform", { value: "win32" });
+
+      const { scriptPath, content } = await prepareAndReadScript({
+        REMOTECLAW_PROFILE: "default",
+        // A non-default root, so these literals cannot be satisfied by the C:\Windows
+        // fallback — the resolution has to actually read SystemRoot.
+        SystemRoot: "D:\\WinNT",
+      });
+
+      expect(content).toContain("$startInfo.FileName = 'D:\\WinNT\\System32\\schtasks.exe'");
+      expect(content).toContain(
+        "$queryOutput = & 'D:\\WinNT\\System32\\schtasks.exe' /Query /TN $TaskName",
+      );
+      expect(content).not.toContain('$startInfo.FileName = "schtasks.exe"');
+      expect(content).not.toContain("& schtasks.exe");
+      await cleanupScript(scriptPath);
+    });
+
+    it("falls back to the default root when SystemRoot is hostile", async () => {
+      Object.defineProperty(process, "platform", { value: "win32" });
+
+      const { scriptPath, content } = await prepareAndReadScript({
+        REMOTECLAW_PROFILE: "default",
+        SystemRoot: "C:\\Windows\\..\\Users\\pub\\evil",
+      });
+
+      expect(content).toContain("$startInfo.FileName = 'C:\\Windows\\System32\\schtasks.exe'");
+      expect(content).not.toContain("Users\\pub\\evil");
+      await cleanupScript(scriptPath);
+    });
+
     it("uses REMOTECLAW_WINDOWS_TASK_NAME override on Windows", async () => {
       Object.defineProperty(process, "platform", { value: "win32" });
 

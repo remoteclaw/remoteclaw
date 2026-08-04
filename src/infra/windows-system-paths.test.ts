@@ -1,11 +1,13 @@
 // Covers %SystemRoot% resolution hardening for pinned Windows system binaries.
 import { describe, expect, it } from "vitest";
 import {
+  formatRejectedWindowsShellOverride,
   resolveWindowsCmdExePath,
   resolveWindowsPowerShellPath,
   resolveWindowsSystem32Path,
   resolveWindowsSystemRoot,
   resolveWindowsWmicPath,
+  selectWindowsShellPath,
 } from "./windows-system-paths.js";
 
 const DEFAULT_ROOT = "C:\\Windows";
@@ -14,6 +16,43 @@ const DEFAULT_ROOT = "C:\\Windows";
 function env(values: Record<string, string | undefined>): NodeJS.ProcessEnv {
   return values;
 }
+
+// One table, deliberately shared by the `%SystemRoot%` and `%ComSpec%` suites below.
+// #3100 existed because those two inputs had different amounts of validation; running
+// both against the SAME rows is what makes "one shared predicate" a checked claim rather
+// than a code-review observation. A second copy of this table would re-open the gap.
+const HOSTILE_PATH_SHAPES: readonly (readonly [string, string])[] = [
+  ["NUL byte", "C:\\Win\0dows"],
+  // Embedded, not trailing. A TRAILING CR/LF is removed by the leading `.trim()` and the
+  // value is then accepted — see the "trims" rows in the accept table below. The rows here
+  // used to be `"C:\\Windows\r"`, which asserted nothing: it trims to `C:\Windows`, which
+  // IS the default root, so the expectation held whether or not the guard ran.
+  ["embedded carriage return", "C:\\Win\rdows"],
+  ["embedded line feed", "C:\\Win\ndows"],
+  ["carriage return before a forged second value", "C:\\Windows\r\nC:\\Evil"],
+  ["semicolon (PATH separator injection)", "C:\\Windows;C:\\Evil"],
+  ["relative path", "Windows"],
+  ["dot-relative path", ".\\Windows"],
+  ["UNC path", "\\\\attacker\\share\\Windows"],
+  ["bare drive root with no subdirectory", "C:\\"],
+  ["POSIX absolute path (no drive letter)", "/usr/share/windows"],
+  ["empty string", ""],
+  ["whitespace only", "   "],
+  // `path.win32.normalize` collapses `..` BEFORE the shape checks run, so a
+  // traversal emerges as a clean absolute drive-rooted non-UNC path that
+  // satisfies every other guard. These must be rejected on the raw value.
+  ["parent-segment traversal", "C:\\Windows\\..\\Users\\pub\\evil"],
+  ["forward-slash traversal", "C:/Windows/../Users/pub/evil"],
+  ["mixed-separator traversal", "C:\\Windows/../Users\\pub\\evil"],
+  ["traversal landing beside the drive root", "C:\\Windows\\..\\evil"],
+  ["traversal clamped at the drive root", "C:\\Windows\\..\\..\\..\\..\\Users"],
+  ["traversal with a trailing separator", "C:\\Windows\\..\\Users\\pub\\evil\\"],
+  // Not raw-value cases: these two collapse to shapes the pre-existing checks
+  // already reject (bare drive root, relative path). They pin that overlap, and
+  // would still pass with the raw-value guard removed.
+  ["traversal collapsing to the bare drive root", "C:\\Windows\\.."],
+  ["leading traversal, which stays relative", "..\\Windows"],
+] as const;
 
 describe("resolveWindowsSystemRoot", () => {
   it("accepts a well-formed SystemRoot", () => {
@@ -37,33 +76,7 @@ describe("resolveWindowsSystemRoot", () => {
 
   // Each rejection branch must fall through to the safe default rather than
   // letting an attacker-shaped value reach a spawn.
-  it.each([
-    ["NUL byte", "C:\\Win\0dows"],
-    ["carriage return", "C:\\Windows\r"],
-    ["line feed", "C:\\Windows\n"],
-    ["semicolon (PATH separator injection)", "C:\\Windows;C:\\Evil"],
-    ["relative path", "Windows"],
-    ["dot-relative path", ".\\Windows"],
-    ["UNC path", "\\\\attacker\\share\\Windows"],
-    ["bare drive root with no subdirectory", "C:\\"],
-    ["POSIX absolute path (no drive letter)", "/usr/share/windows"],
-    ["empty string", ""],
-    ["whitespace only", "   "],
-    // `path.win32.normalize` collapses `..` BEFORE the shape checks run, so a
-    // traversal emerges as a clean absolute drive-rooted non-UNC path that
-    // satisfies every other guard. These must be rejected on the raw value.
-    ["parent-segment traversal", "C:\\Windows\\..\\Users\\pub\\evil"],
-    ["forward-slash traversal", "C:/Windows/../Users/pub/evil"],
-    ["mixed-separator traversal", "C:\\Windows/../Users\\pub\\evil"],
-    ["traversal landing beside the drive root", "C:\\Windows\\..\\evil"],
-    ["traversal clamped at the drive root", "C:\\Windows\\..\\..\\..\\..\\Users"],
-    ["traversal with a trailing separator", "C:\\Windows\\..\\Users\\pub\\evil\\"],
-    // Not raw-value cases: these two collapse to shapes the pre-existing checks
-    // already reject (bare drive root, relative path). They pin that overlap, and
-    // would still pass with the raw-value guard removed.
-    ["traversal collapsing to the bare drive root", "C:\\Windows\\.."],
-    ["leading traversal, which stays relative", "..\\Windows"],
-  ])("rejects %s and falls back to the default root", (_label, raw) => {
+  it.each(HOSTILE_PATH_SHAPES)("rejects %s and falls back to the default root", (_label, raw) => {
     expect(resolveWindowsSystemRoot(env({ SystemRoot: raw }))).toBe(DEFAULT_ROOT);
   });
 
@@ -76,6 +89,11 @@ describe("resolveWindowsSystemRoot", () => {
     ["a directory name containing dots", "C:\\Win..dows", "C:\\Win..dows"],
     ["a trailing-dots directory name", "D:\\WinNT..", "D:\\WinNT.."],
     ["a literal three-dot segment", "C:\\Windows\\...", "C:\\Windows\\..."],
+    // Trailing control characters are whitespace to `.trim()`, so the value that reaches
+    // the shape checks — and the spawn — is already clean. Recorded as an ACCEPT with the
+    // trimmed result rather than mislabelled as a rejection.
+    ["a trailing carriage return, trimmed away", "D:\\WinNT\r", "D:\\WinNT"],
+    ["a trailing line feed, trimmed away", "D:\\WinNT\n", "D:\\WinNT"],
   ])("accepts %s", (_label, raw, expected) => {
     expect(resolveWindowsSystemRoot(env({ SystemRoot: raw }))).toBe(expected);
   });
@@ -163,5 +181,104 @@ describe("named binary resolvers", () => {
       "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
     );
     expect(resolveWindowsWmicPath(hostile)).toBe("C:\\Windows\\System32\\wbem\\WMIC.exe");
+  });
+});
+
+// The shell selector is the one input the pinning workstream left unvalidated: the
+// expression it replaces was `process.env.ComSpec ?? resolveWindowsCmdExePath()`, and `??`
+// falls through only on null/undefined — so ANY set value won, however shaped (#3100).
+describe("selectWindowsShellPath", () => {
+  const PINNED = "D:\\WinNT\\System32\\cmd.exe";
+  const ROOT = { SystemRoot: "D:\\WinNT" };
+
+  it("honours a well-formed ComSpec", () => {
+    const override = "E:\\CustomWindows\\System32\\cmd.exe";
+    // Guard: the two branches must be distinguishable, else nothing below is asserted.
+    expect(override).not.toBe(PINNED);
+    expect(selectWindowsShellPath(env({ ...ROOT, ComSpec: override }))).toEqual({
+      path: override,
+    });
+  });
+
+  it("reads ComSpec case-insensitively, as Windows does", () => {
+    const override = "E:\\CustomWindows\\System32\\cmd.exe";
+    expect(selectWindowsShellPath(env({ ...ROOT, COMSPEC: override })).path).toBe(override);
+    expect(selectWindowsShellPath(env({ ...ROOT, comspec: override })).path).toBe(override);
+  });
+
+  it("pins when ComSpec is unset, and reports no refusal", () => {
+    expect(selectWindowsShellPath(env(ROOT))).toEqual({ path: PINNED });
+  });
+
+  // A blank ComSpec is "no override", not an operator mistake worth shouting about.
+  it.each([
+    ["empty", ""],
+    ["whitespace only", "   "],
+  ])("pins a %s ComSpec without reporting a refusal", (_label, raw) => {
+    expect(selectWindowsShellPath(env({ ...ROOT, ComSpec: raw }))).toEqual({ path: PINNED });
+  });
+
+  // The point of the change: every shape `%SystemRoot%` rejects, `%ComSpec%` now rejects
+  // too. Reusing HOSTILE_PATH_SHAPES is what proves the predicate is genuinely shared —
+  // if the two ever diverge, a row here fails without anyone having to notice by eye.
+  it.each(HOSTILE_PATH_SHAPES)("refuses %s and falls back to the pinned cmd.exe", (_label, raw) => {
+    const selection = selectWindowsShellPath(env({ ...ROOT, ComSpec: raw }));
+    expect(selection.path).toBe(PINNED);
+    // Blank values are "unset", not refusals — they are covered by the case above.
+    if (raw.trim()) {
+      expect(selection.rejectedComSpec).toBe(raw);
+    }
+  });
+
+  // The three shapes #3100 called out by name, asserted as literals so the failure
+  // message names the attack rather than a table index.
+  it("refuses a traversal ComSpec", () => {
+    expect(
+      selectWindowsShellPath(env({ ...ROOT, ComSpec: "C:\\Windows\\..\\Users\\pub\\evil.exe" }))
+        .path,
+    ).toBe(PINNED);
+  });
+
+  it("refuses a UNC ComSpec so a remote share cannot supply the shell", () => {
+    expect(
+      selectWindowsShellPath(env({ ...ROOT, ComSpec: "\\\\attacker\\share\\cmd.exe" })).path,
+    ).toBe(PINNED);
+  });
+
+  it("refuses a ComSpec carrying an embedded PATH separator", () => {
+    expect(
+      selectWindowsShellPath(
+        env({ ...ROOT, ComSpec: "C:\\Windows\\System32\\cmd.exe;C:\\Evil\\cmd.exe" }),
+      ).path,
+    ).toBe(PINNED);
+  });
+
+  // Honest boundary: a shape gate equalizes ComSpec with SystemRoot, it does not make an
+  // attacker-controlled environment block safe. Stated as a test so the limit is recorded
+  // where someone reading the guard will see it, not only in a PR description.
+  it("still accepts a well-formed path to an arbitrary executable", () => {
+    const planted = "C:\\Users\\Public\\evil.exe";
+    expect(selectWindowsShellPath(env({ ...ROOT, ComSpec: planted }))).toEqual({ path: planted });
+  });
+
+  it("explains the refusal with both the refused value and the fallback", () => {
+    // A backslash-free refused value keeps this expectation readable: the message renders
+    // the value JSON-escaped, so a Windows path would have to be written with doubled
+    // backslashes here and would restate the implementation rather than assert it.
+    const selection = selectWindowsShellPath(env({ ...ROOT, ComSpec: "/usr/share/windows" }));
+    const message = formatRejectedWindowsShellOverride(selection);
+    expect(message).toContain("/usr/share/windows");
+    expect(message).toContain(PINNED);
+  });
+
+  // The refused value is attacker-shaped by definition and is about to be written to a
+  // log, where a raw CR/LF would forge a second log line.
+  it("neutralizes control characters in the refused value", () => {
+    const message = formatRejectedWindowsShellOverride(
+      selectWindowsShellPath(env({ ...ROOT, ComSpec: "C:\\Win\r\nFORGED LOG LINE" })),
+    );
+    expect(message).not.toContain("\r");
+    expect(message).not.toContain("\n");
+    expect(message).toContain("FORGED LOG LINE");
   });
 });

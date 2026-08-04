@@ -28,10 +28,9 @@ const OVERRIDE_COM_SPEC = "E:\\CustomWindows\\System32\\cmd.exe";
  * the pinned absolute path rather than a bare `cmd.exe` %PATH% lookup (CWE-426).
  *
  * `override` pins ComSpec as the documented Windows override. It uses a well-formed
- * path on purpose — that is what #3100's proposed validation would still accept, so
- * this case survives that fix. It deliberately does NOT assert today's *unvalidated*
- * passthrough: a hostile ComSpec is currently honoured too, and #3100 tracks that
- * hole rather than this suite green-lighting it as intended behaviour.
+ * path on purpose: that is the branch the #3100 validation still accepts. The refusal
+ * branch — a set-but-malformed ComSpec, which `??` used to hand straight to `spawn` —
+ * is exercised by `HOSTILE_COM_SPECS` below.
  */
 function stubComSpec(mode: "unset" | "override"): string {
   // `unstubEnvs: true` (vitest.config.ts) restores both after each test.
@@ -43,6 +42,22 @@ function stubComSpec(mode: "unset" | "override"): string {
   vi.stubEnv("ComSpec", OVERRIDE_COM_SPEC);
   return OVERRIDE_COM_SPEC;
 }
+
+/**
+ * Shapes that must NEVER reach `spawn` as argv[0]. Under the old
+ * `process.env.ComSpec ?? resolveWindowsCmdExePath()` every one of these became argv[0]
+ * verbatim, because `??` falls through only on null/undefined — so the NUL/CR/LF/`;`,
+ * absolute-path, UNC, drive-root and `..`-traversal checks the resolver performs were
+ * skipped entirely whenever ComSpec was set at all (#3100).
+ *
+ * These are the three the issue named. Exhaustive shape coverage lives in
+ * `windows-system-paths.test.ts`; this file asserts the *spawn* consequence.
+ */
+const HOSTILE_COM_SPECS: readonly (readonly [string, string])[] = [
+  ["parent-segment traversal", "C:\\Windows\\..\\Users\\pub\\evil.exe"],
+  ["UNC share", "\\\\attacker\\share\\cmd.exe"],
+  ["embedded PATH separator", "C:\\Windows\\System32\\cmd.exe;C:\\Evil\\cmd.exe"],
+] as const;
 
 const { spawnMock, spawnSyncMock, execFileMock, execFilePromisifyMock } = vi.hoisted(() => {
   const execFilePromisifyMockLocal = vi.fn();
@@ -269,6 +284,33 @@ describe("windows command wrapper behavior", () => {
       platformSpy.mockRestore();
     }
   });
+
+  // The branch the `??` could not express. Each of these is a value an attacker with
+  // environment-block control would set, and each used to be spawned verbatim.
+  it.each(HOSTILE_COM_SPECS)(
+    "refuses a ComSpec with a %s and spawns the pinned cmd.exe instead",
+    async (_label, hostile) => {
+      const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+      vi.stubEnv("SystemRoot", PINNED_SYSTEM_ROOT);
+      vi.stubEnv("ComSpec", hostile);
+
+      spawnMock.mockImplementation(
+        (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+      );
+
+      try {
+        const result = await runCommandWithTimeout(["pnpm", "--version"], { timeoutMs: 1000 });
+        expect(result.code).toBe(0);
+        const captured = requireSpawnCall(0);
+        // Stated twice on purpose: the hostile value must not be spawned, AND the pinned
+        // path must be. Only asserting the second would pass if argv[0] went empty.
+        expect(captured[0]).not.toBe(hostile);
+        expectCmdWrappedInvocation({ captured, expectedComSpec: PINNED_CMD_EXE });
+      } finally {
+        platformSpy.mockRestore();
+      }
+    },
+  );
 
   it("keeps child exitCode when close reports null on Windows npm shims", async () => {
     const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");

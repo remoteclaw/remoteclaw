@@ -20,6 +20,8 @@ import {
   isSymlinkOpenError,
 } from "./path-guards.js";
 
+export { movePathToTrash, type MovePathToTrashOptions } from "./fs-safe-trash.js";
+
 export type SafeOpenErrorCode =
   | "invalid-path"
   | "not-found"

@@ -5,6 +5,7 @@ import {
   type GatewayBonjourBeacon,
   type GatewayDiscoveryResolvedEndpoint,
 } from "./bonjour-discovery.js";
+import { isUnsafeSshHost } from "./ssh-host-safety.js";
 
 // Gateway discovery targets turn Bonjour beacons into display, websocket, and
 // SSH connection hints without assuming every beacon has all fields.
@@ -31,7 +32,10 @@ export function buildGatewayDiscoveryTarget(
   const endpoint = resolveGatewayDiscoveryEndpoint(beacon);
   const sshPort = pickSshPort(beacon);
   const sshUser = normalizeOptionalString(opts?.sshUser) ?? "";
-  const baseSshTarget = endpoint ? (sshUser ? `${sshUser}@${endpoint.host}` : endpoint.host) : null;
+  // A beacon's host comes from whoever is on the discovery network, so it is
+  // attacker-influenceable before it can be handed to a tunnel.
+  const sshHost = endpoint && !isUnsafeSshHost(endpoint.host) ? endpoint.host : null;
+  const baseSshTarget = sshHost ? (sshUser ? `${sshUser}@${sshHost}` : sshHost) : null;
   const sshTarget =
     baseSshTarget && sshPort && sshPort !== 22 ? `${baseSshTarget}:${sshPort}` : baseSshTarget;
   return {

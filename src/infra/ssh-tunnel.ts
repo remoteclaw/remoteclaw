@@ -5,6 +5,7 @@ import { normalizeStringEntries } from "../shared/string-normalization.js";
 import { formatErrorMessage, isErrno } from "./errors.js";
 import { parseStrictPositiveInteger } from "./parse-finite-number.js";
 import { ensurePortAvailable, PortInUseError } from "./ports.js";
+import { isUnsafeSshHost } from "./ssh-host-safety.js";
 
 export type SshParsedTarget = {
   user?: string;
@@ -20,13 +21,6 @@ export type SshTunnel = {
   stderr: string[];
   stop: () => Promise<void>;
 };
-
-// Reject hosts that would corrupt the SSH HostName field or enable argument
-// injection: a leading '-' becomes an ssh option, and a stray leading/trailing
-// ':' (e.g. sliced from "host::22") produces an invalid HostName.
-function isMalformedHost(host: string): boolean {
-  return host.startsWith("-") || host.startsWith(":") || host.endsWith(":");
-}
 
 export function parseSshTarget(raw: string): SshParsedTarget | null {
   const trimmed = raw.trim().replace(/^ssh\s+/, "");
@@ -51,7 +45,7 @@ export function parseSshTarget(raw: string): SshParsedTarget | null {
     if (!host || port === undefined || port > 65535) {
       return null;
     }
-    if (isMalformedHost(host)) {
+    if (isUnsafeSshHost(host)) {
       return null;
     }
     return { user: userPart, host, port };
@@ -60,7 +54,7 @@ export function parseSshTarget(raw: string): SshParsedTarget | null {
   if (!hostPart) {
     return null;
   }
-  if (isMalformedHost(hostPart)) {
+  if (isUnsafeSshHost(hostPart)) {
     return null;
   }
   return { user: userPart, host: hostPart, port: 22 };

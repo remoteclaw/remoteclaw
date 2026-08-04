@@ -4,7 +4,7 @@ import type { RemoteClawConfig, ConfigFileSnapshot } from "../../config/types.js
 import { hasConfiguredSecretInput } from "../../config/types.secrets.js";
 import { resolveGatewayProbeSurfaceAuth } from "../../gateway/auth-surface-resolution.js";
 import type { GatewayProbeResult } from "../../gateway/probe.js";
-import { pickPrimaryTailnetIPv4 } from "../../infra/tailnet.js";
+import { inspectBestEffortPrimaryTailnetIPv4 } from "../../infra/network-discovery-display.js";
 import { normalizeOptionalString } from "../../shared/string-coerce.js";
 import { colorize, theme } from "../../terminal/theme.js";
 import { pickGatewaySelfPresence } from "../gateway-presence.js";
@@ -222,7 +222,7 @@ export function extractConfigSummary(snapshotUnknown: unknown): GatewayConfigSum
 }
 
 export function buildNetworkHints(cfg: RemoteClawConfig) {
-  const tailnetIPv4 = pickPrimaryTailnetIPv4();
+  const { tailnetIPv4 } = inspectBestEffortPrimaryTailnetIPv4();
   const port = resolveGatewayPort(cfg);
   const localScheme = cfg.gateway?.tls?.enabled === true ? "wss" : "ws";
   return {

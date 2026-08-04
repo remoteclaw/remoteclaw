@@ -1,6 +1,5 @@
 // Covers gateway port availability and diagnostics behavior.
 import net from "node:net";
-import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { stripAnsi } from "../../packages/terminal-core/src/ansi.js";
 import { mockProcessPlatform } from "../test-utils/vitest-spies.js";
@@ -18,14 +17,38 @@ let handlePortError: typeof import("./ports.js").handlePortError;
 let PortInUseError: typeof import("./ports.js").PortInUseError;
 
 const describeUnix = process.platform === "win32" ? describe.skip : describe;
-// argv[0] is now an absolute %SystemRoot% path (src/infra/windows-system-paths.ts);
-// these tests assert which binary ran, not where it lives.
-function windowsBinaryName(argv: string[]): string {
-  return path.win32.basename(argv[0] ?? "").toLowerCase();
-}
+
+// argv[0] is an absolute %SystemRoot% path (src/infra/windows-system-paths.ts).
+// These used to be matched by `path.win32.basename(argv[0])`, which cannot tell
+// `resolveWindowsWmicPath()` from `resolveWindowsSystem32Path("wmic.exe")` — same
+// basename, but the latter yields a path that exists on no Windows install. The
+// Windows suites below route and assert on the FULL path so a wrong resolver at a
+// call site fails here rather than silently breaking the fallback (#3092).
+//
+// A non-default root, so no expectation can be satisfied by the `C:\Windows`
+// fallback — resolution has to actually read SystemRoot.
+const WINDOWS_SYSTEM_ROOT = "D:\\WinNT";
+const WINDOWS_SYSTEM32 = `${WINDOWS_SYSTEM_ROOT}\\System32`;
+const WINDOWS_NETSTAT = `${WINDOWS_SYSTEM32}\\netstat.exe`;
+const WINDOWS_TASKLIST = `${WINDOWS_SYSTEM32}\\tasklist.exe`;
+const WINDOWS_POWERSHELL = `${WINDOWS_SYSTEM32}\\WindowsPowerShell\\v1.0\\powershell.exe`;
+const WINDOWS_WMIC = `${WINDOWS_SYSTEM32}\\wbem\\WMIC.exe`;
 
 function setPlatform(platform: NodeJS.Platform): void {
   mockProcessPlatform(platform);
+  if (platform === "win32") {
+    // `unstubEnvs: true` (vitest.config.ts) restores this after each test.
+    vi.stubEnv("SystemRoot", WINDOWS_SYSTEM_ROOT);
+  }
+}
+
+/** Absolute argv[0] of every command the Windows inspection path spawned, deduped. */
+function spawnedWindowsPaths(): string[] {
+  const paths = runCommandWithTimeoutMock.mock.calls.map((call) => {
+    const argv = call[0] as string[] | undefined;
+    return argv?.[0] ?? "<missing>";
+  });
+  return [...new Set(paths)].toSorted();
 }
 
 async function listenServer(
@@ -425,8 +448,8 @@ describe("inspectPortUsage on Windows", () => {
   it("reports established gateway client connections from netstat", async () => {
     setPlatform("win32");
     runCommandWithTimeoutMock.mockImplementation(async (argv: string[]) => {
-      const command = windowsBinaryName(argv);
-      if (command === "netstat.exe") {
+      const command = argv[0];
+      if (command === WINDOWS_NETSTAT) {
         return {
           stdout:
             "  TCP    127.0.0.1:50123    127.0.0.1:18789    ESTABLISHED    4242\r\n" +
@@ -435,10 +458,10 @@ describe("inspectPortUsage on Windows", () => {
           code: 0,
         };
       }
-      if (command === "tasklist.exe") {
+      if (command === WINDOWS_TASKLIST) {
         return { stdout: "Image Name: node.exe\r\n", stderr: "", code: 0 };
       }
-      if (command === "powershell.exe") {
+      if (command === WINDOWS_POWERSHELL) {
         return {
           stdout:
             '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\me\\AppData\\Roaming\\npm\\node_modules\\remoteclaw\\dist\\index.js logs --follow\r\n',
@@ -451,6 +474,11 @@ describe("inspectPortUsage on Windows", () => {
 
     const result = await inspectPortConnections(18789);
 
+    // Path pin first: a wrong resolver makes the router above miss, which would
+    // otherwise surface as an opaque "commandLine is undefined" further down.
+    expect(spawnedWindowsPaths()).toEqual(
+      [WINDOWS_NETSTAT, WINDOWS_TASKLIST, WINDOWS_POWERSHELL].toSorted(),
+    );
     expect(result.connections).toHaveLength(1);
     expect(result.connections[0]).toMatchObject({
       pid: 4242,
@@ -463,18 +491,18 @@ describe("inspectPortUsage on Windows", () => {
   it("uses PowerShell process command lines to classify RemoteClaw listeners", async () => {
     setPlatform("win32");
     runCommandWithTimeoutMock.mockImplementation(async (argv: string[]) => {
-      const command = windowsBinaryName(argv);
-      if (command === "netstat.exe") {
+      const command = argv[0];
+      if (command === WINDOWS_NETSTAT) {
         return {
           stdout: "  TCP    127.0.0.1:18789    0.0.0.0:0    LISTENING    4242\r\n",
           stderr: "",
           code: 0,
         };
       }
-      if (command === "tasklist.exe") {
+      if (command === WINDOWS_TASKLIST) {
         return { stdout: "Image Name: node.exe\r\n", stderr: "", code: 0 };
       }
-      if (command === "powershell.exe") {
+      if (command === WINDOWS_POWERSHELL) {
         return {
           stdout:
             '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\me\\AppData\\Roaming\\npm\\node_modules\\remoteclaw\\dist\\index.js gateway run\r\n',
@@ -487,6 +515,10 @@ describe("inspectPortUsage on Windows", () => {
 
     const result = await inspectPortUsage(18789);
 
+    // PowerShell answered, so the wmic fallback must not have been reached.
+    expect(spawnedWindowsPaths()).toEqual(
+      [WINDOWS_NETSTAT, WINDOWS_TASKLIST, WINDOWS_POWERSHELL].toSorted(),
+    );
     expect(result.status).toBe("busy");
     expect(result.listeners).toHaveLength(1);
     expect(result.listeners[0]?.command).toBe("node.exe");
@@ -499,8 +531,8 @@ describe("inspectPortUsage on Windows", () => {
   it("does not match Windows listener ports by substring", async () => {
     setPlatform("win32");
     runCommandWithTimeoutMock.mockImplementation(async (argv: string[]) => {
-      const command = windowsBinaryName(argv);
-      if (command === "netstat.exe") {
+      const command = argv[0];
+      if (command === WINDOWS_NETSTAT) {
         return {
           stdout:
             "  TCP    127.0.0.1:187890    0.0.0.0:0    LISTENING    9000\r\n" +
@@ -515,26 +547,27 @@ describe("inspectPortUsage on Windows", () => {
     const result = await inspectPortUsage(18789);
 
     expect(result.listeners).toEqual([]);
+    expect(spawnedWindowsPaths()).toEqual([WINDOWS_NETSTAT]);
   });
 
   it("falls back to wmic when PowerShell cannot read the command line", async () => {
     setPlatform("win32");
     runCommandWithTimeoutMock.mockImplementation(async (argv: string[]) => {
-      const command = windowsBinaryName(argv);
-      if (command === "netstat.exe") {
+      const command = argv[0];
+      if (command === WINDOWS_NETSTAT) {
         return {
           stdout: "  TCP    127.0.0.1:18789    0.0.0.0:0    LISTENING    4242\r\n",
           stderr: "",
           code: 0,
         };
       }
-      if (command === "tasklist.exe") {
+      if (command === WINDOWS_TASKLIST) {
         return { stdout: "Image Name: node.exe\r\n", stderr: "", code: 0 };
       }
-      if (command === "powershell.exe") {
+      if (command === WINDOWS_POWERSHELL) {
         return { stdout: "", stderr: "access denied", code: 1 };
       }
-      if (command === "wmic.exe") {
+      if (command === WINDOWS_WMIC) {
         return {
           stdout: "CommandLine=node.exe C:\\remoteclaw\\dist\\index.js gateway run\r\n",
           stderr: "",
@@ -546,10 +579,12 @@ describe("inspectPortUsage on Windows", () => {
 
     const result = await inspectPortUsage(18789);
 
-    expect(result.listeners[0]?.commandLine).toContain("remoteclaw");
-    const commandNames = runCommandWithTimeoutMock.mock.calls.map(([argv]) =>
-      windowsBinaryName(argv as string[]),
+    // `System32\wmic.exe` would keep this basename and exist on no Windows install,
+    // so the assertion is the full `System32\wbem\WMIC.exe` path (#3092).
+    expect(spawnedWindowsPaths()).toContain(WINDOWS_WMIC);
+    expect(spawnedWindowsPaths()).toEqual(
+      [WINDOWS_NETSTAT, WINDOWS_TASKLIST, WINDOWS_POWERSHELL, WINDOWS_WMIC].toSorted(),
     );
-    expect(commandNames).toContain("wmic.exe");
+    expect(result.listeners[0]?.commandLine).toContain("remoteclaw");
   });
 });

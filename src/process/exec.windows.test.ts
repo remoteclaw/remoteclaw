@@ -4,7 +4,45 @@ import { EventEmitter } from "node:events";
 import fs from "node:fs";
 import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { resolveWindowsCmdExePath } from "../infra/windows-system-paths.js";
+
+// These cases used to compute their expectation as `process.env.ComSpec ??
+// resolveWindowsCmdExePath()` — the production expression from exec.ts verbatim. On
+// any host with ComSpec set both sides collapsed to the same value and nothing was
+// asserted; they only bit on Linux CI, where ComSpec happens to be unset (#3092).
+//
+// Each case now stubs ComSpec explicitly and asserts a LITERAL, so the test states
+// which branch it exercises and cannot restate the implementation. `resolveWindows*`
+// is deliberately not imported here.
+const PINNED_SYSTEM_ROOT = "D:\\WinNT";
+// What resolveWindowsCmdExePath() must produce under that root. A non-default root,
+// so this cannot be satisfied by the `C:\Windows` fallback.
+const PINNED_CMD_EXE = "D:\\WinNT\\System32\\cmd.exe";
+// A well-formed absolute override: drive-rooted, no UNC, no `..`, no NUL/CR/LF/`;`.
+const OVERRIDE_COM_SPEC = "E:\\CustomWindows\\System32\\cmd.exe";
+
+/**
+ * Pin SystemRoot and select the ComSpec branch under test; returns the argv[0] the
+ * cmd wrapper must use.
+ *
+ * `unset` is the branch #3088 hardened: with no ComSpec, exec.ts must fall back to
+ * the pinned absolute path rather than a bare `cmd.exe` %PATH% lookup (CWE-426).
+ *
+ * `override` pins ComSpec as the documented Windows override. It uses a well-formed
+ * path on purpose — that is what #3100's proposed validation would still accept, so
+ * this case survives that fix. It deliberately does NOT assert today's *unvalidated*
+ * passthrough: a hostile ComSpec is currently honoured too, and #3100 tracks that
+ * hole rather than this suite green-lighting it as intended behaviour.
+ */
+function stubComSpec(mode: "unset" | "override"): string {
+  // `unstubEnvs: true` (vitest.config.ts) restores both after each test.
+  vi.stubEnv("SystemRoot", PINNED_SYSTEM_ROOT);
+  if (mode === "unset") {
+    vi.stubEnv("ComSpec", undefined);
+    return PINNED_CMD_EXE;
+  }
+  vi.stubEnv("ComSpec", OVERRIDE_COM_SPEC);
+  return OVERRIDE_COM_SPEC;
+}
 
 const { spawnMock, spawnSyncMock, execFileMock, execFilePromisifyMock } = vi.hoisted(() => {
   const execFilePromisifyMockLocal = vi.fn();
@@ -170,9 +208,9 @@ describe("windows command wrapper behavior", () => {
     vi.restoreAllMocks();
   });
 
-  it("wraps .cmd commands via cmd.exe in runCommandWithTimeout", async () => {
+  it("wraps .cmd commands via the pinned cmd.exe in runCommandWithTimeout", async () => {
     const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
-    const expectedComSpec = process.env.ComSpec ?? resolveWindowsCmdExePath();
+    const expectedComSpec = stubComSpec("unset");
 
     spawnMock.mockImplementation(
       (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
@@ -188,9 +226,9 @@ describe("windows command wrapper behavior", () => {
     }
   });
 
-  it("wraps corepack.cmd via cmd.exe in runCommandWithTimeout", async () => {
+  it("wraps corepack.cmd via the pinned cmd.exe in runCommandWithTimeout", async () => {
     const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
-    const expectedComSpec = process.env.ComSpec ?? resolveWindowsCmdExePath();
+    const expectedComSpec = stubComSpec("unset");
 
     spawnMock.mockImplementation(
       (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
@@ -205,6 +243,28 @@ describe("windows command wrapper behavior", () => {
       expect(captured[1][3]).toContain("corepack.cmd --version");
       expect(captured[2].windowsHide).toBe(true);
       expect(captured[2].windowsVerbatimArguments).toBe(true);
+    } finally {
+      platformSpy.mockRestore();
+    }
+  });
+
+  // The other half of the `??`. The old self-referential expectation could not tell
+  // these two branches apart — it returned whichever one the host happened to be in.
+  it("honours an explicitly set ComSpec over the pinned fallback", async () => {
+    const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
+    // Guard: the two branches must be distinguishable, else this case asserts nothing.
+    expect(stubComSpec("override")).toBe(OVERRIDE_COM_SPEC);
+    expect(OVERRIDE_COM_SPEC).not.toBe(PINNED_CMD_EXE);
+
+    spawnMock.mockImplementation(
+      (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
+    );
+
+    try {
+      const result = await runCommandWithTimeout(["pnpm", "--version"], { timeoutMs: 1000 });
+      expect(result.code).toBe(0);
+      const captured = requireSpawnCall(0);
+      expectCmdWrappedInvocation({ captured, expectedComSpec: OVERRIDE_COM_SPEC });
     } finally {
       platformSpy.mockRestore();
     }
@@ -252,7 +312,7 @@ describe("windows command wrapper behavior", () => {
   it("falls back to npm.cmd when npm-cli.js is unavailable", async () => {
     const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
     const existsSpy = vi.spyOn(fs, "existsSync").mockReturnValue(false);
-    const expectedComSpec = process.env.ComSpec ?? resolveWindowsCmdExePath();
+    const expectedComSpec = stubComSpec("unset");
 
     spawnMock.mockImplementation(
       (_command: string, _args: string[], _options: Record<string, unknown>) => createMockChild(),
@@ -301,9 +361,9 @@ describe("windows command wrapper behavior", () => {
     await expectShimmedWindowsCommandWithoutExitCodeSucceeds({ killed: true });
   });
 
-  it("uses cmd.exe wrapper with windowsVerbatimArguments in runExec for .cmd shims", async () => {
+  it("uses the pinned cmd.exe wrapper with windowsVerbatimArguments in runExec for .cmd shims", async () => {
     const platformSpy = vi.spyOn(process, "platform", "get").mockReturnValue("win32");
-    const expectedComSpec = process.env.ComSpec ?? resolveWindowsCmdExePath();
+    const expectedComSpec = stubComSpec("unset");
 
     execFileMock.mockImplementation(
       (

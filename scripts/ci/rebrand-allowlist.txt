@@ -195,7 +195,6 @@ FILE:src/commands/onboard-search.ts
 FILE:src/config/doc-baseline.ts
 FILE:src/entry.ts
 FILE:src/gateway/android-node.capabilities.live.test.ts
-FILE:src/gateway/live-tool-probe-utils.ts
 FILE:src/infra/fs-safe.ts
 FILE:src/infra/install-safe-path.test.ts
 FILE:src/infra/path-env.test.ts

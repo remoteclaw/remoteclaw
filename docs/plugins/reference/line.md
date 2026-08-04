@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw LINE channel plugin for LINE Bot API chats."
+summary: "Adds the LINE channel surface for sending and receiving RemoteClaw messages."
 read_when:
   - You are installing, configuring, or auditing the line plugin
 title: "LINE plugin"
@@ -7,12 +7,12 @@ title: "LINE plugin"
 
 # LINE plugin
 
-RemoteClaw LINE channel plugin for LINE Bot API chats.
+Adds the LINE channel surface for sending and receiving RemoteClaw messages.
 
 ## Distribution
 
 - Package: `@remoteclaw/line`
-- Install route: npm; ClawHub
+- Install route: included in RemoteClaw
 
 ## Surface
 

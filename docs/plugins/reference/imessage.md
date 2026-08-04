@@ -17,7 +17,3 @@ Adds the iMessage channel surface for sending and receiving RemoteClaw messages.
 ## Surface
 
 channels: imessage
-
-## Related docs
-
-- [imessage](/channels/imessage)

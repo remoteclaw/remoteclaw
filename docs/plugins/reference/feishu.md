@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw Feishu/Lark channel plugin for chats and workplace tools (community maintained by @m1heng)."
+summary: "Adds the Feishu channel surface for sending and receiving RemoteClaw messages."
 read_when:
   - You are installing, configuring, or auditing the feishu plugin
 title: "Feishu plugin"
@@ -7,16 +7,16 @@ title: "Feishu plugin"
 
 # Feishu plugin
 
-RemoteClaw Feishu/Lark channel plugin for chats and workplace tools (community maintained by @m1heng).
+Adds the Feishu channel surface for sending and receiving RemoteClaw messages.
 
 ## Distribution
 
 - Package: `@remoteclaw/feishu`
-- Install route: npm; ClawHub
+- Install route: included in RemoteClaw
 
 ## Surface
 
-channels: feishu; contracts: tools; skills
+channels: feishu
 
 ## Related docs
 

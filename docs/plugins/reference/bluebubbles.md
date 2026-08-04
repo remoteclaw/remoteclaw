@@ -1,18 +1,18 @@
 ---
-summary: "Adds the BlueBubbles channel surface for sending and receiving RemoteClaw messages."
+summary: "Adds the Bluebubbles channel surface for sending and receiving RemoteClaw messages."
 read_when:
   - You are installing, configuring, or auditing the bluebubbles plugin
-title: "BlueBubbles plugin"
+title: "Bluebubbles plugin"
 ---
 
-# BlueBubbles plugin
+# Bluebubbles plugin
 
-Adds the BlueBubbles channel surface for sending and receiving RemoteClaw messages.
+Adds the Bluebubbles channel surface for sending and receiving RemoteClaw messages.
 
 ## Distribution
 
 - Package: `@remoteclaw/bluebubbles`
-- Install route: npm; ClawHub
+- Install route: included in RemoteClaw
 
 ## Surface
 

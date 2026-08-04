@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw Google Chat channel plugin for spaces and direct messages."
+summary: "Adds the Google Chat channel surface for sending and receiving RemoteClaw messages."
 read_when:
   - You are installing, configuring, or auditing the googlechat plugin
 title: "Google Chat plugin"
@@ -7,12 +7,12 @@ title: "Google Chat plugin"
 
 # Google Chat plugin
 
-RemoteClaw Google Chat channel plugin for spaces and direct messages.
+Adds the Google Chat channel surface for sending and receiving RemoteClaw messages.
 
 ## Distribution
 
 - Package: `@remoteclaw/googlechat`
-- Install route: npm; ClawHub
+- Install route: included in RemoteClaw
 
 ## Surface
 

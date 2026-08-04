@@ -11,14 +11,14 @@ Adds policy-backed doctor checks for workspace conformance.
 
 ## Distribution
 
-- Package: `@openclaw/policy`
-- Install route: included in OpenClaw
+- Package: `@remoteclaw/policy`
+- Install route: included in RemoteClaw
 
 ## Surface
 
 plugin
 
-<!-- openclaw-plugin-reference:manual-start -->
+<!-- remoteclaw-plugin-reference:manual-start -->
 
 ## Behavior
 
@@ -72,7 +72,7 @@ for its selector. Overlay rules are additional claims, so they do not weaken
 top-level policy and can produce their own findings when the same observed
 config violates both scopes.
 
-<!-- openclaw-plugin-reference:manual-end -->
+<!-- remoteclaw-plugin-reference:manual-end -->
 
 ## Related docs
 

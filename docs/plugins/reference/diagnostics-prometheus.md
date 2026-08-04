@@ -12,7 +12,7 @@ RemoteClaw diagnostics Prometheus exporter for runtime metrics.
 ## Distribution
 
 - Package: `@remoteclaw/diagnostics-prometheus`
-- Install route: npm; ClawHub: `clawhub:@remoteclaw/diagnostics-prometheus`
+- Install route: included in RemoteClaw; npm; ClawHub
 
 ## Surface
 

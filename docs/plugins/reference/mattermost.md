@@ -12,7 +12,7 @@ Adds the Mattermost channel surface for sending and receiving RemoteClaw message
 ## Distribution
 
 - Package: `@remoteclaw/mattermost`
-- Install route: npm; ClawHub: `clawhub:@remoteclaw/mattermost`
+- Install route: included in RemoteClaw
 
 ## Surface
 

@@ -1,5 +1,5 @@
 ---
-summary: "RemoteClaw voice-call plugin for Twilio, Telnyx, and Plivo phone calls."
+summary: "RemoteClaw voice-call plugin."
 read_when:
   - You are installing, configuring, or auditing the voice-call plugin
 title: "Voice Call plugin"
@@ -7,16 +7,16 @@ title: "Voice Call plugin"
 
 # Voice Call plugin
 
-RemoteClaw voice-call plugin for Twilio, Telnyx, and Plivo phone calls.
+RemoteClaw voice-call plugin.
 
 ## Distribution
 
 - Package: `@remoteclaw/voice-call`
-- Install route: npm; ClawHub
+- Install route: included in RemoteClaw
 
 ## Surface
 
-contracts: tools; skills
+plugin
 
 ## Related docs
 

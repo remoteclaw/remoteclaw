@@ -1,6 +1,7 @@
 // Detects and decodes Windows console output encodings.
 import { spawnSync } from "node:child_process";
 import { normalizeLowercaseStringOrEmpty } from "@remoteclaw/normalization-core/string-coerce";
+import { resolveWindowsCmdExePath, resolveWindowsPowerShellPath } from "./windows-system-paths.js";
 
 const WINDOWS_CODEPAGE_ENCODING_MAP: Record<number, string> = {
   65001: "utf-8",
@@ -49,7 +50,7 @@ export function resolveWindowsConsoleEncoding(): string | null {
     return cachedWindowsConsoleEncoding;
   }
   try {
-    const result = spawnSync("cmd.exe", ["/d", "/s", "/c", "chcp"], {
+    const result = spawnSync(resolveWindowsCmdExePath(), ["/d", "/s", "/c", "chcp"], {
       windowsHide: true,
       encoding: "utf8",
       stdio: ["ignore", "pipe", "pipe"],
@@ -74,7 +75,7 @@ export function resolveWindowsSystemEncoding(): string | null {
   }
   try {
     const result = spawnSync(
-      "powershell.exe",
+      resolveWindowsPowerShellPath(),
       ["-NoLogo", "-NoProfile", "-NonInteractive", "-Command", "[Text.Encoding]::Default.CodePage"],
       {
         windowsHide: true,

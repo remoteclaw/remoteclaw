@@ -5,6 +5,10 @@ import path from "node:path";
 import { isGatewayArgv } from "../infra/gateway-process-argv.js";
 import { findVerifiedGatewayListenerPidsOnPortSync } from "../infra/gateway-processes.js";
 import { inspectPortUsage } from "../infra/ports.js";
+import {
+  resolveWindowsCmdExePath,
+  resolveWindowsSystem32Path,
+} from "../infra/windows-system-paths.js";
 import { killProcessTree } from "../process/kill-tree.js";
 import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { sleep } from "../utils.js";
@@ -426,7 +430,7 @@ async function launchFallbackTaskScript(env: GatewayServiceEnv): Promise<void> {
     return;
   }
 
-  const child = spawn("cmd.exe", ["/d", "/c", scriptPath], {
+  const child = spawn(resolveWindowsCmdExePath(), ["/d", "/c", scriptPath], {
     detached: true,
     stdio: "ignore",
     windowsHide: true,
@@ -559,11 +563,7 @@ async function terminateGatewayProcessTree(pid: number, graceMs: number): Promis
     killProcessTree(pid, { graceMs });
     return;
   }
-  const taskkillPath = path.join(
-    process.env.SystemRoot ?? "C:\\Windows",
-    "System32",
-    "taskkill.exe",
-  );
+  const taskkillPath = resolveWindowsSystem32Path("taskkill.exe");
   spawnSync(taskkillPath, ["/T", "/PID", String(pid)], {
     stdio: "ignore",
     timeout: 5_000,

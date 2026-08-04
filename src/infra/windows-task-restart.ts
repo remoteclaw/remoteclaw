@@ -10,6 +10,7 @@ import { resolveTaskScriptPath } from "../daemon/schtasks.js";
 import { formatErrorMessage } from "./errors.js";
 import type { RestartAttempt } from "./restart.types.js";
 import { resolvePreferredRemoteClawTmpDir } from "./tmp-remoteclaw-dir.js";
+import { resolveWindowsCmdExePath } from "./windows-system-paths.js";
 
 const TASK_RESTART_RETRY_LIMIT = 12;
 const TASK_RESTART_RETRY_DELAY_SEC = 1;
@@ -91,7 +92,7 @@ export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.en
       })}\r\n`,
       "utf8",
     );
-    const child = spawn("cmd.exe", ["/d", "/s", "/c", quotedScriptPath], {
+    const child = spawn(resolveWindowsCmdExePath(), ["/d", "/s", "/c", quotedScriptPath], {
       detached: true,
       stdio: "ignore",
       windowsHide: true,

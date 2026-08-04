@@ -1,5 +1,6 @@
 // Covers gateway port availability and diagnostics behavior.
 import net from "node:net";
+import path from "node:path";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { stripAnsi } from "../../packages/terminal-core/src/ansi.js";
 import { mockProcessPlatform } from "../test-utils/vitest-spies.js";
@@ -17,6 +18,11 @@ let handlePortError: typeof import("./ports.js").handlePortError;
 let PortInUseError: typeof import("./ports.js").PortInUseError;
 
 const describeUnix = process.platform === "win32" ? describe.skip : describe;
+// argv[0] is now an absolute %SystemRoot% path (src/infra/windows-system-paths.ts);
+// these tests assert which binary ran, not where it lives.
+function windowsBinaryName(argv: string[]): string {
+  return path.win32.basename(argv[0] ?? "").toLowerCase();
+}
 
 function setPlatform(platform: NodeJS.Platform): void {
   mockProcessPlatform(platform);
@@ -419,8 +425,8 @@ describe("inspectPortUsage on Windows", () => {
   it("reports established gateway client connections from netstat", async () => {
     setPlatform("win32");
     runCommandWithTimeoutMock.mockImplementation(async (argv: string[]) => {
-      const [command] = argv;
-      if (command === "netstat") {
+      const command = windowsBinaryName(argv);
+      if (command === "netstat.exe") {
         return {
           stdout:
             "  TCP    127.0.0.1:50123    127.0.0.1:18789    ESTABLISHED    4242\r\n" +
@@ -429,10 +435,10 @@ describe("inspectPortUsage on Windows", () => {
           code: 0,
         };
       }
-      if (command === "tasklist") {
+      if (command === "tasklist.exe") {
         return { stdout: "Image Name: node.exe\r\n", stderr: "", code: 0 };
       }
-      if (command === "powershell") {
+      if (command === "powershell.exe") {
         return {
           stdout:
             '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\me\\AppData\\Roaming\\npm\\node_modules\\remoteclaw\\dist\\index.js logs --follow\r\n',
@@ -457,18 +463,18 @@ describe("inspectPortUsage on Windows", () => {
   it("uses PowerShell process command lines to classify RemoteClaw listeners", async () => {
     setPlatform("win32");
     runCommandWithTimeoutMock.mockImplementation(async (argv: string[]) => {
-      const [command] = argv;
-      if (command === "netstat") {
+      const command = windowsBinaryName(argv);
+      if (command === "netstat.exe") {
         return {
           stdout: "  TCP    127.0.0.1:18789    0.0.0.0:0    LISTENING    4242\r\n",
           stderr: "",
           code: 0,
         };
       }
-      if (command === "tasklist") {
+      if (command === "tasklist.exe") {
         return { stdout: "Image Name: node.exe\r\n", stderr: "", code: 0 };
       }
-      if (command === "powershell") {
+      if (command === "powershell.exe") {
         return {
           stdout:
             '"C:\\Program Files\\nodejs\\node.exe" C:\\Users\\me\\AppData\\Roaming\\npm\\node_modules\\remoteclaw\\dist\\index.js gateway run\r\n',
@@ -493,8 +499,8 @@ describe("inspectPortUsage on Windows", () => {
   it("does not match Windows listener ports by substring", async () => {
     setPlatform("win32");
     runCommandWithTimeoutMock.mockImplementation(async (argv: string[]) => {
-      const [command] = argv;
-      if (command === "netstat") {
+      const command = windowsBinaryName(argv);
+      if (command === "netstat.exe") {
         return {
           stdout:
             "  TCP    127.0.0.1:187890    0.0.0.0:0    LISTENING    9000\r\n" +
@@ -514,21 +520,21 @@ describe("inspectPortUsage on Windows", () => {
   it("falls back to wmic when PowerShell cannot read the command line", async () => {
     setPlatform("win32");
     runCommandWithTimeoutMock.mockImplementation(async (argv: string[]) => {
-      const [command] = argv;
-      if (command === "netstat") {
+      const command = windowsBinaryName(argv);
+      if (command === "netstat.exe") {
         return {
           stdout: "  TCP    127.0.0.1:18789    0.0.0.0:0    LISTENING    4242\r\n",
           stderr: "",
           code: 0,
         };
       }
-      if (command === "tasklist") {
+      if (command === "tasklist.exe") {
         return { stdout: "Image Name: node.exe\r\n", stderr: "", code: 0 };
       }
-      if (command === "powershell") {
+      if (command === "powershell.exe") {
         return { stdout: "", stderr: "access denied", code: 1 };
       }
-      if (command === "wmic") {
+      if (command === "wmic.exe") {
         return {
           stdout: "CommandLine=node.exe C:\\remoteclaw\\dist\\index.js gateway run\r\n",
           stderr: "",
@@ -541,7 +547,9 @@ describe("inspectPortUsage on Windows", () => {
     const result = await inspectPortUsage(18789);
 
     expect(result.listeners[0]?.commandLine).toContain("remoteclaw");
-    const commandNames = runCommandWithTimeoutMock.mock.calls.map(([argv]) => argv[0]);
-    expect(commandNames).toContain("wmic");
+    const commandNames = runCommandWithTimeoutMock.mock.calls.map(([argv]) =>
+      windowsBinaryName(argv as string[]),
+    );
+    expect(commandNames).toContain("wmic.exe");
   });
 });

@@ -1,3 +1,4 @@
+import { parseGatewayPortOption } from "../cli/gateway-port-option.js";
 import { withProgress } from "../cli/progress.js";
 import { readBestEffortConfig, resolveGatewayPort } from "../config/config.js";
 import { probeGateway } from "../gateway/probe.js";
@@ -26,6 +27,7 @@ import {
 export async function gatewayStatusCommand(
   opts: {
     url?: string;
+    port?: unknown;
     token?: string;
     password?: string;
     timeout?: unknown;
@@ -54,15 +56,24 @@ export async function gatewayStatusCommand(
     wideAreaDomain,
   });
 
-  let sshTarget = sanitizeSshTarget(opts.ssh) ?? sanitizeSshTarget(cfg.gateway?.remote?.sshTarget);
+  // An explicit --port is a local probe: it must not reach for the configured remote. Only an
+  // explicit --url re-enables the configured fallbacks; an explicit --ssh always wins regardless.
+  const portOverride = parseGatewayPortOption(opts.port);
+  const hasExplicitUrl = typeof opts.url === "string" && opts.url.trim().length > 0;
+  const useConfiguredRemoteTargets = portOverride === undefined || hasExplicitUrl;
+
+  let sshTarget =
+    sanitizeSshTarget(opts.ssh) ??
+    (useConfiguredRemoteTargets ? sanitizeSshTarget(cfg.gateway?.remote?.sshTarget) : null);
   let sshIdentity =
-    sanitizeSshTarget(opts.sshIdentity) ?? sanitizeSshTarget(cfg.gateway?.remote?.sshIdentity);
+    sanitizeSshTarget(opts.sshIdentity) ??
+    (useConfiguredRemoteTargets ? sanitizeSshTarget(cfg.gateway?.remote?.sshIdentity) : null);
   const remotePort = resolveGatewayPort(cfg);
 
   let sshTunnelError: string | null = null;
   let sshTunnelStarted = false;
 
-  if (!sshTarget) {
+  if (!sshTarget && useConfiguredRemoteTargets) {
     sshTarget = inferSshTargetFromRemoteUrl(cfg.gateway?.remote?.url);
   }
 

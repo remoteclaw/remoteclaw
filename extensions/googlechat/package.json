@@ -14,14 +14,6 @@
   "devDependencies": {
     "remoteclaw": "workspace:*"
   },
-  "peerDependencies": {
-    "remoteclaw": ">=2026.6.11"
-  },
-  "peerDependenciesMeta": {
-    "remoteclaw": {
-      "optional": true
-    }
-  },
   "remoteclaw": {
     "bundle": {
       "stageRuntimeDependencies": true

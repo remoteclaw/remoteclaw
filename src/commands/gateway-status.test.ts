@@ -300,6 +300,7 @@ async function runGatewayStatus(
   opts: {
     timeout: string;
     json?: boolean;
+    url?: string;
     port?: unknown;
     ssh?: string;
     sshAuto?: boolean;
@@ -1121,5 +1122,133 @@ describe("gateway-status command", () => {
 
     const call = requireSshForwardCall();
     expect(call.identity).toBe("/tmp/explicit_id");
+  });
+});
+
+// `gateway probe --port <N>` is an explicit *local* port check, so it must not reach for the
+// configured remote. These pin the gate's truth table across all three configured fallbacks:
+// gateway.remote.sshTarget, gateway.remote.sshIdentity, and the
+// inferSshTargetFromRemoteUrl(gateway.remote.url) inference.
+describe("gateway-status --port gates configured remote SSH fallbacks", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  /** Config carrying an explicit configured SSH target + identity (fallbacks 1 and 2). */
+  function makeConfiguredSshConfig() {
+    return {
+      gateway: {
+        mode: "remote",
+        remote: {
+          url: "wss://configured.example:18789",
+          token: "rtok",
+          sshTarget: "ops@configured.example",
+          sshIdentity: "/tmp/id_configured",
+        },
+        auth: { token: "ltok" },
+      },
+    };
+  }
+
+  /** Config carrying only remote.url, so the SSH target can come only from inference (fallback 3). */
+  function makeInferenceOnlyConfig() {
+    return makeRemoteGatewayConfig("wss://inferred.example:18789");
+  }
+
+  it("suppresses configured sshTarget and sshIdentity when --port is given", async () => {
+    const { runtime, runtimeErrors } = createRuntimeCapture();
+    readBestEffortConfig.mockResolvedValueOnce(makeConfiguredSshConfig() as never);
+
+    await runGatewayStatus(runtime, { timeout: "1000", json: true, port: "19080" });
+
+    expect(runtimeErrors).toHaveLength(0);
+    expect(startSshPortForward).not.toHaveBeenCalled();
+  });
+
+  it("suppresses the remote-url SSH inference when --port is given", async () => {
+    const { runtime } = createRuntimeCapture();
+    await withEnvAsync({ USER: "tester" }, async () => {
+      readBestEffortConfig.mockResolvedValueOnce(makeInferenceOnlyConfig() as never);
+
+      await runGatewayStatus(runtime, { timeout: "1000", json: true, port: "19080" });
+
+      expect(startSshPortForward).not.toHaveBeenCalled();
+    });
+  });
+
+  it("keeps the configured fallbacks active when --port is paired with an explicit --url", async () => {
+    const { runtime } = createRuntimeCapture();
+    readBestEffortConfig.mockResolvedValueOnce(makeConfiguredSshConfig() as never);
+
+    await runGatewayStatus(runtime, {
+      timeout: "1000",
+      json: true,
+      port: "19080",
+      url: "ws://explicit.example:18789",
+    });
+
+    expect(startSshPortForward).toHaveBeenCalledTimes(1);
+    const call = requireSshForwardCall();
+    expect(call.target).toBe("ops@configured.example");
+    expect(call.identity).toBe("/tmp/id_configured");
+  });
+
+  it("lets an explicit --ssh win over the --port gate", async () => {
+    const { runtime } = createRuntimeCapture();
+    readBestEffortConfig.mockResolvedValueOnce(makeConfiguredSshConfig() as never);
+
+    await runGatewayStatus(runtime, {
+      timeout: "1000",
+      json: true,
+      port: "19080",
+      ssh: "me@explicit-host.example",
+    });
+
+    expect(startSshPortForward).toHaveBeenCalledTimes(1);
+    const call = requireSshForwardCall();
+    expect(call.target).toBe("me@explicit-host.example");
+    // The gate still suppressed the *configured* identity; only the target was explicit.
+    expect(call.identity).toBeUndefined();
+  });
+
+  it("keeps an explicit --ssh-identity alongside an explicit --ssh under --port", async () => {
+    const { runtime } = createRuntimeCapture();
+    readBestEffortConfig.mockResolvedValueOnce(makeConfiguredSshConfig() as never);
+
+    await runGatewayStatus(runtime, {
+      timeout: "1000",
+      json: true,
+      port: "19080",
+      ssh: "me@explicit-host.example",
+      sshIdentity: "/tmp/id_explicit",
+    });
+
+    const call = requireSshForwardCall();
+    expect(call.target).toBe("me@explicit-host.example");
+    expect(call.identity).toBe("/tmp/id_explicit");
+  });
+
+  it("leaves configured sshTarget and sshIdentity untouched when --port is absent", async () => {
+    const { runtime } = createRuntimeCapture();
+    readBestEffortConfig.mockResolvedValueOnce(makeConfiguredSshConfig() as never);
+
+    await runGatewayStatus(runtime, { timeout: "1000", json: true });
+
+    expect(startSshPortForward).toHaveBeenCalledTimes(1);
+    const call = requireSshForwardCall();
+    expect(call.target).toBe("ops@configured.example");
+    expect(call.identity).toBe("/tmp/id_configured");
+  });
+
+  it("leaves the remote-url SSH inference untouched when --port is absent", async () => {
+    const { runtime } = createRuntimeCapture();
+    await withEnvAsync({ USER: "tester" }, async () => {
+      readBestEffortConfig.mockResolvedValueOnce(makeInferenceOnlyConfig() as never);
+
+      await runGatewayStatus(runtime, { timeout: "1000", json: true });
+
+      expect(startSshPortForward).toHaveBeenCalledTimes(1);
+      expect(requireSshForwardCall().target).toBe("tester@inferred.example");
+    });
   });
 });

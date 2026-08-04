@@ -10,14 +10,6 @@
   "devDependencies": {
     "remoteclaw": "workspace:*"
   },
-  "peerDependencies": {
-    "remoteclaw": ">=2026.4.4"
-  },
-  "peerDependenciesMeta": {
-    "remoteclaw": {
-      "optional": true
-    }
-  },
   "remoteclaw": {
     "channel": {
       "id": "qa-channel",

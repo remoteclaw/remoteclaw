@@ -51,7 +51,6 @@ vi.mock("../../infra/restart-sentinel.js", async () => {
     ...(actual as Record<string, unknown>),
     writeRestartSentinel: async (payload: RestartSentinelPayload) => {
       capturedPayload = payload;
-      return "/tmp/sentinel.json";
     },
   };
 });

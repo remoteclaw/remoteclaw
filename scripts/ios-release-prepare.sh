@@ -6,10 +6,6 @@ usage() {
 Usage:
   scripts/ios-release-prepare.sh --build-number 7 [--team-id TEAMID]
 
-Optional custom relay:
-  REMOTECLAW_PUSH_RELAY_BASE_URL=https://relay.example.com \
-    scripts/ios-release-prepare.sh --build-number 7 [--team-id TEAMID]
-
 Prepares local App Store release inputs without touching local signing overrides:
 - reads apps/ios/version.json and writes apps/ios/build/Version.xcconfig
 - writes apps/ios/build/AppStoreRelease.xcconfig with canonical bundle IDs
@@ -32,9 +28,6 @@ CANONICAL_TEAM_ID="FWJYW4S8P8"
 
 BUILD_NUMBER=""
 TEAM_ID="${IOS_DEVELOPMENT_TEAM:-}"
-DEFAULT_IOS_PUSH_RELAY_BASE_URL="https://ios-push-relay.remoteclaw.org"
-PUSH_RELAY_BASE_URL="${REMOTECLAW_PUSH_RELAY_BASE_URL:-${IOS_PUSH_RELAY_BASE_URL:-${DEFAULT_IOS_PUSH_RELAY_BASE_URL}}}"
-PUSH_RELAY_BASE_URL_XCCONFIG=""
 IOS_VERSION=""
 RELEASE_SIGNING_XCCONFIG=""
 
@@ -61,27 +54,13 @@ write_generated_file() {
   mv -f "${tmp_file}" "${output_path}"
 }
 
-validate_push_relay_base_url() {
-  local value="$1"
+require_option_value() {
+  local option="$1"
+  local value="${2-}"
 
-  if [[ "${value}" =~ [[:space:]] ]]; then
-    echo "Invalid REMOTECLAW_PUSH_RELAY_BASE_URL: whitespace is not allowed." >&2
-    exit 1
-  fi
-
-  if [[ "${value}" == *'$'* || "${value}" == *'('* || "${value}" == *')'* || "${value}" == *'='* ]]; then
-    echo "Invalid REMOTECLAW_PUSH_RELAY_BASE_URL: contains forbidden xcconfig characters." >&2
-    exit 1
-  fi
-
-  if [[ ! "${value}" =~ ^https://[A-Za-z0-9.-]+(:([0-9]{1,5}))?(/[A-Za-z0-9._~!&*+,;:@%/-]*)?$ ]]; then
-    echo "Invalid REMOTECLAW_PUSH_RELAY_BASE_URL: expected https://host[:port][/path]." >&2
-    exit 1
-  fi
-
-  local port="${BASH_REMATCH[2]:-}"
-  if [[ -n "${port}" ]] && (( 10#${port} > 65535 )); then
-    echo "Invalid REMOTECLAW_PUSH_RELAY_BASE_URL: port must be between 1 and 65535." >&2
+  if [[ -z "${value}" || "${value}" == --* ]]; then
+    echo "Missing value for ${option}." >&2
+    usage >&2
     exit 1
   fi
 }
@@ -92,10 +71,12 @@ while [[ $# -gt 0 ]]; do
       shift
       ;;
     --build-number)
+      require_option_value "$1" "${2-}"
       BUILD_NUMBER="${2:-}"
       shift 2
       ;;
     --team-id)
+      require_option_value "$1" "${2-}"
       TEAM_ID="${2:-}"
       shift 2
       ;;
@@ -131,14 +112,10 @@ if [[ "${TEAM_ID}" != "${CANONICAL_TEAM_ID}" ]]; then
   exit 1
 fi
 
-validate_push_relay_base_url "${PUSH_RELAY_BASE_URL}"
-
-# `.xcconfig` treats `//` as a comment opener. Break the URL with a helper setting
-# so Xcode still resolves it back to `https://...` at build time.
-PUSH_RELAY_BASE_URL_XCCONFIG="$(
-  printf '%s' "${PUSH_RELAY_BASE_URL}" \
-    | sed 's#//#$(REMOTECLAW_URL_SLASH)$(REMOTECLAW_URL_SLASH)#g'
-)"
+if [[ -n "${REMOTECLAW_PUSH_RELAY_BASE_URL:-}" || -n "${IOS_PUSH_RELAY_BASE_URL:-}" ]]; then
+  echo "iOS App Store release uses the canonical hosted push relay; custom relay URL overrides are not allowed." >&2
+  exit 1
+fi
 
 prepare_build_dir
 
@@ -172,12 +149,11 @@ REMOTECLAW_APP_BUNDLE_ID = org.remoteclaw.app
 REMOTECLAW_SHARE_BUNDLE_ID = org.remoteclaw.app.share
 REMOTECLAW_ACTIVITY_WIDGET_BUNDLE_ID = org.remoteclaw.app.activitywidget
 REMOTECLAW_WATCH_APP_BUNDLE_ID = org.remoteclaw.app.watchkitapp
+REMOTECLAW_CODE_SIGN_ENTITLEMENTS = Sources/RemoteClawAppAttest.entitlements
 REMOTECLAW_APNS_ENTITLEMENT_ENVIRONMENT = production
-REMOTECLAW_PUSH_TRANSPORT = relay
-REMOTECLAW_PUSH_DISTRIBUTION = official
-REMOTECLAW_URL_SLASH = /
-REMOTECLAW_PUSH_RELAY_BASE_URL = ${PUSH_RELAY_BASE_URL_XCCONFIG}
-REMOTECLAW_PUSH_APNS_ENVIRONMENT = production
+REMOTECLAW_APP_ATTEST_ENVIRONMENT = production
+REMOTECLAW_PUSH_MODE = appStore
+REMOTECLAW_PUSH_RELAY_BASE_URL =
 EOF
 
 (

@@ -913,7 +913,22 @@ describe("normalizeCronJobPatch", () => {
     expect(payload.toolsAllow).toBeNull();
     expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
   });
-  it("does not infer agentTurn kind for delivery-only legacy hints", () => {
+
+  it("preserves null fallback lists so patches can clear the fallback override", () => {
+    const normalized = normalizeCronJobPatch({
+      payload: {
+        kind: "agentTurn",
+        fallbacks: null,
+      },
+    }) as unknown as Record<string, unknown>;
+
+    const payload = normalized.payload as Record<string, unknown>;
+    expect(payload.kind).toBe("agentTurn");
+    expect(payload.fallbacks).toBeNull();
+    expect(validateCronUpdateParams({ id: "job-1", patch: normalized })).toBe(true);
+  });
+
+  it("promotes implicit text payloads with agentTurn hints to agentTurn patches", () => {
     const normalized = normalizeCronJobPatch({
       payload: {
         channel: "telegram",

@@ -194,7 +194,7 @@ struct ChatProTab: View {
     }
 
     private var chatUserAccent: Color {
-        self.colorScheme == .light ? Color(red: 0 / 255.0, green: 122 / 255.0, blue: 255 / 255.0) : RemoteClawBrand.accent
+        self.colorScheme == .light ? RemoteClawBrand.info : RemoteClawBrand.accent
     }
 
     private var activeAgent: AgentSummary? {

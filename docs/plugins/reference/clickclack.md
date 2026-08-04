@@ -12,7 +12,7 @@ Adds the ClickClack channel surface for sending and receiving RemoteClaw message
 ## Distribution
 
 - Package: `@remoteclaw/clickclack`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/clickclack`
 
 ## Surface
 

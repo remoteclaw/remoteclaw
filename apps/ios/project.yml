@@ -91,8 +91,8 @@ targets:
           swiftlint lint --config "$SRCROOT/.swiftlint.yml" --use-script-input-file-lists
     settings:
       base:
-        CODE_SIGN_IDENTITY: "Apple Development"
-        CODE_SIGN_ENTITLEMENTS: Sources/RemoteClaw.entitlements
+        CODE_SIGN_IDENTITY: "$(REMOTECLAW_CODE_SIGN_IDENTITY)"
+        CODE_SIGN_ENTITLEMENTS: "$(REMOTECLAW_CODE_SIGN_ENTITLEMENTS)"
         CODE_SIGN_STYLE: "$(REMOTECLAW_CODE_SIGN_STYLE)"
         DEVELOPMENT_TEAM: "$(REMOTECLAW_DEVELOPMENT_TEAM)"
         PRODUCT_BUNDLE_IDENTIFIER: "$(REMOTECLAW_APP_BUNDLE_ID)"
@@ -105,15 +105,15 @@ targets:
         ENABLE_APP_INTENTS_METADATA_GENERATION: NO
       configs:
         Debug:
-          REMOTECLAW_PUSH_TRANSPORT: direct
-          REMOTECLAW_PUSH_DISTRIBUTION: local
+          REMOTECLAW_CODE_SIGN_ENTITLEMENTS: Sources/RemoteClaw.entitlements
+          REMOTECLAW_APNS_ENTITLEMENT_ENVIRONMENT: development
+          REMOTECLAW_PUSH_MODE: localSandbox
           REMOTECLAW_PUSH_RELAY_BASE_URL: ""
-          REMOTECLAW_PUSH_APNS_ENVIRONMENT: sandbox
         Release:
-          REMOTECLAW_PUSH_TRANSPORT: direct
-          REMOTECLAW_PUSH_DISTRIBUTION: local
+          REMOTECLAW_CODE_SIGN_ENTITLEMENTS: Sources/RemoteClaw.entitlements
+          REMOTECLAW_APNS_ENTITLEMENT_ENVIRONMENT: production
+          REMOTECLAW_PUSH_MODE: localProduction
           REMOTECLAW_PUSH_RELAY_BASE_URL: ""
-          REMOTECLAW_PUSH_APNS_ENVIRONMENT: production
     info:
       path: Sources/Info.plist
       properties:
@@ -154,10 +154,8 @@ targets:
         NSSpeechRecognitionUsageDescription: RemoteClaw uses on-device speech recognition for talk mode and voice wake.
         NSSupportsLiveActivities: true
         ITSAppUsesNonExemptEncryption: false
-        RemoteClawPushTransport: "$(REMOTECLAW_PUSH_TRANSPORT)"
-        RemoteClawPushDistribution: "$(REMOTECLAW_PUSH_DISTRIBUTION)"
+        RemoteClawPushMode: "$(REMOTECLAW_PUSH_MODE)"
         RemoteClawPushRelayBaseURL: "$(REMOTECLAW_PUSH_RELAY_BASE_URL)"
-        RemoteClawPushAPNsEnvironment: "$(REMOTECLAW_PUSH_APNS_ENVIRONMENT)"
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationPortraitUpsideDown

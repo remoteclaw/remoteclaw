@@ -2,6 +2,7 @@
 import { html, nothing } from "lit";
 import { icons } from "../icons.ts";
 import type { GatewaySessionRow } from "../types.ts";
+import { formatCompactTokenCount } from "./token-format.ts";
 
 const CONTEXT_NOTICE_RATIO = 0.85;
 const CONTEXT_COMPACT_RATIO = 0.9;
@@ -88,7 +89,7 @@ export function getContextNoticeViewModel(
   const bg = `rgba(${r}, ${g}, ${b}, ${bgOpacity})`;
   return {
     pct,
-    detail: `${formatTokensCompact(used)} / ${formatTokensCompact(limit)}`,
+    detail: `${formatCompactTokenCount(used)} / ${formatCompactTokenCount(limit)}`,
     color,
     bg,
     compactRecommended: ratio >= CONTEXT_COMPACT_RATIO,
@@ -157,15 +158,4 @@ export function renderContextNotice(
       }
     </div>
   `;
-}
-
-/** Format token count compactly (e.g. 128000 -> "128k"). */
-function formatTokensCompact(n: number): string {
-  if (n >= 1_000_000) {
-    return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, "")}M`;
-  }
-  if (n >= 1_000) {
-    return `${(n / 1_000).toFixed(1).replace(/\.0$/, "")}k`;
-  }
-  return String(n);
 }

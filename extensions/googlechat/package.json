@@ -1,8 +1,12 @@
 {
   "name": "@remoteclaw/googlechat",
   "version": "0.8.0",
+  "description": "RemoteClaw Google Chat channel plugin for spaces and direct messages.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/remoteclaw/remoteclaw"
+  },
   "private": true,
-  "description": "RemoteClaw Google Chat channel plugin",
   "type": "module",
   "dependencies": {
     "google-auth-library": "^10.6.1"
@@ -11,7 +15,7 @@
     "remoteclaw": "workspace:*"
   },
   "peerDependencies": {
-    "remoteclaw": ">=2026.3.11"
+    "remoteclaw": ">=2026.6.11"
   },
   "peerDependenciesMeta": {
     "remoteclaw": {

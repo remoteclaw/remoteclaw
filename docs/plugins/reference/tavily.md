@@ -12,7 +12,7 @@ Adds agent-callable tools. Adds web search provider support.
 ## Distribution
 
 - Package: `@remoteclaw/tavily-plugin`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/tavily-plugin`
 
 ## Surface
 

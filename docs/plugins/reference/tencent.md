@@ -12,7 +12,7 @@ Adds Tencent TokenHub model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/tencent-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/tencent-provider`
 
 ## Surface
 

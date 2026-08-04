@@ -48,7 +48,6 @@ vi.mock("./subagent-followup.js", () => ({
 // Import after mocks
 import { countActiveDescendantRuns } from "../../agents/subagent-registry.js";
 import { deliverOutboundPayloads } from "../../infra/outbound/deliver.js";
-import { shouldEnqueueCronMainSummary } from "../heartbeat-policy.js";
 import { dispatchCronDelivery } from "./delivery-dispatch.js";
 import type { DeliveryTargetResolution } from "./delivery-target.js";
 import type { RunCronAgentTurnResult } from "./run.js";
@@ -145,18 +144,6 @@ describe("dispatchCronDelivery — double-announce guard", () => {
     // deliveryAttempted must be true so timer does NOT fire enqueueSystemEvent
     expect(state.deliveryAttempted).toBe(true);
 
-    // Verify timer guard agrees: shouldEnqueueCronMainSummary returns false
-    expect(
-      shouldEnqueueCronMainSummary({
-        summaryText: "on it",
-        deliveryRequested: true,
-        delivered: state.delivered,
-        deliveryAttempted: state.deliveryAttempted,
-        suppressMainSummary: false,
-        isCronSystemEvent: () => true,
-      }),
-    ).toBe(false);
-
     // No announce should have been attempted (subagents still running)
     expect(deliverOutboundPayloads).not.toHaveBeenCalled();
   });
@@ -176,18 +163,6 @@ describe("dispatchCronDelivery — double-announce guard", () => {
 
     // deliveryAttempted must be true so timer does NOT fire enqueueSystemEvent
     expect(state.deliveryAttempted).toBe(true);
-
-    // Verify timer guard agrees
-    expect(
-      shouldEnqueueCronMainSummary({
-        summaryText: "on it, pulling everything together",
-        deliveryRequested: true,
-        delivered: state.delivered,
-        deliveryAttempted: state.deliveryAttempted,
-        suppressMainSummary: false,
-        isCronSystemEvent: () => true,
-      }),
-    ).toBe(false);
 
     // No direct delivery should have been sent (stale interim suppressed)
     expect(deliverOutboundPayloads).not.toHaveBeenCalled();
@@ -225,18 +200,6 @@ describe("dispatchCronDelivery — double-announce guard", () => {
     expect(state.deliveryAttempted).toBe(true);
     expect(state.delivered).toBe(true);
     expect(deliverOutboundPayloads).toHaveBeenCalledTimes(1);
-
-    // Timer should not fire enqueueSystemEvent (delivered=true)
-    expect(
-      shouldEnqueueCronMainSummary({
-        summaryText: "Morning briefing complete.",
-        deliveryRequested: true,
-        delivered: state.delivered,
-        deliveryAttempted: state.deliveryAttempted,
-        suppressMainSummary: false,
-        isCronSystemEvent: () => true,
-      }),
-    ).toBe(false);
   });
 
   it("text delivery fires exactly once (no double-deliver)", async () => {

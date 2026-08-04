@@ -1,8 +1,12 @@
 {
   "name": "@remoteclaw/line",
   "version": "0.8.0",
+  "description": "RemoteClaw LINE channel plugin for LINE Bot API chats.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/remoteclaw/remoteclaw"
+  },
   "private": true,
-  "description": "RemoteClaw LINE channel plugin",
   "type": "module",
   "remoteclaw": {
     "extensions": [

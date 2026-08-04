@@ -96,6 +96,7 @@ cat >"${tmp_file}" <<EOF
 // REMOTECLAW_IOS_WATCH_APP_PROFILE
 REMOTECLAW_CODE_SIGN_STYLE = ${code_sign_style}
 REMOTECLAW_CODE_SIGN_IDENTITY = ${code_sign_identity}
+REMOTECLAW_CODE_SIGN_ENTITLEMENTS = Sources/RemoteClaw.entitlements
 REMOTECLAW_DEVELOPMENT_TEAM = ${team_id}
 // Keep legacy key for compatibility with older signing config paths.
 REMOTECLAW_IOS_SELECTED_TEAM = ${team_id}

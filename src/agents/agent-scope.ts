@@ -136,6 +136,7 @@ export function resolveSessionAgentIds(params: {
   sessionKey?: string;
   config?: RemoteClawConfig;
   agentId?: string;
+  fallbackAgentId?: string;
 }): {
   defaultAgentId: string;
   sessionAgentId: string;
@@ -143,17 +144,22 @@ export function resolveSessionAgentIds(params: {
   const defaultAgentId = resolveDefaultAgentId(params.config ?? {});
   const explicitAgentIdRaw = normalizeLowercaseStringOrEmpty(params.agentId);
   const explicitAgentId = explicitAgentIdRaw ? normalizeAgentId(explicitAgentIdRaw) : null;
+  const fallbackAgentIdRaw = normalizeLowercaseStringOrEmpty(params.fallbackAgentId);
+  const fallbackAgentId = fallbackAgentIdRaw ? normalizeAgentId(fallbackAgentIdRaw) : null;
   const sessionKey = params.sessionKey?.trim();
   const normalizedSessionKey = sessionKey ? normalizeLowercaseStringOrEmpty(sessionKey) : undefined;
   const parsed = normalizedSessionKey ? parseAgentSessionKey(normalizedSessionKey) : null;
   const sessionAgentId =
-    explicitAgentId ?? (parsed?.agentId ? normalizeAgentId(parsed.agentId) : defaultAgentId);
+    explicitAgentId ??
+    (parsed?.agentId ? normalizeAgentId(parsed.agentId) : (fallbackAgentId ?? defaultAgentId));
   return { defaultAgentId, sessionAgentId };
 }
 
 export function resolveSessionAgentId(params: {
   sessionKey?: string;
   config?: RemoteClawConfig;
+  agentId?: string;
+  fallbackAgentId?: string;
 }): string {
   return resolveSessionAgentIds(params).sessionAgentId;
 }

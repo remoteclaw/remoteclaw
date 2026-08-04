@@ -12,7 +12,7 @@ Adds Venice model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/venice-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/venice-provider`
 
 ## Surface
 

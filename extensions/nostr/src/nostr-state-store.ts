@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { getNostrRuntime } from "./runtime.js";
+import { normalizeNostrStateAccountId } from "./state-account-id.js";
 
 const STORE_VERSION = 2;
 const PROFILE_STATE_VERSION = 1;

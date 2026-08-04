@@ -85,14 +85,12 @@ export const createConfigIO = vi.fn(() => ({
   readConfigFileSnapshot: legacyReadConfigFileSnapshot,
 })) as unknown as MockFn;
 
-export const findLegacyGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
-export const uninstallLegacyGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
-export const findExtraGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
-export const findSystemGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
-export const renderGatewayServiceCleanupHints = vi
-  .fn()
-  .mockReturnValue(["cleanup"]) as unknown as MockFn;
-export const auditGatewayServiceConfig = vi
+const findLegacyGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
+const uninstallLegacyGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
+const findExtraGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
+const findSystemGatewayServices = vi.fn().mockResolvedValue([]) as unknown as MockFn;
+const renderGatewayServiceCleanupHints = vi.fn().mockReturnValue(["cleanup"]) as unknown as MockFn;
+const auditGatewayServiceConfig = vi
   .fn()
   .mockResolvedValue({ ok: true, issues: [] }) as unknown as MockFn;
 export const buildGatewayInstallPlan = vi.mocked(

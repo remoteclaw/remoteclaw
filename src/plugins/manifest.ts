@@ -20,6 +20,8 @@ export type PluginManifest = {
   skills?: string[];
   name?: string;
   description?: string;
+  /** Optional HTTPS URL for marketplace/catalog card artwork. */
+  icon?: string;
   version?: string;
   uiHints?: Record<string, PluginConfigUiHint>;
 };
@@ -89,6 +91,7 @@ export function loadPluginManifest(
   const kind = typeof raw.kind === "string" ? (raw.kind as PluginKind) : undefined;
   const name = normalizeOptionalString(raw.name);
   const description = normalizeOptionalString(raw.description);
+  const icon = normalizeOptionalString(raw.icon);
   const version = normalizeOptionalString(raw.version);
   const channels = normalizeTrimmedStringList(raw.channels);
   const providers = normalizeTrimmedStringList(raw.providers);
@@ -110,6 +113,7 @@ export function loadPluginManifest(
       skills,
       name,
       description,
+      icon,
       version,
       uiHints,
     },

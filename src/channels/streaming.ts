@@ -345,6 +345,8 @@ function itemKindToToolName(kind: string | undefined): string | undefined {
       return "apply_patch";
     case "search":
       return "web_search";
+    case "api":
+      return "api";
     case "tool":
       return "tool_call";
     default:
@@ -1005,8 +1007,8 @@ export function mergeChannelProgressDraftLine<TLine extends string | ChannelProg
       return next.slice(-maxLines);
     }
   }
-  const previous = normalizeChannelProgressDraftLineIdentity(lines.at(-1));
-  if (previous === normalized) {
+  const previous = lines.at(-1);
+  if (previous && normalizeChannelProgressDraftLineIdentity(previous) === normalized) {
     return lines;
   }
   return [...lines, line].slice(-maxLines);

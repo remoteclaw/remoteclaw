@@ -1,6 +1,7 @@
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
+import { normalizeOptionalString } from "@remoteclaw/normalization-core/string-coerce";
 import { normalizeStringEntries } from "@remoteclaw/normalization-core/string-normalization";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { resolveUserPath } from "../utils.js";
@@ -40,8 +41,8 @@ function normalizeNpmViewMetadata(value: unknown): NpmSpecResolution | null {
     return null;
   }
   const rec = value as Record<string, unknown>;
-  const name = toOptionalString(rec.name);
-  const version = toOptionalString(rec.version);
+  const name = normalizeOptionalString(rec.name);
+  const version = normalizeOptionalString(rec.version);
   const resolvedSpec = name && version ? `${name}@${version}` : undefined;
   const dist =
     rec.dist && typeof rec.dist === "object" ? (rec.dist as Record<string, unknown>) : {};
@@ -164,21 +165,21 @@ function normalizeNpmPackEntry(
     return null;
   }
   const rec = entry as Record<string, unknown>;
-  const name = toOptionalString(rec.name);
-  const version = toOptionalString(rec.version);
-  const id = toOptionalString(rec.id);
+  const name = normalizeOptionalString(rec.name);
+  const version = normalizeOptionalString(rec.version);
+  const id = normalizeOptionalString(rec.id);
   const resolvedSpec =
     (name && version ? `${name}@${version}` : undefined) ??
     (id ? parseResolvedSpecFromId(id) : undefined);
 
   return {
-    filename: toOptionalString(rec.filename),
+    filename: normalizeOptionalString(rec.filename),
     metadata: {
       name,
       version,
       resolvedSpec,
-      integrity: toOptionalString(rec.integrity),
-      shasum: toOptionalString(rec.shasum),
+      integrity: normalizeOptionalString(rec.integrity),
+      shasum: normalizeOptionalString(rec.shasum),
     },
   };
 }

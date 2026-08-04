@@ -4,9 +4,11 @@ export {
   isSelfChatMode,
   jidToE164,
   markdownToWhatsApp,
+  resolveEquivalentWhatsAppDirectChatJids,
   resolveJidToE164,
   toWhatsappJid,
   toWhatsappJidWithLid,
   type JidToE164Options,
+  type LidLookup,
   type WebChannel,
 } from "./targets-runtime.js";

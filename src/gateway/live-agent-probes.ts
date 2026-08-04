@@ -103,8 +103,10 @@ export function buildLiveCronProbeMessage(params: {
   const claudeLike = isClaudeLikeLiveAgent(params.agent);
   if (params.attempt === 0) {
     return (
-      "Use the RemoteClaw MCP tool `remoteclaw-tools/cron` (server `remoteclaw-tools`, tool `cron`). " +
-      "If the harness shows Claude-style MCP names, use `mcp__remoteclaw-tools__cron` or `mcp__remoteclaw_tools__cron`. " +
+      "Use the RemoteClaw MCP cron tool from server `remoteclaw`. " +
+      "If it is not already visible, search/load MCP tools for `remoteclaw cron` or `cron`, " +
+      "then call the matching RemoteClaw MCP tool; Claude-style names may appear as `mcp__remoteclaw__cron`. " +
+      "Do not use Claude native `CronCreate`, `CronList`, or `CronDelete`; those are not RemoteClaw proof. " +
       `Call it with JSON arguments ${params.argsJson}. ` +
       "Preserve the JSON exactly, including job.sessionTarget and job.sessionKey; do not omit, rename, or flatten those fields. " +
       "Do the actual tool call; I will verify externally with the RemoteClaw cron CLI. " +
@@ -113,8 +115,10 @@ export function buildLiveCronProbeMessage(params: {
   }
   if (claudeLike) {
     return (
-      "Retry the RemoteClaw MCP tool `remoteclaw-tools/cron` now. " +
-      "If the harness shows Claude-style MCP names, use `mcp__remoteclaw-tools__cron` or `mcp__remoteclaw_tools__cron`. " +
+      "Retry the RemoteClaw MCP cron tool from server `remoteclaw` now. " +
+      "If it is not already visible, search/load MCP tools for `remoteclaw cron` or `cron`, " +
+      "then call the matching RemoteClaw MCP tool; Claude-style names may appear as `mcp__remoteclaw__cron`. " +
+      "Do not use Claude native `CronCreate`, `CronList`, or `CronDelete`; those are not RemoteClaw proof. " +
       `Use these exact JSON arguments: ${params.argsJson}. ` +
       "Preserve job.sessionTarget and job.sessionKey exactly as provided. " +
       `If the cron job is created, reply exactly: ${params.exactReply}. ` +
@@ -125,8 +129,8 @@ export function buildLiveCronProbeMessage(params: {
   }
   return (
     "Your previous RemoteClaw cron MCP tool call was cancelled before the job was created. " +
-    "Retry the RemoteClaw MCP tool `remoteclaw-tools/cron` now. " +
-    "If the harness shows Claude-style MCP names, use `mcp__remoteclaw-tools__cron` or `mcp__remoteclaw_tools__cron`. " +
+    "Retry the RemoteClaw MCP cron tool from server `remoteclaw` now. " +
+    "If the harness shows Claude-style MCP names, use `mcp__remoteclaw__cron`. " +
     `Use these exact JSON arguments: ${params.argsJson}. ` +
     "Preserve job.sessionTarget and job.sessionKey exactly as provided. " +
     `If the cron job is created, reply exactly: ${params.exactReply}. ` +

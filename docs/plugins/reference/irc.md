@@ -12,7 +12,7 @@ Adds the IRC channel surface for sending and receiving RemoteClaw messages.
 ## Distribution
 
 - Package: `@remoteclaw/irc`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/irc`
 
 ## Surface
 

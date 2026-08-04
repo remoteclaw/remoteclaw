@@ -10,7 +10,6 @@ import {
   normalizePairingConnectRequestId,
   readConnectErrorDetailCode,
   readConnectErrorRecoveryAdvice,
-  readConnectPairingRequiredDetails,
   readConnectPairingRequiredMessage,
   readPairingConnectErrorDetails,
   resolveAuthConnectErrorDetailCode,
@@ -128,20 +127,6 @@ describe("pairing connect details", () => {
       code: "PAIRING_REQUIRED",
       reason: "scope-upgrade",
       remediationHint: "Review the requested scopes, then approve the pending upgrade.",
-    });
-  });
-
-  it("reads pairing details as compact connect details", () => {
-    expect(
-      readConnectPairingRequiredDetails({
-        code: "PAIRING_REQUIRED",
-        requestId: "req-123",
-        reason: "scope-upgrade",
-        remediationHint: "Review the requested scopes, then approve the pending upgrade.",
-      }),
-    ).toEqual({
-      requestId: "req-123",
-      reason: "scope-upgrade",
     });
   });
 

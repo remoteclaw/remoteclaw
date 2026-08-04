@@ -178,7 +178,6 @@ vi.mock("../../stream-mode.js", () => ({
     rendered: incoming,
     source: incoming,
   }),
-  buildStatusFinalPreviewText: () => "status",
   resolveSlackStreamingConfig: () => ({
     mode: "partial",
     nativeStreaming: false,

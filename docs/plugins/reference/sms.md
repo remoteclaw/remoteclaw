@@ -12,7 +12,7 @@ Twilio SMS channel plugin for RemoteClaw text messages.
 ## Distribution
 
 - Package: `@remoteclaw/sms`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/sms`
 
 ## Surface
 

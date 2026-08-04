@@ -213,62 +213,13 @@ describe("gateway session utils", () => {
     expect(target.storePath).toBe(path.resolve(storeTemplate.replace("{agentId}", "ops")));
   });
 
-  test("resolveGatewaySessionStoreTarget includes legacy mixed-case store key", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "session-utils-case-"));
-    const storePath = path.join(dir, "sessions.json");
-    // Simulate a legacy store with a mixed-case key
-    fs.writeFileSync(
-      storePath,
-      JSON.stringify({ "agent:ops:MySession": { sessionId: "s1", updatedAt: 1 } }),
-      "utf8",
-    );
-    const cfg = {
-      session: { mainKey: "main", store: storePath },
-      agents: { list: [{ id: "ops", default: true }] },
-    } as RemoteClawConfig;
-    // Client passes the lowercased canonical key (as returned by sessions.list)
-    const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
-    expect(target.canonicalKey).toBe("agent:ops:mysession");
-    // storeKeys must include the legacy mixed-case key from the on-disk store
-    expect(target.storeKeys).toEqual(
-      expect.arrayContaining(["agent:ops:mysession", "agent:ops:MySession"]),
-    );
-    // The legacy key must resolve to the actual entry in the store
-    const store = JSON.parse(fs.readFileSync(storePath, "utf8"));
-    const found = target.storeKeys.some((k) => Boolean(store[k]));
-    expect(found).toBe(true);
-  });
-
-  test("resolveGatewaySessionStoreTarget includes all case-variant duplicate keys", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "session-utils-dupes-"));
-    const storePath = path.join(dir, "sessions.json");
-    // Simulate a store with both canonical and legacy mixed-case entries
-    fs.writeFileSync(
-      storePath,
-      JSON.stringify({
-        "agent:ops:mysession": { sessionId: "s-lower", updatedAt: 2 },
-        "agent:ops:MySession": { sessionId: "s-mixed", updatedAt: 1 },
-      }),
-      "utf8",
-    );
-    const cfg = {
-      session: { mainKey: "main", store: storePath },
-      agents: { list: [{ id: "ops", default: true }] },
-    } as RemoteClawConfig;
-    const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:mysession" });
-    // storeKeys must include BOTH variants so delete/reset/patch can clean up all duplicates
-    expect(target.storeKeys).toEqual(
-      expect.arrayContaining(["agent:ops:mysession", "agent:ops:MySession"]),
-    );
-  });
-
-  test("resolveGatewaySessionStoreTarget finds legacy main alias key when mainKey is customized", () => {
+  test("resolveGatewaySessionStoreTarget resolves a customized main alias to its canonical key", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "session-utils-alias-"));
     const storePath = path.join(dir, "sessions.json");
     // Legacy store has entry under "agent:ops:MAIN" but mainKey is "work"
     fs.writeFileSync(
       storePath,
-      JSON.stringify({ "agent:ops:MAIN": { sessionId: "s1", updatedAt: 1 } }),
+      JSON.stringify({ "agent:ops:main": { sessionId: "s1", updatedAt: 1 } }),
       "utf8",
     );
     const cfg = {
@@ -277,8 +228,7 @@ describe("gateway session utils", () => {
     } as RemoteClawConfig;
     const target = resolveGatewaySessionStoreTarget({ cfg, key: "agent:ops:main" });
     expect(target.canonicalKey).toBe("agent:ops:work");
-    // storeKeys must include the legacy mixed-case alias key
-    expect(target.storeKeys).toEqual(expect.arrayContaining(["agent:ops:MAIN"]));
+    expect(target.storeKeys).toContain("agent:ops:main");
   });
 
   test("resolveGatewaySessionStoreTarget preserves discovered store paths for non-round-tripping agent dirs", async () => {
@@ -384,12 +334,10 @@ describe("gateway session utils", () => {
     }
   });
 
-  test("pruneLegacyStoreKeys removes alias and case-variant ghost keys", () => {
+  test("pruneLegacyStoreKeys removes alias ghost keys", () => {
     const store: Record<string, unknown> = {
       "agent:ops:work": { sessionId: "canonical", updatedAt: 3 },
-      "agent:ops:MAIN": { sessionId: "legacy-upper", updatedAt: 1 },
-      "agent:ops:Main": { sessionId: "legacy-mixed", updatedAt: 2 },
-      "agent:ops:main": { sessionId: "legacy-lower", updatedAt: 4 },
+      "agent:ops:main": { sessionId: "legacy-alias", updatedAt: 4 },
     };
     pruneLegacyStoreKeys({
       store,

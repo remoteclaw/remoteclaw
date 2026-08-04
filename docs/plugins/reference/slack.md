@@ -16,7 +16,7 @@ RemoteClaw Slack channel plugin for channels, DMs, commands, and app events.
 
 ## Surface
 
-channels: slack
+channels: slack; skills
 
 ## Related docs
 

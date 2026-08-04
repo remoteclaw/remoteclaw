@@ -44,14 +44,19 @@ describe("live-agent-probes", () => {
       agentId: "codex",
       sessionKey: "agent:codex:acp:test",
     });
-    expect(
-      buildLiveCronProbeMessage({
-        agent: "claude-cli",
-        argsJson: spec.argsJson,
-        attempt: 1,
-        exactReply: spec.name,
-      }),
-    ).toContain("Preserve job.sessionTarget and job.sessionKey exactly as provided.");
+    const claudeRetryPrompt = buildLiveCronProbeMessage({
+      agent: "claude-cli",
+      argsJson: spec.argsJson,
+      attempt: 1,
+      exactReply: spec.name,
+    });
+    expect(claudeRetryPrompt).toContain(
+      "Preserve job.sessionTarget and job.sessionKey exactly as provided.",
+    );
+    expect(claudeRetryPrompt).toContain("search/load MCP tools for `remoteclaw cron` or `cron`");
+    expect(claudeRetryPrompt).toContain("mcp__remoteclaw__cron");
+    expect(claudeRetryPrompt).toContain("Do not use Claude native `CronCreate`");
+    expect(claudeRetryPrompt).not.toContain("remoteclaw-tools");
     expect(
       buildLiveCronProbeMessage({
         agent: "future-agent",

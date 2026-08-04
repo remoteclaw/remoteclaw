@@ -48,7 +48,7 @@ export type ExtensionChannelConfig = {
 
 export interface ChannelsConfig {
   defaults?: ChannelDefaultsConfig;
-  /** Map provider -> channel id -> model override. */
+  /** Map provider -> channel id / DM peer id -> model override. See docs/gateway/config-channels.md for supported key forms. */
   modelByChannel?: ChannelModelByChannelConfig;
   /** Channel sections are plugin-owned; concrete channel files augment this interface. */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

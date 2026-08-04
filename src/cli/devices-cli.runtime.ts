@@ -32,6 +32,7 @@ import { theme } from "../terminal/theme.js";
 import { formatCliCommand } from "./command-format.js";
 import { parseTimeoutMsWithFallback } from "./parse-timeout.js";
 import { withProgress } from "./progress.js";
+import { quoteCliArg } from "./quote-cli-arg.js";
 
 type DevicesRpcOpts = {
   url?: string;
@@ -612,13 +613,6 @@ function lookupPairedDevice(
     return undefined;
   }
   return paired;
-}
-
-function quoteCliArg(value: string): string {
-  if (/^[A-Za-z0-9_/:=.,@%+-]+$/.test(value)) {
-    return value;
-  }
-  return `'${value.replaceAll("'", "'\\''")}'`;
 }
 
 function buildExplicitApproveCommand(opts: DevicesRpcOpts, requestId: string): string {

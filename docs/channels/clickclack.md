@@ -58,9 +58,9 @@ If `plugins.allow` is a non-empty restrictive list, explicitly selecting
 ClickClack in channel setup or running `remoteclaw plugins enable clickclack`
 appends `clickclack` to that list. Onboarding installation uses the same
 explicit-selection behavior. These paths do not override `plugins.deny` or a
-global `plugins.enabled: false` setting. Direct `remoteclaw plugins install
-clickclack` follows the normal plugin-install policy and also records ClickClack
-in an existing allowlist.
+global `plugins.enabled: false` setting. Direct
+`remoteclaw plugins install @remoteclaw/clickclack` follows the normal
+plugin-install policy and also records ClickClack in an existing allowlist.
 
 ## Access control
 

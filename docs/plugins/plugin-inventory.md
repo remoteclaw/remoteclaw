@@ -51,7 +51,7 @@ Each entry lists the package, distribution route, and description.
 
 ## Core npm package
 
-72 plugins
+59 plugins
 
 - **[admin-http-rpc](/plugins/reference/admin-http-rpc)** (`@remoteclaw/admin-http-rpc`) - included in RemoteClaw. RemoteClaw admin HTTP RPC endpoint.
 
@@ -68,8 +68,6 @@ Each entry lists the package, distribution route, and description.
 - **[byteplus](/plugins/reference/byteplus)** (`@remoteclaw/byteplus-provider`) - included in RemoteClaw. Adds BytePlus, BytePlus Plan model provider support to RemoteClaw.
 
 - **[canvas](/plugins/reference/canvas)** (`@remoteclaw/canvas-plugin`) - included in RemoteClaw. Experimental Canvas control and A2UI rendering surfaces for paired nodes.
-
-- **[clickclack](/plugins/reference/clickclack)** (`@remoteclaw/clickclack`) - included in RemoteClaw. Adds the Clickclack channel surface for sending and receiving RemoteClaw messages.
 
 - **[codex-supervisor](/plugins/reference/codex-supervisor)** (`@remoteclaw/codex-supervisor`) - included in RemoteClaw. Supervise Codex app-server sessions from RemoteClaw.
 
@@ -91,8 +89,6 @@ Each entry lists the package, distribution route, and description.
 
 - **[file-transfer](/plugins/reference/file-transfer)** (`@remoteclaw/file-transfer`) - included in RemoteClaw. Fetch, list, and write files on paired nodes via dedicated node commands. Bypasses bash stdout truncation by using base64 over node.invoke for binaries up to 16 MB.
 
-- **[fireworks](/plugins/reference/fireworks)** (`@remoteclaw/fireworks-provider`) - included in RemoteClaw. Adds Fireworks model provider support to RemoteClaw.
-
 - **[github-copilot](/plugins/reference/github-copilot)** (`@remoteclaw/github-copilot-provider`) - included in RemoteClaw. Adds GitHub Copilot model provider support to RemoteClaw.
 
 - **[google](/plugins/reference/google)** (`@remoteclaw/google-plugin`) - included in RemoteClaw. Adds Google, Google Gemini CLI, Google Vertex model provider support to RemoteClaw.
@@ -101,15 +97,11 @@ Each entry lists the package, distribution route, and description.
 
 - **[imessage](/plugins/reference/imessage)** (`@remoteclaw/imessage`) - included in RemoteClaw. Adds the iMessage channel surface for sending and receiving RemoteClaw messages.
 
-- **[irc](/plugins/reference/irc)** (`@remoteclaw/irc`) - included in RemoteClaw. Adds the IRC channel surface for sending and receiving RemoteClaw messages.
-
 - **[litellm](/plugins/reference/litellm)** (`@remoteclaw/litellm-provider`) - included in RemoteClaw. Adds LiteLLM model provider support to RemoteClaw.
 
 - **[llm-task](/plugins/reference/llm-task)** (`@remoteclaw/llm-task`) - included in RemoteClaw. Generic JSON-only LLM tool for structured tasks callable from workflows.
 
 - **[lmstudio](/plugins/reference/lmstudio)** (`@remoteclaw/lmstudio-provider`) - included in RemoteClaw. Adds LM Studio model provider support to RemoteClaw.
-
-- **[mattermost](/plugins/reference/mattermost)** (`@remoteclaw/mattermost`) - included in RemoteClaw. Adds the Mattermost channel surface for sending and receiving RemoteClaw messages.
 
 - **[memory-core](/plugins/reference/memory-core)** (`@remoteclaw/memory-core`) - included in RemoteClaw. Adds agent-callable tools.
 
@@ -126,8 +118,6 @@ Each entry lists the package, distribution route, and description.
 - **[minimax](/plugins/reference/minimax)** (`@remoteclaw/minimax-provider`) - included in RemoteClaw. Adds MiniMax, MiniMax Portal model provider support to RemoteClaw.
 
 - **[mistral](/plugins/reference/mistral)** (`@remoteclaw/mistral-provider`) - included in RemoteClaw. Adds Mistral model provider support to RemoteClaw.
-
-- **[moonshot](/plugins/reference/moonshot)** (`@remoteclaw/moonshot-provider`) - included in RemoteClaw. Adds Moonshot model provider support to RemoteClaw.
 
 - **[novita](/plugins/reference/novita)** (`@remoteclaw/novita-provider`) - included in RemoteClaw. Adds Novita, Novita AI, Novitaai model provider support to RemoteClaw.
 
@@ -151,31 +141,17 @@ Each entry lists the package, distribution route, and description.
 
 - **[runway](/plugins/reference/runway)** (`@remoteclaw/runway-provider`) - included in RemoteClaw. Adds video generation provider support.
 
-- **[searxng](/plugins/reference/searxng)** (`@remoteclaw/searxng-plugin`) - included in RemoteClaw. Adds web search provider support.
-
 - **[senseaudio](/plugins/reference/senseaudio)** (`@remoteclaw/senseaudio-provider`) - included in RemoteClaw. Adds media understanding provider support.
 
 - **[sglang](/plugins/reference/sglang)** (`@remoteclaw/sglang-provider`) - included in RemoteClaw. Adds SGLang model provider support to RemoteClaw.
 
-- **[signal](/plugins/reference/signal)** (`@remoteclaw/signal`) - included in RemoteClaw. Adds the Signal channel surface for sending and receiving RemoteClaw messages.
-
-- **[sms](/plugins/reference/sms)** (`@remoteclaw/sms`) - included in RemoteClaw. Twilio SMS channel plugin for RemoteClaw text messages.
-
 - **[synthetic](/plugins/reference/synthetic)** (`@remoteclaw/synthetic-provider`) - included in RemoteClaw. Adds Synthetic model provider support to RemoteClaw.
 
-- **[tavily](/plugins/reference/tavily)** (`@remoteclaw/tavily-plugin`) - included in RemoteClaw. Adds agent-callable tools. Adds web search provider support.
-
 - **[telegram](/plugins/reference/telegram)** (`@remoteclaw/telegram`) - included in RemoteClaw. Adds the Telegram channel surface for sending and receiving RemoteClaw messages.
-
-- **[tencent](/plugins/reference/tencent)** (`@remoteclaw/tencent-provider`) - included in RemoteClaw. Adds Tencent TokenHub model provider support to RemoteClaw.
 
 - **[together](/plugins/reference/together)** (`@remoteclaw/together-provider`) - included in RemoteClaw. Adds Together model provider support to RemoteClaw.
 
 - **[tts-local-cli](/plugins/reference/tts-local-cli)** (`@remoteclaw/tts-local-cli`) - included in RemoteClaw. Adds text-to-speech provider support.
-
-- **[venice](/plugins/reference/venice)** (`@remoteclaw/venice-provider`) - included in RemoteClaw. Adds Venice model provider support to RemoteClaw.
-
-- **[vercel-ai-gateway](/plugins/reference/vercel-ai-gateway)** (`@remoteclaw/vercel-ai-gateway-provider`) - included in RemoteClaw. Adds Vercel AI Gateway model provider support to RemoteClaw.
 
 - **[vllm](/plugins/reference/vllm)** (`@remoteclaw/vllm-provider`) - included in RemoteClaw. Adds vLLM model provider support to RemoteClaw.
 
@@ -195,11 +171,9 @@ Each entry lists the package, distribution route, and description.
 
 - **[xiaomi](/plugins/reference/xiaomi)** (`@remoteclaw/xiaomi-provider`) - included in RemoteClaw. Adds Xiaomi, Xiaomi Token Plan model provider support to RemoteClaw.
 
-- **[zai](/plugins/reference/zai)** (`@remoteclaw/zai-provider`) - included in RemoteClaw. Adds Z.AI model provider support to RemoteClaw.
-
 ## Official external packages
 
-54 plugins
+68 plugins
 
 - **[acpx](/plugins/reference/acpx)** (`@remoteclaw/acpx`) - npm; ClawHub. RemoteClaw ACP runtime backend with plugin-owned session and transport management.
 
@@ -216,6 +190,8 @@ Each entry lists the package, distribution route, and description.
 - **[cerebras](/plugins/reference/cerebras)** (`@remoteclaw/cerebras-provider`) - npm; ClawHub: `clawhub:@remoteclaw/cerebras-provider`. Adds Cerebras model provider support to RemoteClaw.
 
 - **[chutes](/plugins/reference/chutes)** (`@remoteclaw/chutes-provider`) - npm; ClawHub: `clawhub:@remoteclaw/chutes-provider`. Adds Chutes model provider support to RemoteClaw.
+
+- **[clickclack](/plugins/reference/clickclack)** (`@remoteclaw/clickclack`) - npm; ClawHub: `clawhub:@remoteclaw/clickclack`. Adds the Clickclack channel surface for sending and receiving RemoteClaw messages.
 
 - **[cloudflare-ai-gateway](/plugins/reference/cloudflare-ai-gateway)** (`@remoteclaw/cloudflare-ai-gateway-provider`) - npm; ClawHub: `clawhub:@remoteclaw/cloudflare-ai-gateway-provider`. Adds Cloudflare AI Gateway model provider support to RemoteClaw.
 
@@ -243,6 +219,8 @@ Each entry lists the package, distribution route, and description.
 
 - **[firecrawl](/plugins/reference/firecrawl)** (`@remoteclaw/firecrawl-plugin`) - npm; ClawHub: `clawhub:@remoteclaw/firecrawl-plugin`. Adds agent-callable tools. Adds web fetch provider support. Adds web search provider support.
 
+- **[fireworks](/plugins/reference/fireworks)** (`@remoteclaw/fireworks-provider`) - npm; ClawHub: `clawhub:@remoteclaw/fireworks-provider`. Adds Fireworks model provider support to RemoteClaw.
+
 - **[gmi](/plugins/reference/gmi)** (`@remoteclaw/gmi-provider`) - npm; ClawHub: `clawhub:@remoteclaw/gmi-provider`. RemoteClaw GMI Cloud provider plugin.
 
 - **[google-meet](/plugins/reference/google-meet)** (`@remoteclaw/google-meet`) - npm; ClawHub. RemoteClaw Google Meet participant plugin for joining calls through Chrome or Twilio transports.
@@ -254,6 +232,8 @@ Each entry lists the package, distribution route, and description.
 - **[groq](/plugins/reference/groq)** (`@remoteclaw/groq-provider`) - npm; ClawHub: `clawhub:@remoteclaw/groq-provider`. Adds Groq model provider support to RemoteClaw.
 
 - **[inworld](/plugins/reference/inworld)** (`@remoteclaw/inworld-speech`) - npm; ClawHub: `clawhub:@remoteclaw/inworld-speech`. Inworld streaming text-to-speech (MP3, OGG_OPUS, PCM telephony).
+
+- **[irc](/plugins/reference/irc)** (`@remoteclaw/irc`) - npm; ClawHub: `clawhub:@remoteclaw/irc`. Adds the IRC channel surface for sending and receiving RemoteClaw messages.
 
 - **[kilocode](/plugins/reference/kilocode)** (`@remoteclaw/kilocode-provider`) - npm; ClawHub: `clawhub:@remoteclaw/kilocode-provider`. Adds Kilocode model provider support to RemoteClaw.
 
@@ -267,7 +247,11 @@ Each entry lists the package, distribution route, and description.
 
 - **[matrix](/plugins/reference/matrix)** (`@remoteclaw/matrix`) - ClawHub: `clawhub:@remoteclaw/matrix`; npm. RemoteClaw Matrix channel plugin for rooms and direct messages.
 
+- **[mattermost](/plugins/reference/mattermost)** (`@remoteclaw/mattermost`) - npm; ClawHub: `clawhub:@remoteclaw/mattermost`. Adds the Mattermost channel surface for sending and receiving RemoteClaw messages.
+
 - **[memory-lancedb](/plugins/reference/memory-lancedb)** (`@remoteclaw/memory-lancedb`) - npm; ClawHub. RemoteClaw LanceDB-backed long-term memory plugin with auto-recall, auto-capture, and vector search.
+
+- **[moonshot](/plugins/reference/moonshot)** (`@remoteclaw/moonshot-provider`) - npm; ClawHub: `clawhub:@remoteclaw/moonshot-provider`. Adds Moonshot model provider support to RemoteClaw.
 
 - **[msteams](/plugins/reference/msteams)** (`@remoteclaw/msteams`) - npm; ClawHub. RemoteClaw Microsoft Teams channel plugin for bot conversations.
 
@@ -289,11 +273,23 @@ Each entry lists the package, distribution route, and description.
 
 - **[qwen](/plugins/reference/qwen)** (`@remoteclaw/qwen-provider`) - npm; ClawHub: `clawhub:@remoteclaw/qwen-provider`. Adds Qwen, Qwen Cloud, Model Studio, DashScope, Qwen Oauth, Qwen Portal, Qwen CLI model provider support to RemoteClaw.
 
+- **[raft](/plugins/reference/raft)** (`@remoteclaw/raft`) - npm; ClawHub. RemoteClaw Raft channel plugin for secure CLI wake bridges.
+
+- **[searxng](/plugins/reference/searxng)** (`@remoteclaw/searxng-plugin`) - npm; ClawHub: `clawhub:@remoteclaw/searxng-plugin`. Adds web search provider support.
+
+- **[signal](/plugins/reference/signal)** (`@remoteclaw/signal`) - npm; ClawHub: `clawhub:@remoteclaw/signal`. Adds the Signal channel surface for sending and receiving RemoteClaw messages.
+
 - **[slack](/plugins/reference/slack)** (`@remoteclaw/slack`) - npm; ClawHub. RemoteClaw Slack channel plugin for channels, DMs, commands, and app events.
+
+- **[sms](/plugins/reference/sms)** (`@remoteclaw/sms`) - npm; ClawHub: `clawhub:@remoteclaw/sms`. Twilio SMS channel plugin for RemoteClaw text messages.
 
 - **[stepfun](/plugins/reference/stepfun)** (`@remoteclaw/stepfun-provider`) - npm; ClawHub: `clawhub:@remoteclaw/stepfun-provider`. Adds StepFun, StepFun Plan model provider support to RemoteClaw.
 
 - **[synology-chat](/plugins/reference/synology-chat)** (`@remoteclaw/synology-chat`) - npm; ClawHub. Synology Chat channel plugin for RemoteClaw channels and direct messages.
+
+- **[tavily](/plugins/reference/tavily)** (`@remoteclaw/tavily-plugin`) - npm; ClawHub: `clawhub:@remoteclaw/tavily-plugin`. Adds agent-callable tools. Adds web search provider support.
+
+- **[tencent](/plugins/reference/tencent)** (`@remoteclaw/tencent-provider`) - npm; ClawHub: `clawhub:@remoteclaw/tencent-provider`. Adds Tencent TokenHub model provider support to RemoteClaw.
 
 - **[tlon](/plugins/reference/tlon)** (`@remoteclaw/tlon`) - npm; ClawHub. RemoteClaw Tlon/Urbit channel plugin for chat workflows.
 
@@ -301,9 +297,15 @@ Each entry lists the package, distribution route, and description.
 
 - **[twitch](/plugins/reference/twitch)** (`@remoteclaw/twitch`) - npm; ClawHub. RemoteClaw Twitch channel plugin for chat and moderation workflows.
 
+- **[venice](/plugins/reference/venice)** (`@remoteclaw/venice-provider`) - npm; ClawHub: `clawhub:@remoteclaw/venice-provider`. Adds Venice model provider support to RemoteClaw.
+
+- **[vercel-ai-gateway](/plugins/reference/vercel-ai-gateway)** (`@remoteclaw/vercel-ai-gateway-provider`) - npm; ClawHub: `clawhub:@remoteclaw/vercel-ai-gateway-provider`. Adds Vercel AI Gateway model provider support to RemoteClaw.
+
 - **[voice-call](/plugins/reference/voice-call)** (`@remoteclaw/voice-call`) - npm; ClawHub. RemoteClaw voice-call plugin for Twilio, Telnyx, and Plivo phone calls.
 
 - **[whatsapp](/plugins/reference/whatsapp)** (`@remoteclaw/whatsapp`) - ClawHub: `clawhub:@remoteclaw/whatsapp`; npm. RemoteClaw WhatsApp channel plugin for WhatsApp Web chats.
+
+- **[zai](/plugins/reference/zai)** (`@remoteclaw/zai-provider`) - npm; ClawHub: `clawhub:@remoteclaw/zai-provider`. Adds Z.AI model provider support to RemoteClaw.
 
 - **[zalo](/plugins/reference/zalo)** (`@remoteclaw/zalo`) - npm; ClawHub. RemoteClaw Zalo channel plugin for bot and webhook chats.
 

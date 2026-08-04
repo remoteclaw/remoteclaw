@@ -12,7 +12,7 @@
       "platform": "IOS",
       "profileKey": "REMOTECLAW_APP_PROFILE",
       "profileName": "RemoteClaw App Store org.remoteclaw.app",
-      "capabilities": ["PUSH_NOTIFICATIONS", "APP_GROUPS"],
+      "capabilities": ["PUSH_NOTIFICATIONS", "APP_GROUPS", "APP_ATTEST"],
       "appGroups": ["group.org.remoteclaw.app.shared"]
     },
     {

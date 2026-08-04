@@ -95,7 +95,7 @@ function parseArgs(argv) {
     const arg = argv[i];
     const next = argv[i + 1];
     const readValue = () => {
-      if (!next) {
+      if (!next || next.startsWith("-")) {
         throw new Error(`Missing value for ${arg}`);
       }
       i += 1;
@@ -130,13 +130,13 @@ function parseArgs(argv) {
         options.minLeakedFds = readPositiveNumber(readValue(), "--min-leaked-fds");
         break;
       case "--invoke-timeout-ms":
-        options.invokeTimeoutMs = readPositiveNumber(readValue(), "--invoke-timeout-ms");
+        options.invokeTimeoutMs = readTimerTimeoutNumber(readValue(), "--invoke-timeout-ms");
         break;
       case "--sample-delay-ms":
-        options.sampleDelayMs = readNumber(readValue(), "--sample-delay-ms");
+        options.sampleDelayMs = readTimerTimeoutNumber(readValue(), "--sample-delay-ms", 0);
         break;
       case "--settle-delay-ms":
-        options.settleDelayMs = readNumber(readValue(), "--settle-delay-ms");
+        options.settleDelayMs = readTimerTimeoutNumber(readValue(), "--settle-delay-ms", 0);
         break;
       case "--output-dir":
         options.outputDir = path.resolve(readValue());
@@ -172,7 +172,9 @@ function logStep(message) {
 }
 
 function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => {
+    setTimeout(resolve, clampTimerTimeoutMs(ms, 0));
+  });
 }
 
 async function getFreePort() {
@@ -375,9 +377,10 @@ async function stopGateway({ child, port }) {
   }
 }
 
-async function invokeMemorySearch({ port, token, timeoutMs }) {
+export async function invokeMemorySearch({ port, token, timeoutMs }) {
+  const resolvedTimeoutMs = clampTimerTimeoutMs(timeoutMs);
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const timer = setTimeout(() => controller.abort(), resolvedTimeoutMs);
   const startedAt = Date.now();
   try {
     const res = await fetch(`http://127.0.0.1:${port}/tools/invoke`, {

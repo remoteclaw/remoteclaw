@@ -189,6 +189,7 @@ export function draftToCronFormPatch(draft: CronQuickCreateDraft): Partial<CronF
       break;
     case "silent":
       patch.sessionTarget = "main";
+      patch.payloadKind = "systemEvent";
       patch.deliveryMode = "none";
       patch.wakeMode = "now";
       break;

@@ -1,3 +1,8 @@
+import {
+  MIN_HOST_VERSION_FORMAT,
+  parseMinHostVersionRequirement,
+} from "../../src/plugins/min-host-version.ts";
+
 export type ExtensionPackageJson = {
   name?: string;
   version?: string;
@@ -6,6 +11,7 @@ export type ExtensionPackageJson = {
   remoteclaw?: {
     install?: {
       npmSpec?: string;
+      minHostVersion?: unknown;
     };
     releaseChecks?: {
       rootDependencyMirrorAllowlist?: string[];
@@ -47,6 +53,14 @@ export function collectBundledExtensionManifestErrors(extensions: BundledExtensi
       errors.push(
         `bundled extension '${extension.id}' manifest invalid | remoteclaw.install.npmSpec must be a non-empty string`,
       );
+    }
+    const minHostVersionError =
+      install?.minHostVersion === undefined ||
+      parseMinHostVersionRequirement(install.minHostVersion)
+        ? null
+        : MIN_HOST_VERSION_FORMAT;
+    if (minHostVersionError) {
+      errors.push(`bundled extension '${extension.id}' manifest invalid | ${minHostVersionError}`);
     }
 
     const allowlist =

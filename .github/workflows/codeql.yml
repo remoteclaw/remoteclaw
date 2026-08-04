@@ -6,8 +6,8 @@ on:
     - cron: "0 6 * * *"
 
 concurrency:
-  group: codeql-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: codeql-${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || format('ref-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref == 'refs/heads/main') }}
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
@@ -35,41 +35,10 @@ jobs:
             needs_autobuild: false
             config_file: ./.github/codeql/codeql-javascript-typescript.yml
           - language: actions
-            runs_on: blacksmith-16vcpu-ubuntu-2404
-            needs_node: false
-            needs_python: false
-            needs_java: false
-            needs_swift_tools: false
-            needs_manual_build: false
-            needs_autobuild: false
-            config_file: ""
-          - language: python
-            runs_on: blacksmith-16vcpu-ubuntu-2404
-            needs_node: false
-            needs_python: true
-            needs_java: false
-            needs_swift_tools: false
-            needs_manual_build: false
-            needs_autobuild: false
-            config_file: ""
-          - language: java-kotlin
-            runs_on: blacksmith-16vcpu-ubuntu-2404
-            needs_node: false
-            needs_python: false
-            needs_java: true
-            needs_swift_tools: false
-            needs_manual_build: true
-            needs_autobuild: false
-            config_file: ""
-          - language: swift
-            runs_on: ${{ github.repository == 'remoteclaw/remoteclaw' && 'blacksmith-12vcpu-macos-latest' || 'macos-latest' }}
-            needs_node: false
-            needs_python: false
-            needs_java: false
-            needs_swift_tools: true
-            needs_manual_build: true
-            needs_autobuild: false
-            config_file: ""
+            category: actions
+            runs_on: ubuntu-24.04
+            timeout_minutes: 10
+            config_file: ./.github/codeql/codeql-actions-critical-security.yml
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6

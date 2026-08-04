@@ -6,6 +6,7 @@ import { formatUnknownError, waitForSlackSocketDisconnect } from "./reconnect-po
 
 type SlackAppConstructor = typeof import("@slack/bolt").App;
 type SlackHttpReceiverConstructor = typeof import("@slack/bolt").HTTPReceiver;
+type SlackReceiver = import("@slack/bolt").Receiver;
 type SlackSocketModeReceiverConstructor = typeof import("@slack/bolt").SocketModeReceiver;
 type SlackSocketModeReceiverOptions = ConstructorParameters<SlackSocketModeReceiverConstructor>[0];
 type SlackSdkLogger = NonNullable<SlackSocketModeReceiverOptions["logger"]>;

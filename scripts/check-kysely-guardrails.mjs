@@ -39,6 +39,7 @@ const rawSqliteAllowPathGroups = {
     "src/infra/sqlite-integrity.ts",
     "src/infra/sqlite-pragma.test-support.ts",
     "src/infra/sqlite-transaction.ts",
+    "src/infra/sqlite-user-version.ts",
     "src/infra/sqlite-wal.ts",
   ],
   "backup snapshot maintenance": ["src/commands/backup-verify.ts", "src/infra/backup-create.ts"],

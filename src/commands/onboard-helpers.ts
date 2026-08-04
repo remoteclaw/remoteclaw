@@ -10,9 +10,13 @@ import { resolveStateDir } from "../config/paths.js";
 import { resolveSessionTranscriptsDirForAgent } from "../config/sessions.js";
 import { callGateway } from "../gateway/call.js";
 import { normalizeControlUiBasePath } from "../gateway/control-ui-shared.js";
-import { pickPrimaryLanIPv4, isValidIPv4 } from "../gateway/net.js";
+import { isValidIPv4 } from "../gateway/net.js";
+import { movePathToTrash } from "../infra/fs-safe.js";
+import {
+  inspectBestEffortPrimaryTailnetIPv4,
+  pickBestEffortPrimaryLanIPv4,
+} from "../infra/network-discovery-display.js";
 import { isSafeExecutableValue } from "../infra/safe-executable-value.js";
-import { pickPrimaryTailnetIPv4 } from "../infra/tailnet.js";
 import { resolveWindowsSystem32Path } from "../infra/windows-system-paths.js";
 import { isWSL } from "../infra/wsl.js";
 import { runCommandWithTimeout } from "../process/exec.js";
@@ -129,12 +133,20 @@ type BrowserOpenCommand = {
   argv: string[] | null;
   reason?: string;
   command?: string;
-  /**
-   * Whether the URL must be wrapped in quotes when appended to argv.
-   * Needed for Windows `cmd /c start` where `&` splits commands.
-   */
-  quoteUrl?: boolean;
 };
+
+// Only web URLs may be handed to an OS URL handler. `file://` would open a
+// local file, and custom schemes reach whatever application claims them, so a
+// URL that reaches openUrl by mistake must not become an arbitrary OS action.
+const BROWSER_OPEN_ALLOWED_PROTOCOLS = new Set(["http:", "https:"]);
+
+function isBrowserOpenableUrl(url: string): boolean {
+  try {
+    return BROWSER_OPEN_ALLOWED_PROTOCOLS.has(new URL(url).protocol);
+  } catch {
+    return false;
+  }
+}
 
 export async function resolveBrowserOpenCommand(): Promise<BrowserOpenCommand> {
   const platform = process.platform;
@@ -149,10 +161,13 @@ export async function resolveBrowserOpenCommand(): Promise<BrowserOpenCommand> {
   }
 
   if (platform === "win32") {
+    // rundll32 + FileProtocolHandler hands the URL to the registered handler as
+    // a single argument. `cmd /c start` instead re-parses it through the shell,
+    // where `&` in an OAuth query string splits it into further commands.
+    const rundll32 = resolveWindowsSystem32Path("rundll32.exe");
     return {
-      argv: ["cmd", "/c", "start", ""],
-      command: "cmd",
-      quoteUrl: true,
+      argv: [rundll32, "url.dll,FileProtocolHandler"],
+      command: rundll32,
     };
   }
 
@@ -229,26 +244,15 @@ export async function openUrl(url: string): Promise<boolean> {
   if (shouldSkipBrowserOpenInTests()) {
     return false;
   }
+  if (!isBrowserOpenableUrl(url)) {
+    return false;
+  }
   const resolved = await resolveBrowserOpenCommand();
   if (!resolved.argv) {
     return false;
   }
-  const quoteUrl = resolved.quoteUrl === true;
-  const command = [...resolved.argv];
-  if (quoteUrl) {
-    if (command.at(-1) === "") {
-      // Preserve the empty title token for `start` when using verbatim args.
-      command[command.length - 1] = '""';
-    }
-    command.push(`"${url}"`);
-  } else {
-    command.push(url);
-  }
   try {
-    await runCommandWithTimeout(command, {
-      timeoutMs: 5_000,
-      windowsVerbatimArguments: quoteUrl,
-    });
+    await runCommandWithTimeout([...resolved.argv, url], { timeoutMs: 5_000 });
     return true;
   } catch {
     // ignore; we still print the URL for manual open
@@ -258,6 +262,9 @@ export async function openUrl(url: string): Promise<boolean> {
 
 export async function openUrlInBackground(url: string): Promise<boolean> {
   if (shouldSkipBrowserOpenInTests()) {
+    return false;
+  }
+  if (!isBrowserOpenableUrl(url)) {
     return false;
   }
   if (process.platform !== "darwin") {
@@ -293,16 +300,45 @@ export async function moveToTrash(pathname: string, runtime: RuntimeEnv): Promis
     return;
   }
   try {
-    await fs.access(pathname);
+    await fs.lstat(pathname);
   } catch {
     return;
   }
   try {
-    await runCommandWithTimeout(["trash", pathname], { timeoutMs: 5000 });
+    const targetPath = path.resolve(pathname);
+    const sourcePath = await resolveMoveToTrashSourcePath(targetPath);
+    await movePathToTrash(sourcePath, {
+      allowedRoots: await resolveMoveToTrashAllowedRoots(sourcePath),
+    });
     runtime.log(`Moved to Trash: ${shortenHomePath(pathname)}`);
   } catch {
     runtime.log(`Failed to move to Trash (manual delete): ${shortenHomePath(pathname)}`);
   }
+}
+
+// Mirror the canonicalization movePathToTrash performs internally, so the
+// allowed roots below are derived from the same parent the rename will use.
+async function resolveMoveToTrashSourcePath(targetPath: string): Promise<string> {
+  return path.join(await fs.realpath(path.dirname(targetPath)), path.basename(targetPath));
+}
+
+// These roots are derived from the target, so they do NOT bound where a reset
+// can reach — a config path that is itself a symlink into /etc still resolves
+// inside its own canonical parent. They exist to satisfy the fs-safe contract
+// and to keep a link whose target lives elsewhere from being read as an escape.
+// Bounding reset to known-owned directories would need roots sourced from
+// resolveConfigDir()/resolveStateDir() instead.
+async function resolveMoveToTrashAllowedRoots(sourcePath: string): Promise<string[]> {
+  const allowedRoots = [path.dirname(sourcePath)];
+  const stat = await fs.lstat(sourcePath);
+  if (stat.isSymbolicLink()) {
+    try {
+      allowedRoots.push(path.dirname(await fs.realpath(sourcePath)));
+    } catch {
+      // Broken symlink: the lexical parent is the only root that applies.
+    }
+  }
+  return [...new Set(allowedRoots)];
 }
 
 export async function handleReset(scope: ResetScope, workspaceDir: string, runtime: RuntimeEnv) {
@@ -444,7 +480,7 @@ export function resolveControlUiLinks(params: {
   const port = params.port;
   const bind = params.bind ?? "loopback";
   const customBindHost = params.customBindHost?.trim();
-  const tailnetIPv4 = pickPrimaryTailnetIPv4();
+  const { tailnetIPv4 } = inspectBestEffortPrimaryTailnetIPv4();
   const host = (() => {
     if (bind === "custom" && customBindHost && isValidIPv4(customBindHost)) {
       return customBindHost;
@@ -453,7 +489,7 @@ export function resolveControlUiLinks(params: {
       return tailnetIPv4 ?? "127.0.0.1";
     }
     if (bind === "lan") {
-      return pickPrimaryLanIPv4() ?? "127.0.0.1";
+      return pickBestEffortPrimaryLanIPv4() ?? "127.0.0.1";
     }
     return "127.0.0.1";
   })();

@@ -3,11 +3,16 @@ import { withProgress } from "../cli/progress.js";
 import { readBestEffortConfig, resolveGatewayPort } from "../config/config.js";
 import { probeGateway } from "../gateway/probe.js";
 import { discoverGatewayBeacons } from "../infra/bonjour-discovery.js";
-import { resolveSshConfig } from "../infra/ssh-config.js";
 import { parseSshTarget, startSshPortForward } from "../infra/ssh-tunnel.js";
 import { resolveWideAreaDiscoveryDomain } from "../infra/widearea-dns.js";
 import type { RuntimeEnv } from "../runtime.js";
 import { colorize, isRich, theme } from "../terminal/theme.js";
+import {
+  inferSshTargetFromRemoteUrl,
+  pickAutoSshTargetFromDiscovery,
+  resolveSshTarget,
+  serializeGatewayDiscoveryBeacon,
+} from "./gateway-status/discovery.js";
 import {
   buildNetworkHints,
   extractConfigSummary,
@@ -78,7 +83,13 @@ export async function gatewayStatusCommand(
   }
 
   if (sshTarget) {
-    const resolved = await resolveSshTarget(sshTarget, sshIdentity, overallTimeoutMs);
+    const resolved = await resolveSshTarget({
+      rawTarget: sshTarget,
+      identity: sshIdentity,
+      overallTimeoutMs,
+      loadSshConfigModule: async () => await import("../infra/ssh-config.js"),
+      loadSshTunnelModule: async () => await import("../infra/ssh-tunnel.js"),
+    });
     if (resolved) {
       sshTarget = resolved.target;
       if (!sshIdentity && resolved.identity) {
@@ -120,23 +131,13 @@ export async function gatewayStatusCommand(
       const [discovery, tunnelFirst] = await Promise.all([discoveryTask, tunnelTask]);
 
       if (!sshTarget && opts.sshAuto) {
-        const user = process.env.USER?.trim() || "";
-        const candidates = discovery
-          .map((b) => {
-            const host = b.tailnetDns || b.lanHost || b.host;
-            if (!host?.trim()) {
-              return null;
-            }
-            const sshPort = typeof b.sshPort === "number" && b.sshPort > 0 ? b.sshPort : 22;
-            const base = user ? `${user}@${host.trim()}` : host.trim();
-            return sshPort !== 22 ? `${base}:${sshPort}` : base;
-          })
-          .filter((candidate): candidate is string =>
-            Boolean(candidate && parseSshTarget(candidate)),
-          );
-        if (candidates.length > 0) {
-          sshTarget = candidates[0] ?? null;
-        }
+        // TXT hints (tailnetDns / lanHost) are attacker-publishable — deliberately
+        // no longer a fallback here; only a resolved endpoint yields an auto target.
+        sshTarget = pickAutoSshTargetFromDiscovery({
+          discovery,
+          parseSshTarget,
+          sshUser: process.env.USER,
+        });
       }
 
       const tunnel =
@@ -276,21 +277,7 @@ export async function gatewayStatusCommand(
           discovery: {
             timeoutMs: discoveryTimeoutMs,
             count: discovery.length,
-            beacons: discovery.map((b) => ({
-              instanceName: b.instanceName,
-              displayName: b.displayName ?? null,
-              domain: b.domain ?? null,
-              host: b.host ?? null,
-              lanHost: b.lanHost ?? null,
-              tailnetDns: b.tailnetDns ?? null,
-              gatewayPort: b.gatewayPort ?? null,
-              sshPort: b.sshPort ?? null,
-              wsUrl: (() => {
-                const host = b.tailnetDns || b.lanHost || b.host;
-                const port = b.gatewayPort ?? 18789;
-                return host ? `ws://${host}:${port}` : null;
-              })(),
-            })),
+            beacons: discovery.map(serializeGatewayDiscoveryBeacon),
           },
           targets: probed.map((p) => ({
             id: p.target.id,
@@ -390,68 +377,4 @@ export async function gatewayStatusCommand(
   if (!ok) {
     runtime.exit(1);
   }
-}
-
-function inferSshTargetFromRemoteUrl(rawUrl?: string | null): string | null {
-  if (typeof rawUrl !== "string") {
-    return null;
-  }
-  const trimmed = rawUrl.trim();
-  if (!trimmed) {
-    return null;
-  }
-  let host: string | null = null;
-  try {
-    host = new URL(trimmed).hostname || null;
-  } catch {
-    return null;
-  }
-  if (!host) {
-    return null;
-  }
-  const user = process.env.USER?.trim() || "";
-  return user ? `${user}@${host}` : host;
-}
-
-function buildSshTarget(input: { user?: string; host?: string; port?: number }): string | null {
-  const host = input.host?.trim() ?? "";
-  if (!host) {
-    return null;
-  }
-  const user = input.user?.trim() ?? "";
-  const base = user ? `${user}@${host}` : host;
-  const port = input.port ?? 22;
-  if (port && port !== 22) {
-    return `${base}:${port}`;
-  }
-  return base;
-}
-
-async function resolveSshTarget(
-  rawTarget: string,
-  identity: string | null,
-  overallTimeoutMs: number,
-): Promise<{ target: string; identity?: string } | null> {
-  const parsed = parseSshTarget(rawTarget);
-  if (!parsed) {
-    return null;
-  }
-  const config = await resolveSshConfig(parsed, {
-    identity: identity ?? undefined,
-    timeoutMs: Math.min(800, overallTimeoutMs),
-  });
-  if (!config) {
-    return { target: rawTarget, identity: identity ?? undefined };
-  }
-  const target = buildSshTarget({
-    user: config.user ?? parsed.user,
-    host: config.host ?? parsed.host,
-    port: config.port ?? parsed.port,
-  });
-  if (!target) {
-    return { target: rawTarget, identity: identity ?? undefined };
-  }
-  const identityFile =
-    identity ?? config.identityFiles.find((entry) => entry.trim().length > 0)?.trim() ?? undefined;
-  return { target, identity: identityFile };
 }

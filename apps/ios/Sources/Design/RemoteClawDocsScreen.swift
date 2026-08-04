@@ -1,9 +1,9 @@
 import SwiftUI
 
-struct OpenClawDocsScreen: View {
-    private let docsURL = URL(string: "https://docs.openclaw.ai")!
-    private let gatewayURL = URL(string: "https://docs.openclaw.ai/gateway")!
-    private let pairingURL = URL(string: "https://docs.openclaw.ai/channels/pairing")!
+struct RemoteClawDocsScreen: View {
+    private let docsURL = URL(string: "https://docs.remoteclaw.org")!
+    private let gatewayURL = URL(string: "https://docs.remoteclaw.org/gateway")!
+    private let pairingURL = URL(string: "https://docs.remoteclaw.org/channels/pairing")!
     let headerLeadingAction: OpenClawSidebarHeaderAction?
     let gatewayAction: (() -> Void)?
 
@@ -67,7 +67,7 @@ struct OpenClawDocsScreen: View {
             VStack(spacing: 0) {
                 self.docsLinkRow(
                     title: "Docs Home",
-                    detail: "Browse the current OpenClaw reference.",
+                    detail: "Browse the current RemoteClaw reference.",
                     icon: "book",
                     url: self.docsURL)
                 Divider().padding(.leading, 58)

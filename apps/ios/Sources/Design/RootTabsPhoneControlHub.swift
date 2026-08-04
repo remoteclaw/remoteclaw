@@ -246,7 +246,7 @@ struct RootTabsPhoneControlHub: View {
                 headerTitle: "Cron Jobs",
                 openSettings: { self.openRootDestination(.gateway) })
         case .docs:
-            OpenClawDocsScreen(
+            RemoteClawDocsScreen(
                 headerLeadingAction: self.phoneDetailBackAction,
                 gatewayAction: { self.openRootDestination(.gateway) })
         case .settings:

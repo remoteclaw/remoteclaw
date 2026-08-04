@@ -1,12 +1,12 @@
 {
   "name": "@remoteclaw/slack",
   "version": "0.8.0",
-  "private": true,
-  "description": "RemoteClaw Slack channel plugin",
+  "description": "RemoteClaw Slack channel plugin for channels, DMs, commands, and app events.",
   "repository": {
     "type": "git",
     "url": "https://github.com/remoteclaw/remoteclaw"
   },
+  "private": true,
   "type": "module",
   "remoteclaw": {
     "extensions": [

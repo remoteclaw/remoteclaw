@@ -397,12 +397,16 @@ function extractAssistantTextForSilentCheck(message: unknown): string | undefine
       return undefined;
     }
     const typed = block as { type?: unknown; text?: unknown };
-    if (typed.type !== "text" || typeof typed.text !== "string") {
+    if (!isAssistantTextContentType(typed.type) || typeof typed.text !== "string") {
       return undefined;
     }
     texts.push(typed.text);
   }
   return texts.length > 0 ? texts.join("\n") : undefined;
+}
+
+function isAssistantTextContentType(type: unknown): boolean {
+  return type === "text" || type === "input_text" || type === "output_text";
 }
 
 function hasAssistantNonTextContent(message: unknown): boolean {
@@ -414,7 +418,10 @@ function hasAssistantNonTextContent(message: unknown): boolean {
     return false;
   }
   return content.some(
-    (block) => block && typeof block === "object" && (block as { type?: unknown }).type !== "text",
+    (block) =>
+      block &&
+      typeof block === "object" &&
+      !isAssistantTextContentType((block as { type?: unknown }).type),
   );
 }
 
@@ -436,7 +443,11 @@ function hasAssistantMixedToolVisibleText(message: unknown): boolean {
     if (isToolHistoryBlockType(entry.type)) {
       hasToolHistoryBlock = true;
     }
-    if (entry.type === "text" && typeof entry.text === "string" && entry.text.trim()) {
+    if (
+      isAssistantTextContentType(entry.type) &&
+      typeof entry.text === "string" &&
+      entry.text.trim()
+    ) {
       hasText = true;
     }
   }

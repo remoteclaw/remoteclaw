@@ -38,15 +38,20 @@ function extractMessageSenderLabel(entry: Record<string, unknown>): string | nul
 
 function stripEnvelopeFromContentWithRole(
   content: unknown[],
-  stripUserEnvelope: boolean,
+  role: string,
 ): { content: unknown[]; changed: boolean } {
+  const stripUserEnvelope = role === "user";
   let changed = false;
   const next = content.map((item) => {
     if (!item || typeof item !== "object") {
       return item;
     }
     const entry = item as Record<string, unknown>;
-    if (entry.type !== "text" || typeof entry.text !== "string") {
+    const isRoleTextBlock =
+      entry.type === "text" ||
+      (role === "user" && entry.type === "input_text") ||
+      (role === "assistant" && (entry.type === "input_text" || entry.type === "output_text"));
+    if (!isRoleTextBlock || typeof entry.text !== "string") {
       return item;
     }
     const runtimeStripped = stripInternalRuntimeContext(entry.text);
@@ -93,7 +98,7 @@ export function stripEnvelopeFromMessage(message: unknown): unknown {
       changed = true;
     }
   } else if (Array.isArray(entry.content)) {
-    const updated = stripEnvelopeFromContentWithRole(entry.content, stripUserEnvelope);
+    const updated = stripEnvelopeFromContentWithRole(entry.content, role);
     if (updated.changed) {
       next.content = updated.content;
       changed = true;

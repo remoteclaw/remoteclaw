@@ -48,7 +48,7 @@ export async function resolveDeliveryTarget(
     accountId?: string;
     sessionKey?: string;
   },
-  options?: { dryRun?: boolean },
+  options?: { dryRun?: boolean; inheritSessionThread?: boolean },
 ): Promise<DeliveryTargetResolution> {
   const requestedChannel = typeof jobPayload.channel === "string" ? jobPayload.channel : "last";
   const explicitTo = typeof jobPayload.to === "string" ? jobPayload.to : undefined;

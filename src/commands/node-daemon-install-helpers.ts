@@ -8,7 +8,7 @@ import {
   resolveDaemonInstallRuntimeInputs,
 } from "./daemon-install-plan.shared.js";
 import type { DaemonInstallWarnFn } from "./daemon-install-runtime-warning.js";
-import type { NodeDaemonRuntime } from "./node-daemon-runtime.js";
+import type { GatewayDaemonRuntime } from "./daemon-runtime.js";
 
 type NodeInstallPlan = {
   programArguments: string[];
@@ -36,7 +36,7 @@ export async function buildNodeInstallPlan(params: {
   tlsFingerprint?: string;
   nodeId?: string;
   displayName?: string;
-  runtime: NodeDaemonRuntime;
+  runtime: GatewayDaemonRuntime;
   devMode?: boolean;
   nodePath?: string;
   warn?: DaemonInstallWarnFn;

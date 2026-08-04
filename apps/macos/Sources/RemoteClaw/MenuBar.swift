@@ -16,7 +16,6 @@ struct RemoteClawApp: App {
     private let gatewayManager = GatewayProcessManager.shared
     private let controlChannel = ControlChannel.shared
     private let activityStore = WorkActivityStore.shared
-    private let connectivityCoordinator = GatewayConnectivityCoordinator.shared
     @State private var statusItem: NSStatusItem?
     @State private var isMenuPresented = false
     @State private var isPanelVisible = false
@@ -34,6 +33,7 @@ struct RemoteClawApp: App {
 
     init() {
         RemoteClawLogging.bootstrapIfNeeded()
+        GatewayConnectivityCoordinator.shared.start()
 
         Self.applyAttachOnlyOverrideIfNeeded()
         _state = State(initialValue: AppStateStore.shared)

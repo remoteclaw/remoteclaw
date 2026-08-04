@@ -1,9 +1,9 @@
 import type { IMessagePayload } from "./types.js";
 
-// Keep the coalescing contract narrow (caps, ID tracking, reply-context
-// preference) so a future SDK lift into `remoteclaw/plugin-sdk/channel-inbound`
-// is a mechanical extraction instead of a behavioral redesign. Apple's
-// split-send pipeline is the behavior this protects.
+// Keep the merge contract narrow (caps, ID tracking, reply-context preference)
+// so a future SDK lift into `remoteclaw/plugin-sdk/channel-inbound` is a
+// mechanical extraction instead of a behavioral redesign. Apple's URL-preview
+// split-send pipeline is the iMessage-only behavior this still protects.
 
 /**
  * Bounds on the merged output when multiple inbound iMessage payloads are
@@ -31,9 +31,8 @@ export type CoalescedIMessagePayload = IMessagePayload & {
 
 /**
  * Combine consecutive same-sender iMessage payloads into a single payload for
- * downstream dispatch. Used when the debouncer flushes a bucket containing
- * more than one event — e.g. Apple's split-send for `Dump https://example.com`
- * arriving as two separate `chat.db` rows ~0.8-2.0 s apart.
+ * downstream dispatch. Used for Apple's URL-preview split-send, and for the
+ * general inbound debounce (`messages.inbound`, off by default) when configured.
  *
  * The first payload anchors the merged shape (preserving its GUID for reply
  * threading). Text is concatenated with deduplication, attachments are merged

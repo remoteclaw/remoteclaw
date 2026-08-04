@@ -26,7 +26,7 @@ export function formatToolAggregate(
   metas?: string[],
   options?: ToolAggregateOptions,
 ): string {
-  const filtered = (metas ?? []).filter(Boolean).map(shortenMeta);
+  const filtered = (metas ?? []).filter(Boolean).map(shortenHomeInString);
   const display = resolveToolDisplay({ name: toolName });
   const prefix = `${display.emoji} ${display.label}`;
   if (!filtered.length) {

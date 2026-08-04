@@ -21,10 +21,10 @@
       "./index.ts"
     ],
     "compat": {
-      "pluginApi": ">=2026.4.20"
+      "pluginApi": ">=2026.6.11"
     },
     "build": {
-      "remoteclawVersion": "2026.4.20"
+      "remoteclawVersion": "2026.6.11"
     },
     "release": {
       "publishToClawHub": true,

@@ -12,7 +12,7 @@ Adds Moonshot model provider support to RemoteClaw.
 ## Distribution
 
 - Package: `@remoteclaw/moonshot-provider`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/moonshot-provider`
 
 ## Surface
 

@@ -5,7 +5,7 @@
 # One-tap: shows status toast
 # If expired: directly opens auth URL
 
-SERVER="${REMOTECLAW_SERVER:-l36}"
+SERVER="${REMOTECLAW_SERVER:-remoteclaw-host}"
 
 STATUS=$(ssh -o ConnectTimeout=5 "$SERVER" '$HOME/remoteclaw/scripts/claude-auth-status.sh simple' 2>&1)
 

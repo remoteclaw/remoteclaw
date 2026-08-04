@@ -345,10 +345,10 @@ lives on the [First-run FAQ](/help/faq-first-run).
     ```bash
     remoteclaw skills search "calendar"
     remoteclaw skills search --limit 20
-    remoteclaw skills install <skill-slug>
-    remoteclaw skills install <skill-slug> --version <version>
-    remoteclaw skills install <skill-slug> --force
-    remoteclaw skills install <skill-slug> --global
+    remoteclaw skills install @owner/<skill-slug>
+    remoteclaw skills install @owner/<skill-slug> --version <version>
+    remoteclaw skills install @owner/<skill-slug> --force
+    remoteclaw skills install @owner/<skill-slug> --global
     remoteclaw skills update --all
     remoteclaw skills update --all --global
     remoteclaw skills list --eligible
@@ -432,11 +432,11 @@ lives on the [First-run FAQ](/help/faq-first-run).
     Install skills:
 
     ```bash
-    remoteclaw skills install <skill-slug>
+    remoteclaw skills install @owner/<skill-slug>
     remoteclaw skills update --all
     ```
 
-    Native installs land in the active workspace `skills/` directory. For shared skills across all local agents, use `remoteclaw skills install <slug> --global` (or place them manually in `~/.remoteclaw/skills/<name>/SKILL.md`). If only some agents should see a shared install, configure `agents.defaults.skills` or `agents.list[].skills`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above). See [Skills](/tools/skills), [Skills config](/tools/skills-config), and [ClawHub](/tools/clawhub).
+    Native installs land in the active workspace `skills/` directory. For shared skills across all local agents, use `remoteclaw skills install @owner/<skill-slug> --global` (or place them manually in `~/.remoteclaw/skills/<name>/SKILL.md`). If only some agents should see a shared install, configure `agents.defaults.skills` or `agents.list[].skills`. Some skills expect binaries installed via Homebrew; on Linux that means Linuxbrew (see the Homebrew Linux FAQ entry above). See [Skills](/tools/skills), [Skills config](/tools/skills-config), and [ClawHub](/tools/clawhub).
 
   </Accordion>
 

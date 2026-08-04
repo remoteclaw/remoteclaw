@@ -4,6 +4,7 @@ import {
   shouldDebounceTextInbound,
 } from "../../../../src/channels/inbound-debounce-policy.js";
 import type { ResolvedSlackAccount } from "../accounts.js";
+import type { SlackSendIdentity } from "../send.js";
 import type { SlackMessageEvent } from "../types.js";
 import { stripSlackMentionsForCommandDetection } from "./commands.js";
 import type { SlackMonitorContext } from "./context.js";
@@ -13,8 +14,34 @@ import { createSlackThreadTsResolver } from "./thread-resolution.js";
 
 export type SlackMessageHandler = (
   message: SlackMessageEvent,
-  opts: { source: "message" | "app_mention"; wasMentioned?: boolean },
+  opts: {
+    source: "message" | "app_mention";
+    wasMentioned?: boolean;
+    relayIdentity?: SlackSendIdentity;
+    /** Wait until any inbound debounce flush and dispatch has completed. */
+    awaitDispatch?: boolean;
+  },
 ) => Promise<void>;
+
+type SlackDispatchCompletion = {
+  promise: Promise<void>;
+  resolve: () => void;
+  reject: (error: unknown) => void;
+};
+
+type QueuedSlackMessageOptions = Parameters<SlackMessageHandler>[1] & {
+  dispatchCompletion?: Omit<SlackDispatchCompletion, "promise">;
+};
+
+function createSlackDispatchCompletion(): SlackDispatchCompletion {
+  let resolve!: () => void;
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<void>((nextResolve, nextReject) => {
+    resolve = nextResolve;
+    reject = nextReject;
+  });
+  return { promise, resolve, reject };
+}
 
 const APP_MENTION_RETRY_TTL_MS = 60_000;
 
@@ -97,7 +124,7 @@ export function createSlackMessageHandler(params: {
   const { ctx, account, trackEvent } = params;
   const { debounceMs, debouncer } = createChannelInboundDebouncer<{
     message: SlackMessageEvent;
-    opts: { source: "message" | "app_mention"; wasMentioned?: boolean };
+    opts: QueuedSlackMessageOptions;
   }>({
     cfg: ctx.cfg,
     channel: "slack",
@@ -253,6 +280,21 @@ export function createSlackMessageHandler(params: {
       pendingKeys.add(debounceKey);
       pendingTopLevelDebounceKeys.set(conversationKey, pendingKeys);
     }
-    await debouncer.enqueue({ message: resolvedMessage, opts });
+    const dispatchCompletion = opts.awaitDispatch ? createSlackDispatchCompletion() : undefined;
+    await debouncer.enqueue({
+      message: resolvedMessage,
+      opts: {
+        ...opts,
+        ...(dispatchCompletion
+          ? {
+              dispatchCompletion: {
+                resolve: dispatchCompletion.resolve,
+                reject: dispatchCompletion.reject,
+              },
+            }
+          : {}),
+      },
+    });
+    await dispatchCompletion?.promise;
   };
 }

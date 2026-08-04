@@ -46,6 +46,8 @@ export type SupplementalContextFacts = {
   };
   untrustedContext?: Array<{ label: string; source?: string; type?: string; payload: unknown }>;
   groupSystemPrompt?: string;
+  /** Prompt-like group metadata from user-controlled sources; never enters the system prompt. */
+  untrustedGroupSystemPrompt?: string;
 };
 
 export type MsgContext = {
@@ -223,6 +225,8 @@ export type MsgContext = {
   GatewayClientScopes?: string[];
   /** Trusted system override for contexts that must never inherit owner semantics. */
   ForceSenderIsOwnerFalse?: boolean;
+  /** Gateway device id allowed to review approvals initiated by this turn. */
+  ApprovalReviewerDeviceId?: string;
   /** Thread identifier (Telegram topic id or Matrix thread event id). */
   MessageThreadId?: string | number;
   /** Platform-native channel/conversation id (e.g. Slack DM channel "D…" id). */

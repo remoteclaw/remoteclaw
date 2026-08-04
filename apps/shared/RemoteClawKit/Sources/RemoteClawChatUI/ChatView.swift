@@ -372,7 +372,7 @@ public struct RemoteClawChatView: View {
                 systemImage: "bubble.left.and.bubble.right.fill",
                 title: self.emptyStateTitle,
                 message: self.emptyStateMessage,
-                tint: .accentColor,
+                tint: RemoteClawChatTheme.accent,
                 actionTitle: nil,
                 action: nil)
                 .padding(.horizontal, 24)

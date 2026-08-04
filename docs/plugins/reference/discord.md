@@ -16,7 +16,7 @@ RemoteClaw Discord channel plugin for channels, DMs, commands, and app events.
 
 ## Surface
 
-channels: discord; contracts: transcriptSourceProviders
+channels: discord; contracts: transcriptSourceProviders; skills
 
 ## Related docs
 

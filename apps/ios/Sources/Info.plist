@@ -84,8 +84,6 @@
 	<string>$(REMOTECLAW_PUSH_DISTRIBUTION)</string>
 	<key>RemoteClawPushRelayBaseURL</key>
 	<string>$(REMOTECLAW_PUSH_RELAY_BASE_URL)</string>
-	<key>RemoteClawPushTransport</key>
-	<string>$(REMOTECLAW_PUSH_TRANSPORT)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

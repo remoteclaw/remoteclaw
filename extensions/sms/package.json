@@ -28,7 +28,7 @@
       "quickstartAllowFrom": true
     },
     "compat": {
-      "pluginApi": ">=2026.6.1"
+      "pluginApi": ">=2026.6.11"
     },
     "build": {
       "remoteclawVersion": "2026.6.1"

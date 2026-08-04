@@ -127,14 +127,6 @@ function splitRef(value: string): { base: string; ref?: string } {
   };
 }
 
-function toOptionalString(value: unknown): string | undefined {
-  if (typeof value !== "string") {
-    return undefined;
-  }
-  const trimmed = value.trim();
-  return trimmed.length > 0 ? trimmed : undefined;
-}
-
 function normalizeEntrySource(
   raw: unknown,
 ): { ok: true; source: MarketplaceEntrySource } | { ok: false; error: string } {
@@ -154,13 +146,13 @@ function normalizeEntrySource(
   }
 
   const rec = raw as Record<string, unknown>;
-  const kind = toOptionalString(rec.type) ?? toOptionalString(rec.source);
+  const kind = normalizeOptionalString(rec.type) ?? normalizeOptionalString(rec.source);
   if (!kind) {
     return { ok: false, error: 'plugin source object missing "type" or "source"' };
   }
 
   if (kind === "path") {
-    const sourcePath = toOptionalString(rec.path);
+    const sourcePath = normalizeOptionalString(rec.path);
     if (!sourcePath) {
       return { ok: false, error: 'path source missing "path"' };
     }
@@ -168,7 +160,7 @@ function normalizeEntrySource(
   }
 
   if (kind === "github") {
-    const repo = toOptionalString(rec.repo) ?? toOptionalString(rec.url);
+    const repo = normalizeOptionalString(rec.repo) ?? normalizeOptionalString(rec.url);
     if (!repo) {
       return { ok: false, error: 'github source missing "repo"' };
     }
@@ -177,14 +169,17 @@ function normalizeEntrySource(
       source: {
         kind: "github",
         repo,
-        path: toOptionalString(rec.path),
-        ref: toOptionalString(rec.ref) ?? toOptionalString(rec.branch) ?? toOptionalString(rec.tag),
+        path: normalizeOptionalString(rec.path),
+        ref:
+          normalizeOptionalString(rec.ref) ??
+          normalizeOptionalString(rec.branch) ??
+          normalizeOptionalString(rec.tag),
       },
     };
   }
 
   if (kind === "git") {
-    const url = toOptionalString(rec.url) ?? toOptionalString(rec.repo);
+    const url = normalizeOptionalString(rec.url) ?? normalizeOptionalString(rec.repo);
     if (!url) {
       return { ok: false, error: 'git source missing "url"' };
     }
@@ -193,15 +188,18 @@ function normalizeEntrySource(
       source: {
         kind: "git",
         url,
-        path: toOptionalString(rec.path),
-        ref: toOptionalString(rec.ref) ?? toOptionalString(rec.branch) ?? toOptionalString(rec.tag),
+        path: normalizeOptionalString(rec.path),
+        ref:
+          normalizeOptionalString(rec.ref) ??
+          normalizeOptionalString(rec.branch) ??
+          normalizeOptionalString(rec.tag),
       },
     };
   }
 
   if (kind === "git-subdir") {
-    const url = toOptionalString(rec.url) ?? toOptionalString(rec.repo);
-    const sourcePath = toOptionalString(rec.path) ?? toOptionalString(rec.subdir);
+    const url = normalizeOptionalString(rec.url) ?? normalizeOptionalString(rec.repo);
+    const sourcePath = normalizeOptionalString(rec.path) ?? normalizeOptionalString(rec.subdir);
     if (!url) {
       return { ok: false, error: 'git-subdir source missing "url"' };
     }
@@ -214,13 +212,16 @@ function normalizeEntrySource(
         kind: "git-subdir",
         url,
         path: sourcePath,
-        ref: toOptionalString(rec.ref) ?? toOptionalString(rec.branch) ?? toOptionalString(rec.tag),
+        ref:
+          normalizeOptionalString(rec.ref) ??
+          normalizeOptionalString(rec.branch) ??
+          normalizeOptionalString(rec.tag),
       },
     };
   }
 
   if (kind === "url") {
-    const url = toOptionalString(rec.url);
+    const url = normalizeOptionalString(rec.url);
     if (!url) {
       return { ok: false, error: 'url source missing "url"' };
     }
@@ -271,7 +272,7 @@ function parseMarketplaceManifest(
       return { ok: false, error: `invalid marketplace entry in ${sourceLabel}: expected object` };
     }
     const plugin = entry as Record<string, unknown>;
-    const name = toOptionalString(plugin.name);
+    const name = normalizeOptionalString(plugin.name);
     if (!name) {
       return { ok: false, error: `invalid marketplace entry in ${sourceLabel}: missing name` };
     }
@@ -284,8 +285,8 @@ function parseMarketplaceManifest(
     }
     plugins.push({
       name,
-      version: toOptionalString(plugin.version),
-      description: toOptionalString(plugin.description),
+      version: normalizeOptionalString(plugin.version),
+      description: normalizeOptionalString(plugin.description),
       source: normalizedSource.source,
     });
   }
@@ -293,8 +294,8 @@ function parseMarketplaceManifest(
   return {
     ok: true,
     manifest: {
-      name: toOptionalString(rec.name),
-      version: toOptionalString(rec.version),
+      name: normalizeOptionalString(rec.name),
+      version: normalizeOptionalString(rec.version),
       plugins,
     },
   };
@@ -334,7 +335,7 @@ async function readClaudeKnownMarketplaces(): Promise<Record<string, KnownMarket
     }
     const record = value as Record<string, unknown>;
     result[name] = {
-      installLocation: toOptionalString(record.installLocation),
+      installLocation: normalizeOptionalString(record.installLocation),
       source: record.source,
     };
   }

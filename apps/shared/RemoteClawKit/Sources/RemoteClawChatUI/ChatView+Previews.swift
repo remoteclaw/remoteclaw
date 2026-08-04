@@ -235,7 +235,7 @@ private struct OpenClawChatPreviewTransport: OpenClawChatTransport {
         showsSessionSwitcher: false,
         style: .onboarding,
         markdownVariant: .standard,
-        userAccent: .blue)
+        userAccent: RemoteClawChatTheme.accent)
 }
 
 private struct OpenClawChatPreview: View {
@@ -250,7 +250,7 @@ private struct OpenClawChatPreview: View {
             showsSessionSwitcher: true,
             style: .standard,
             markdownVariant: .standard,
-            userAccent: .blue,
+            userAccent: RemoteClawChatTheme.accent,
             showsAssistantTrace: true)
     }
 }

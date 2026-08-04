@@ -1,8 +1,12 @@
 {
   "name": "@remoteclaw/whatsapp",
   "version": "0.8.0",
+  "description": "RemoteClaw WhatsApp channel plugin for WhatsApp Web chats.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/remoteclaw/remoteclaw"
+  },
   "private": true,
-  "description": "RemoteClaw WhatsApp channel plugin",
   "type": "module",
   "remoteclaw": {
     "extensions": [

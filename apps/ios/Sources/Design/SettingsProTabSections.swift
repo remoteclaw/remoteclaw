@@ -109,7 +109,7 @@ extension SettingsProTab {
             self.gatewayActionButton(
                 title: "Diagnose",
                 icon: "cross.case",
-                color: Color(red: 0 / 255.0, green: 122 / 255.0, blue: 255 / 255.0),
+                color: RemoteClawBrand.info,
                 isBusy: self.isRefreshingGateway)
             {
                 Task { await self.runDiagnostics() }
@@ -270,13 +270,55 @@ extension SettingsProTab {
             self.detailStatusCard(
                 icon: "checkmark.shield.fill",
                 title: "Approvals",
-                detail: self.pendingApproval == nil ? "No gateway actions are waiting for review." :
-                    "Review the pending gateway action.",
-                value: self.pendingApproval == nil ? "clear" : "1 waiting",
-                color: self.pendingApproval == nil ? RemoteClawBrand.ok : RemoteClawBrand.warn)
+                detail: self.notificationsNeedAttention
+                    ? "Out-of-app approval alerts need notification permission."
+                    : (self.pendingApproval == nil ? "No gateway actions are waiting for review." :
+                        "Review the pending gateway action."),
+                value: self.notificationsNeedAttention
+                    ? "Alerts Off"
+                    : (self.pendingApproval == nil ? "clear" : "1 waiting"),
+                color: self.notificationsNeedAttention ? RemoteClawBrand.warn :
+                    (self.pendingApproval == nil ? RemoteClawBrand.ok : RemoteClawBrand.warn))
+
+            if self.notificationsNeedAttention {
+                self.approvalNotificationsWarningCard
+            }
 
             self.approvalsReviewCard
         }
+    }
+
+    var approvalNotificationsWarningCard: some View {
+        ProCard(radius: SettingsLayout.cardRadius) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(alignment: .top, spacing: 12) {
+                    ProIconBadge(systemName: "bell.slash.fill", color: RemoteClawBrand.warn)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Notifications are off")
+                            .font(.subheadline.weight(.semibold))
+                        Text(
+                            """
+                            Enable Notifications to receive approval notifications while RemoteClaw is not open.
+                            """)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+
+                if self.directRoute == nil {
+                    Button {
+                        self.openNotificationsRouteFromApprovals()
+                    } label: {
+                        Label("Open Notifications", systemImage: "bell.badge")
+                            .frame(maxWidth: .infinity)
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.small)
+                }
+            }
+        }
+        .padding(.horizontal, RemoteClawProMetric.pagePadding)
     }
 
     var approvalsReviewCard: some View {
@@ -396,7 +438,7 @@ extension SettingsProTab {
                 self.gatewayActionButton(
                     title: "Run Diagnostics",
                     icon: "cross.case",
-                    color: Color(red: 0 / 255.0, green: 122 / 255.0, blue: 255 / 255.0),
+                    color: RemoteClawBrand.info,
                     isBusy: self.isRefreshingGateway)
                 {
                     Task { await self.runDiagnostics() }
@@ -452,7 +494,7 @@ extension SettingsProTab {
             self.detailStatusCard(
                 icon: "bell",
                 title: "Notifications",
-                detail: "Approvals and event alerts from RemoteClaw.",
+                detail: self.notificationStatusDetail,
                 value: self.notificationStatusText,
                 color: self.notificationStatus.color)
 
@@ -468,10 +510,25 @@ extension SettingsProTab {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
+                    .disabled(self.notificationStatus == .checking || self.isRequestingNotificationAuthorization)
 
-                    Text("RemoteClaw uses notifications for approval prompts and mirrored event alerts.")
+                    Text(self.notificationStatusDetail)
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    Divider()
+
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "network")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(RemoteClawBrand.accent)
+                            .frame(width: 22, height: 22)
+                        Text(self.notificationRelayDetail)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
             }
             .padding(.horizontal, RemoteClawProMetric.pagePadding)
@@ -945,7 +1002,7 @@ extension SettingsProTab {
 
     func settingsSwitchIndicator(isOn: Bool) -> some View {
         Capsule()
-            .fill(isOn ? Color.accentColor : Color.secondary.opacity(0.35))
+            .fill(isOn ? RemoteClawBrand.accent : Color.secondary.opacity(0.35))
             .frame(width: 52, height: 32)
             .overlay(alignment: isOn ? .trailing : .leading) {
                 Circle()

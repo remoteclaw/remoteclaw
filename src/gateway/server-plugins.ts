@@ -104,11 +104,20 @@ async function dispatchGatewayMethod<T>(
   return result.payload as T;
 }
 
+const PLUGIN_SUBAGENT_SESSION_MESSAGES_MAX_LIMIT = 1_000;
+
 function createGatewaySubagentRuntime(): PluginRuntime["subagent"] {
   const getSessionMessages: PluginRuntime["subagent"]["getSessionMessages"] = async (params) => {
+    const limit =
+      params.limit == null || !Number.isFinite(params.limit)
+        ? undefined
+        : Math.min(
+            PLUGIN_SUBAGENT_SESSION_MESSAGES_MAX_LIMIT,
+            Math.max(1, Math.floor(params.limit)),
+          );
     const payload = await dispatchGatewayMethod<{ messages?: unknown[] }>("sessions.get", {
       key: params.sessionKey,
-      ...(params.limit != null && { limit: params.limit }),
+      ...(limit != null && { limit }),
     });
     return { messages: Array.isArray(payload?.messages) ? payload.messages : [] };
   };

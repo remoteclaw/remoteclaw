@@ -62,14 +62,3 @@ export function resolveCronNotificationSessionKey(params: {
     ? params.sessionKey.trim()
     : `cron:${params.jobId}:failure`;
 }
-
-export function resolveCronFailureNotificationSessionKey(job: {
-  id: string;
-  sessionTarget?: string | null;
-  sessionKey?: string | null;
-}): string {
-  return resolveCronNotificationSessionKey({
-    jobId: job.id,
-    sessionKey: resolveCronDeliverySessionKey(job),
-  });
-}

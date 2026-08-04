@@ -283,7 +283,7 @@ struct RemoteClawChatComposer: View {
                     }
                     .padding(.horizontal, 8)
                     .padding(.vertical, 5)
-                    .background(Color.accentColor.opacity(0.08))
+                    .background(RemoteClawChatTheme.accent.opacity(0.08))
                     .clipShape(Capsule())
                 }
             }
@@ -550,7 +550,7 @@ struct RemoteClawChatComposer: View {
                 .frame(width: self.sendButtonSize, height: self.sendButtonSize)
                 .background(
                     RoundedRectangle(cornerRadius: self.sendButtonCornerRadius, style: .continuous)
-                        .fill(Color.red))
+                        .fill(RemoteClawChatTheme.danger))
                 .contentShape(RoundedRectangle(cornerRadius: self.sendButtonCornerRadius, style: .continuous))
                 .accessibilityLabel("Stop response")
                 .disabled(self.viewModel.isAborting)

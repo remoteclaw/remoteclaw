@@ -16,7 +16,7 @@ RemoteClaw voice-call plugin for Twilio, Telnyx, and Plivo phone calls.
 
 ## Surface
 
-contracts: tools
+contracts: tools; skills
 
 ## Related docs
 

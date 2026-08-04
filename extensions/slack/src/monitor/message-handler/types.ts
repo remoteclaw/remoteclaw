@@ -1,6 +1,7 @@
 import type { FinalizedMsgContext } from "../../../../../src/auto-reply/templating.js";
 import type { ResolvedAgentRoute } from "../../../../../src/routing/resolve-route.js";
 import type { ResolvedSlackAccount } from "../../accounts.js";
+import type { SlackSendIdentity } from "../../send.js";
 import type { SlackMessageEvent } from "../../types.js";
 import type { SlackChannelConfigResolved } from "../channel-config.js";
 import type { SlackMonitorContext } from "../context.js";
@@ -9,6 +10,7 @@ export type PreparedSlackMessage = {
   ctx: SlackMonitorContext;
   account: ResolvedSlackAccount;
   message: SlackMessageEvent;
+  relayIdentity?: SlackSendIdentity;
   route: ResolvedAgentRoute;
   channelConfig: SlackChannelConfigResolved | null;
   replyTarget: string;

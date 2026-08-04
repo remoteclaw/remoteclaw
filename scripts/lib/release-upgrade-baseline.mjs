@@ -63,7 +63,7 @@ export function resolveDefaultReleaseUpgradeBaseline(candidateVersion, published
   throw new Error(`no published RemoteClaw baseline is <= candidate ${candidate.version}`);
 }
 
-function parseArgs(argv) {
+export function parseArgs(argv) {
   const args = new Map();
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index];
@@ -72,7 +72,7 @@ function parseArgs(argv) {
     }
     const key = arg.slice(2);
     const value = argv[index + 1];
-    if (value === undefined || value.startsWith("--")) {
+    if (value === undefined || value.startsWith("-")) {
       throw new Error(`missing value for --${key}`);
     }
     args.set(key, value);

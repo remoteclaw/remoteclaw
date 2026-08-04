@@ -1,5 +1,6 @@
 package org.remoteclaw.app.voice
 
+import org.remoteclaw.app.gateway.ChatSendAck
 import android.Manifest
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
@@ -34,7 +35,7 @@ class MicCaptureManagerTest {
           sendToGateway = { message, onRunIdKnown ->
             sentMessages += message
             onRunIdKnown("run-1")
-            null
+            ChatSendAck(runId = "run-1", status = "started")
           },
         )
 
@@ -84,7 +85,7 @@ class MicCaptureManagerTest {
           sendToGateway = { message, onRunIdKnown ->
             sentMessages += message
             onRunIdKnown("run-1")
-            "run-1"
+            ChatSendAck(runId = "run-1", status = "started")
           },
         )
 
@@ -111,7 +112,7 @@ class MicCaptureManagerTest {
           sendToGateway = { message, onRunIdKnown ->
             sentMessages += message
             onRunIdKnown("run-voice-e2e")
-            "run-voice-e2e"
+            ChatSendAck(runId = "run-voice-e2e", status = "started")
           },
         )
 
@@ -132,6 +133,88 @@ class MicCaptureManagerTest {
           .last()
           .text,
       )
+    }
+
+  @Test
+  @OptIn(ExperimentalCoroutinesApi::class)
+  fun terminalGatewayTimeoutSendDoesNotAcceptDelayedOldRunEvents() =
+    runTest {
+      val manager =
+        createManager(
+          scope = this,
+          sendToGateway = { _, onRunIdKnown ->
+            onRunIdKnown("run-terminal")
+            ChatSendAck(runId = "run-terminal", status = "timeout")
+          },
+        )
+
+      manager.onGatewayConnectionChanged(true)
+      manager.submitTranscribedMessage("terminal ack message")
+      runCurrent()
+
+      assertNull(privateField<String?>(manager, "pendingRunId"))
+      assertEquals(false, manager.isSending.value)
+      assertEquals("Send failed: Chat failed before the run started; try again.", manager.statusText.value)
+
+      manager.handleGatewayEvent("chat", chatFinalPayload(runId = "run-terminal", text = "stale reply"))
+      advanceUntilIdle()
+
+      assertEquals(
+        listOf(VoiceConversationRole.User),
+        manager.conversation.value.map { it.role },
+      )
+      assertEquals(
+        "terminal ack message",
+        manager.conversation.value
+          .single()
+          .text,
+      )
+    }
+
+  @Test
+  @OptIn(ExperimentalCoroutinesApi::class)
+  fun terminalGatewayErrorSurfacesFailureWithoutWaitingForRunEvents() =
+    runTest {
+      val manager =
+        createManager(
+          scope = this,
+          sendToGateway = { _, onRunIdKnown ->
+            onRunIdKnown("run-error")
+            ChatSendAck(runId = "run-error", status = "error")
+          },
+        )
+
+      manager.onGatewayConnectionChanged(true)
+      manager.submitTranscribedMessage("terminal error message")
+      runCurrent()
+
+      assertNull(privateField<String?>(manager, "pendingRunId"))
+      assertEquals(false, manager.isSending.value)
+      assertEquals("Send failed: Chat failed before the run started; try again.", manager.statusText.value)
+    }
+
+  @Test
+  @OptIn(ExperimentalCoroutinesApi::class)
+  fun terminalGatewayOkRefreshesHistoryWithoutWaitingForRunEvents() =
+    runTest {
+      var refreshCalls = 0
+      val manager =
+        createManager(
+          scope = this,
+          sendToGateway = { _, onRunIdKnown ->
+            onRunIdKnown("run-ok")
+            ChatSendAck(runId = "run-ok", status = "ok")
+          },
+          refreshAfterTerminalSuccess = { refreshCalls += 1 },
+        )
+
+      manager.onGatewayConnectionChanged(true)
+      manager.submitTranscribedMessage("terminal ok message")
+      runCurrent()
+
+      assertNull(privateField<String?>(manager, "pendingRunId"))
+      assertEquals(false, manager.isSending.value)
+      assertEquals(1, refreshCalls)
     }
 
   @Test
@@ -225,10 +308,11 @@ class MicCaptureManagerTest {
     scope: CoroutineScope = CoroutineScope(Dispatchers.Unconfined),
     createTranscriptionSession: suspend () -> String = { "transcription-1" },
     closeTranscriptionSession: suspend (String) -> Unit = { _ -> },
-    sendToGateway: suspend (String, (String) -> Unit) -> String? = { _, onRunIdKnown ->
+    sendToGateway: suspend (String, (String) -> Unit) -> ChatSendAck = { _, onRunIdKnown ->
       onRunIdKnown("run-1")
-      "run-1"
+      ChatSendAck(runId = "run-1", status = "started")
     },
+    refreshAfterTerminalSuccess: suspend () -> Unit = {},
   ): MicCaptureManager =
     MicCaptureManager(
       context =
@@ -240,6 +324,7 @@ class MicCaptureManagerTest {
       appendTranscriptionAudio = { _, _, _ -> },
       closeTranscriptionSession = closeTranscriptionSession,
       sendToGateway = sendToGateway,
+      refreshAfterTerminalSuccess = refreshAfterTerminalSuccess,
     )
 
   private fun setPrivateField(

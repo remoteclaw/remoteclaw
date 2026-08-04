@@ -68,7 +68,7 @@ function createBot(api: Record<string, unknown> = {}): Bot {
 }
 
 async function deliverWith(params: DeliverWithParams) {
-  await deliverReplies({
+  return await deliverReplies({
     ...baseDeliveryParams,
     ...params,
   });

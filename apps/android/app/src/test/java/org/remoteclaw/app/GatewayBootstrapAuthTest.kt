@@ -29,46 +29,46 @@ import java.util.UUID
 @Config(sdk = [34])
 class GatewayBootstrapAuthTest {
   @Test
-  fun connectsOperatorSessionWhenOnlyBootstrapAuthExists() {
-    assertTrue(
-      shouldConnectOperatorSession(
+  fun doesNotConnectOperatorSessionWhenOnlyBootstrapAuthExists() {
+    assertFalse(
+      resolveOperatorSessionConnectAuth(
         NodeRuntime.GatewayConnectAuth(token = "", bootstrapToken = "bootstrap-1", password = ""),
         storedOperatorToken = "",
-      ),
+      ) != null,
     )
-    assertTrue(
-      shouldConnectOperatorSession(
+    assertFalse(
+      resolveOperatorSessionConnectAuth(
         NodeRuntime.GatewayConnectAuth(token = null, bootstrapToken = "bootstrap-1", password = null),
         storedOperatorToken = null,
-      ),
+      ) != null,
     )
   }
 
   @Test
   fun connectsOperatorSessionWhenSharedPasswordOrStoredAuthExists() {
     assertTrue(
-      shouldConnectOperatorSession(
+      resolveOperatorSessionConnectAuth(
         NodeRuntime.GatewayConnectAuth(token = "shared-token", bootstrapToken = "bootstrap-1", password = null),
         storedOperatorToken = null,
-      ),
+      ) != null,
     )
     assertTrue(
-      shouldConnectOperatorSession(
+      resolveOperatorSessionConnectAuth(
         NodeRuntime.GatewayConnectAuth(token = null, bootstrapToken = "bootstrap-1", password = "shared-password"),
         storedOperatorToken = null,
-      ),
+      ) != null,
     )
     assertTrue(
-      shouldConnectOperatorSession(
+      resolveOperatorSessionConnectAuth(
         NodeRuntime.GatewayConnectAuth(token = null, bootstrapToken = "bootstrap-1", password = null),
         storedOperatorToken = "stored-token",
-      ),
+      ) != null,
     )
-    assertFalse(
-      shouldConnectOperatorSession(
+    assertTrue(
+      resolveOperatorSessionConnectAuth(
         NodeRuntime.GatewayConnectAuth(token = null, bootstrapToken = "", password = null),
         storedOperatorToken = null,
-      ),
+      ) != null,
     )
   }
 

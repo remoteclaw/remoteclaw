@@ -292,7 +292,3 @@ export function measureDiagnosticsTimelineSpanSync<T>(
     throw error;
   }
 }
-
-export async function flushDiagnosticsTimelineForTest(): Promise<void> {
-  await Promise.resolve();
-}

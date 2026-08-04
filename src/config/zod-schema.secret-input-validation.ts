@@ -69,7 +69,9 @@ export function validateSlackSigningSecretRequirements(
   value: SlackConfigLike,
   ctx: z.RefinementCtx,
 ): void {
-  const baseMode = value.mode === "http" || value.mode === "socket" ? value.mode : "socket";
+  const resolveMode = (mode: unknown) =>
+    mode === "http" || mode === "socket" || mode === "relay" ? mode : undefined;
+  const baseMode = resolveMode(value.mode) ?? "socket";
   if (baseMode === "http" && !hasConfiguredSecretInput(value.signingSecret)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

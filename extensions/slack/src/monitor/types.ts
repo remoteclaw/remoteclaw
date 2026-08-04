@@ -6,7 +6,7 @@ export type MonitorSlackOpts = {
   botToken?: string;
   appToken?: string;
   accountId?: string;
-  mode?: "socket" | "http";
+  mode?: "socket" | "http" | "relay";
   config?: RemoteClawConfig;
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;

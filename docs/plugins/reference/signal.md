@@ -12,7 +12,7 @@ Adds the Signal channel surface for sending and receiving RemoteClaw messages.
 ## Distribution
 
 - Package: `@remoteclaw/signal`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/signal`
 
 ## Surface
 

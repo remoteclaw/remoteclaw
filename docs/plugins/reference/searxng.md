@@ -12,7 +12,7 @@ Adds web search provider support.
 ## Distribution
 
 - Package: `@remoteclaw/searxng-plugin`
-- Install route: included in RemoteClaw
+- Install route: npm; ClawHub: `clawhub:@remoteclaw/searxng-plugin`
 
 ## Surface
 

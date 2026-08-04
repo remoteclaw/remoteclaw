@@ -54,7 +54,6 @@ export type AgentCliOpts = {
   extraSystemPrompt?: string;
   local?: boolean;
 };
-
 function parseTimeoutSeconds(opts: { cfg: ReturnType<typeof loadConfig>; timeout?: string }) {
   const raw =
     opts.timeout !== undefined

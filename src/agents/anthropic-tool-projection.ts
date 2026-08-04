@@ -1,3 +1,4 @@
+import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
 import { projectRuntimeToolInputSchema } from "./tool-schema-json-projection.js";
 
 export const MODULE_ATTESTATIONS = {
@@ -38,10 +39,6 @@ export type AnthropicProjectedToolChoice =
   | ({ readonly type: "any" } & AnthropicParallelToolChoice)
   | { readonly type: "none" }
   | ({ readonly type: "tool"; readonly name: string } & AnthropicParallelToolChoice);
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function isProviderSupportedViolation(violation: string): boolean {
   return violation.endsWith(".$dynamicRef") || violation.endsWith(".$dynamicAnchor");

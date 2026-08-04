@@ -99,6 +99,7 @@ export function registerGatewayCli(program: Command) {
     gateway
       .command("health")
       .description("Fetch Gateway health")
+      .option("--port <port>", "Local Gateway port")
       .action(async (opts, command) => {
         await runGatewayCommand(async () => {
           const rpcOpts = resolveGatewayRpcOptions(opts, command);
@@ -128,6 +129,7 @@ export function registerGatewayCli(program: Command) {
     .command("probe")
     .description("Show gateway reachability + discovery + health + status summary (local + remote)")
     .option("--url <url>", "Explicit Gateway WebSocket URL (still probes localhost)")
+    .option("--port <port>", "Local Gateway port")
     .option("--ssh <target>", "SSH target for remote gateway tunnel (user@host or user@host:port)")
     .option("--ssh-identity <path>", "SSH identity file path")
     .option("--ssh-auto", "Try to derive an SSH target from Bonjour discovery", false)

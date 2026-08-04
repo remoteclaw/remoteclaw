@@ -270,6 +270,7 @@ describe("buildServiceEnvironment", () => {
     expect(typeof env.REMOTECLAW_SERVICE_VERSION).toBe("string");
     expect(env.REMOTECLAW_SYSTEMD_UNIT).toBe("remoteclaw-gateway.service");
     expect(env.REMOTECLAW_WINDOWS_TASK_NAME).toBe("RemoteClaw Gateway");
+    expect(env.REMOTECLAW_WINDOWS_TASK_HIDDEN_LAUNCHER).toBe("1");
     if (process.platform === "darwin") {
       expect(env.REMOTECLAW_LAUNCHD_LABEL).toBe("org.remoteclaw.gateway");
     }

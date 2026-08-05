@@ -10,7 +10,7 @@ import { resolveTaskScriptPath } from "../daemon/schtasks.js";
 import { formatErrorMessage } from "./errors.js";
 import type { RestartAttempt } from "./restart.types.js";
 import { resolvePreferredRemoteClawTmpDir } from "./tmp-remoteclaw-dir.js";
-import { resolveWindowsCmdExePath } from "./windows-system-paths.js";
+import { resolveWindowsCmdExePath, resolveWindowsSystem32Path } from "./windows-system-paths.js";
 
 const TASK_RESTART_RETRY_LIMIT = 12;
 const TASK_RESTART_RETRY_DELAY_SEC = 1;
@@ -29,11 +29,12 @@ function resolveWindowsTaskName(env: NodeJS.ProcessEnv): string {
 
 function buildScheduledTaskRestartScript(params: {
   quotedLogPath: string;
+  quotedSchtasksPath: string;
   setupLines: string[];
   taskName: string;
   taskScriptPath?: string;
 }): string {
-  const { quotedLogPath, setupLines, taskName, taskScriptPath } = params;
+  const { quotedLogPath, quotedSchtasksPath, setupLines, taskName, taskScriptPath } = params;
   const quotedTaskName = quoteCmdScriptArg(taskName);
   const queryTaskStateCommand = `(Get-ScheduledTask -TaskName ${quotePowerShellSingleQuotedLiteral(
     taskName,
@@ -44,7 +45,7 @@ function buildScheduledTaskRestartScript(params: {
     "setlocal",
     ...setupLines,
     `>> ${quotedLogPath} 2>&1 echo [%DATE% %TIME%] remoteclaw restart attempt source=windows-task-handoff target=${quotedTaskName}`,
-    `schtasks /Query /TN ${quotedTaskName} >> ${quotedLogPath} 2>&1`,
+    `${quotedSchtasksPath} /Query /TN ${quotedTaskName} >> ${quotedLogPath} 2>&1`,
     "if errorlevel 1 goto fallback",
     "set /a attempts=0",
     ":retry",
@@ -53,7 +54,7 @@ function buildScheduledTaskRestartScript(params: {
     // Avoid racing with another restart path that already started the scheduled task.
     `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ${quotedQueryTaskStateCommand} 2>nul | findstr /I /C:"Running" >nul 2>&1`,
     "if not errorlevel 1 goto cleanup",
-    `schtasks /Run /TN ${quotedTaskName} >> ${quotedLogPath} 2>&1`,
+    `${quotedSchtasksPath} /Run /TN ${quotedTaskName} >> ${quotedLogPath} 2>&1`,
     "if not errorlevel 1 goto cleanup",
     `if %attempts% GEQ ${TASK_RESTART_RETRY_LIMIT} goto fallback`,
     "goto retry",
@@ -75,6 +76,20 @@ function buildScheduledTaskRestartScript(params: {
 export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.env): RestartAttempt {
   const taskName = resolveWindowsTaskName(env);
   const taskScriptPath = resolveTaskScriptPath(env);
+  // Pinned at emission time, for the same reason as every argv site: a binary named inside
+  // generated script content resolves through the *script's* search path when it finally
+  // runs, which no source scan of this repo can see. The helper below is spawned detached
+  // through `cmd.exe` with no `cwd` or `env` override, so it inherits the parent's %PATH%
+  // AND cwd — and `cmd.exe` resolves a bare name against the current directory first.
+  // Identical treatment to `cli/update-cli/restart-helper.ts`; only the substrate differs
+  // (a cmd script, so `quoteCmdScriptArg` — the escape hatch the log path and task name
+  // already use — rather than a PowerShell literal).
+  //
+  // Scope, so this is not read as more than it closes: only the two `schtasks` invocations
+  // are pinned. `powershell.exe`, `findstr` and the `cmd.exe` startup fallback further down
+  // the same emitted script are still bare.
+  const schtasksPath = resolveWindowsSystem32Path("schtasks.exe", { ...process.env, ...env });
+  const quotedSchtasksPath = quoteCmdScriptArg(schtasksPath);
   const scriptPath = path.join(
     resolvePreferredRemoteClawTmpDir(),
     `remoteclaw-schtasks-restart-${randomUUID()}.cmd`,
@@ -86,6 +101,7 @@ export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.en
       scriptPath,
       `${buildScheduledTaskRestartScript({
         quotedLogPath: restartLog.quotedLogPath,
+        quotedSchtasksPath,
         setupLines: restartLog.lines,
         taskName,
         taskScriptPath,
@@ -101,7 +117,9 @@ export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.en
     return {
       ok: true,
       method: "schtasks",
-      tried: [`schtasks /Run /TN "${taskName}"`, `cmd.exe /d /s /c ${quotedScriptPath}`],
+      // Reports the pinned path, not the bare name: an operator reading this after a failed
+      // restart needs to see which binary the emitted script actually invoked.
+      tried: [`${schtasksPath} /Run /TN "${taskName}"`, `cmd.exe /d /s /c ${quotedScriptPath}`],
     };
   } catch (err) {
     try {
@@ -113,7 +131,7 @@ export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.en
       ok: false,
       method: "schtasks",
       detail: formatErrorMessage(err),
-      tried: [`schtasks /Run /TN "${taskName}"`],
+      tried: [`${schtasksPath} /Run /TN "${taskName}"`],
     };
   }
 }

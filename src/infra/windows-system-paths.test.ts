@@ -281,4 +281,37 @@ describe("selectWindowsShellPath", () => {
     expect(message).not.toContain("\n");
     expect(message).toContain("FORGED LOG LINE");
   });
+
+  // The OTHER half of the same message. `selection.path` is `%SystemRoot%`-derived, and the
+  // shape gate rejects NUL, CR, LF and `;` but NOT ESC — so a hostile SystemRoot is ACCEPTED
+  // and rides into `logError` through the fallback clause (CWE-117). The refused value is
+  // JSON-escaped and the fallback path was not, which is the asymmetry this pins.
+  it("neutralizes terminal escapes in the fallback path", () => {
+    const escape = String.fromCharCode(0x1b);
+    const hostileRoot = `D:\\Win${escape}[31mNT`;
+    // Guard: the gate really does accept this root, so the formatter is what is under test
+    // here rather than a rejection that never reaches it.
+    expect(resolveWindowsSystemRoot(env({ SystemRoot: hostileRoot }))).toBe(hostileRoot);
+
+    const message = formatRejectedWindowsShellOverride(
+      selectWindowsShellPath(env({ SystemRoot: hostileRoot, ComSpec: "evil.exe" })),
+    );
+    expect(message).not.toContain(escape);
+    expect(message).toContain("Using D:\\WinNT\\System32\\cmd.exe instead.");
+  });
+
+  // `JSON.stringify` escapes every C0 control, but leaves DEL (0x7f) and C1 (0x80-0x9f)
+  // raw — so JSON escaping alone is not a log-safety guarantee for the refused value.
+  it("strips the controls JSON escaping leaves raw in the refused value", () => {
+    const del = String.fromCharCode(0x7f);
+    const c1ControlSequenceIntroducer = String.fromCharCode(0x9b);
+    const message = formatRejectedWindowsShellOverride(
+      selectWindowsShellPath(
+        env({ ...ROOT, ComSpec: `evil${del}${c1ControlSequenceIntroducer}31m.exe` }),
+      ),
+    );
+    expect(message).not.toContain(del);
+    expect(message).not.toContain(c1ControlSequenceIntroducer);
+    expect(message).toContain('Refusing ComSpec="evil31m.exe":');
+  });
 });

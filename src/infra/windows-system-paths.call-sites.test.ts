@@ -79,7 +79,11 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
   "src/infra/update-managed-service-handoff.ts": [`${SYSTEM32}\\schtasks.exe`],
   "src/infra/windows-encoding.ts": [CMD_EXE, POWERSHELL],
   "src/infra/windows-port-pids.ts": [POWERSHELL, `${SYSTEM32}\\netstat.exe`, POWERSHELL, WMIC],
-  "src/infra/windows-task-restart.ts": [CMD_EXE],
+  // The schtasks.exe entry is interpolated into the emitted `.cmd` (both the /Query probe
+  // and the /Run retry), not spawned as argv from this module. CMD_EXE is the argv spawn of
+  // that script. The `powershell.exe`, `findstr` and `cmd.exe` names ALSO inside that
+  // emitted script are still bare — see the scope note below.
+  "src/infra/windows-task-restart.ts": [`${SYSTEM32}\\schtasks.exe`, CMD_EXE],
   "src/node-host/invoke-system-run.ts": [CMD_EXE],
   "src/process/exec.ts": [CMD_EXE],
   "src/process/kill-tree.ts": [`${SYSTEM32}\\taskkill.exe`],
@@ -92,13 +96,36 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
 
 // #3088 pinned 27 executable-position sites; #3099 added the 28th — the `rundll32.exe`
 // in `onboard-helpers.ts`, which replaced a `cmd /c start` that re-parsed the URL through
-// the shell. #3112 added the last five: `windows-acl.ts` had a third, unhardened copy of
-// the resolver (whoami + icacls) plus a bare `icacls` on the ACL-reset path, and two
-// `schtasks.exe` spawns named inside *emitted script content* — one in the detached update
-// handoff, one in the update restart helper's PowerShell — were pinned at emission time.
-// Stated independently of the table above so a merge that drops rows cannot quietly shrink
-// the covered surface.
-const EXPECTED_CALL_SITE_COUNT = 33;
+// the shell. #3112 added five more: `windows-acl.ts` had a third, unhardened copy of the
+// resolver (whoami + icacls) plus a bare `icacls` on the ACL-reset path, and `schtasks`
+// named inside *emitted script content* — the detached update handoff and the update
+// restart helper's PowerShell — was pinned at emission time. #3116 added the 34th, the
+// `schtasks` pair inside the scheduled-task restart `.cmd`, which #3112 §4 named alongside
+// the other two and the first pass left bare.
+//
+// SCOPE — what a green run here does and does NOT establish. Covered:
+//   - every argv-position spawn of a Windows system binary under `src/`;
+//   - the `schtasks` invocations inside emitted script content that #3112 §4 NAMED.
+// NOT covered: bare binaries inside emitted script content generally. Known-bare today,
+// deliberately out of scope, and invisible to this suite because it scans for resolver
+// CALLS rather than for binary names in emitted strings:
+//   - `cli/update-cli/restart-helper.ts` — `& netstat.exe -ano -p tcp` (emitted PowerShell)
+//   - `cli/update-cli/restart-helper.ts` — `powershell -NoProfile …` (emitted `.cmd` header)
+//   - `infra/windows-task-restart.ts`    — `powershell.exe …` and `findstr` (emitted `.cmd`)
+//   - `infra/windows-task-restart.ts`    — `start "" /min cmd.exe /d /c …` (startup fallback)
+// So this is an inventory of a covered surface, not a closed class. Do not read it as
+// "emitted scripts are fully pinned".
+//
+// One more limit worth knowing before trusting a green run: this suite scans for resolver
+// CALLS, so for an emitted-script row it proves the parent RESOLVES the path — not that the
+// emitted text still USES it. Reverting an emitted `${quotedSchtasksPath}` to a bare name
+// while leaving the call in place passes here; only the behavioural suite next to each
+// emitter (`windows-task-restart.test.ts`, `restart-helper.test.ts`) fails on that. Verified
+// by mutation, not assumed.
+//
+// The count is stated independently of the table above so a merge that drops rows cannot
+// quietly shrink the covered surface.
+const EXPECTED_CALL_SITE_COUNT = 34;
 
 // `selectWindowsShellPath` is the fifth name because #3100 moved the `%ComSpec%` decision
 // behind it: `exec.ts` and `launchd.ts` used to call `resolveWindowsCmdExePath` directly as

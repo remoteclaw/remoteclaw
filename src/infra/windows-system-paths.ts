@@ -11,7 +11,13 @@
 // (so it cannot import TypeScript), it lives outside the tsconfig `include`,
 // and `scripts/lib/docker-e2e-package.sh` bind-mounts it into a container as a
 // single standalone file. Keep the two in sync by hand when either changes.
+//
+// What is shared is the RESOLVER family (`resolveWindowsSystemRoot` and the pinned-path
+// helpers built on it). The `%ComSpec%` selector and its operator-facing message below have
+// no counterpart in the `.mjs` — build tooling never reads ComSpec — so the `sanitizeForLog`
+// import they need is not twin drift and nothing is owed to the other copy for it.
 import path from "node:path";
+import { sanitizeForLog } from "../terminal/ansi.js";
 
 const DEFAULT_WINDOWS_SYSTEM_ROOT = "C:\\Windows";
 const WINDOWS_SYSTEM32_EXE_NAME_RE = /^[A-Za-z0-9_.-]+\.exe$/u;
@@ -148,13 +154,22 @@ export function selectWindowsShellPath(
 /**
  * Operator-facing explanation for a refused `%ComSpec%`. Lives next to the gate so both
  * call sites emit the same wording without either owning a copy of it.
+ *
+ * BOTH interpolated values are sanitized, because both are environment-derived and this
+ * string goes straight to `logError` (CWE-117):
+ *
+ *  - `selection.path` is `%SystemRoot%`-derived, and the shape gate above rejects NUL, CR,
+ *    LF and `;` but NOT ESC — so `SystemRoot=C:\W<ESC>[31mnt` is ACCEPTED and would carry a
+ *    live terminal escape into the log through the fallback path.
+ *  - `rejectedComSpec` is JSON-escaped, which covers ESC and every other C0 control, but
+ *    `JSON.stringify` leaves DEL (0x7f) and C1 (0x80-0x9f) raw.
  */
 export function formatRejectedWindowsShellOverride(selection: WindowsShellSelection): string {
   return [
-    `Refusing ComSpec=${JSON.stringify(selection.rejectedComSpec ?? "")}:`,
+    `Refusing ComSpec=${sanitizeForLog(JSON.stringify(selection.rejectedComSpec ?? ""))}:`,
     "a Windows shell override must be an absolute drive-letter path (not UNC),",
     "with no `..` segment and no NUL, CR, LF or `;` character.",
-    `Using ${selection.path} instead.`,
+    `Using ${sanitizeForLog(selection.path)} instead.`,
   ].join(" ");
 }
 

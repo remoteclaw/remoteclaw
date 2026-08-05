@@ -239,8 +239,8 @@ remoteclaw plugins install ./my-hook-pack
 # Local archive
 remoteclaw plugins install ./my-hook-pack.zip
 
-# NPM package
-remoteclaw plugins install @remoteclaw/my-hook-pack
+# NPM package (any scope you control; the `@remoteclaw` scope is not resolvable)
+remoteclaw plugins install @acme/my-hook-pack
 
 # Link a local directory without copying
 remoteclaw plugins install -l ./my-hook-pack

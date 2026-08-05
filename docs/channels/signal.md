@@ -20,10 +20,10 @@ Status: external CLI integration. Gateway talks to `signal-cli` over HTTP — ei
 ## Quick setup (beginner)
 
 1. Use a **separate Signal number** for the bot (recommended).
-2. Install the RemoteClaw plugin:
+2. Enable the bundled RemoteClaw plugin:
 
 ```bash
-remoteclaw plugins install @remoteclaw/signal
+remoteclaw plugins enable signal
 ```
 
 3. Install `signal-cli` (Java required if you use the JVM build).

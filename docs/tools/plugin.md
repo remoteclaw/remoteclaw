@@ -23,10 +23,10 @@ with RemoteClaw), others are **external** (published on npm by the community).
     ```
   </Step>
 
-  <Step title="Install a plugin">
+  <Step title="Enable or install a plugin">
     ```bash
-    # From npm
-    remoteclaw plugins install @remoteclaw/voice-call
+    # Enable a plugin that ships with RemoteClaw
+    remoteclaw plugins enable voice-call
 
     # From a local directory or archive
     remoteclaw plugins install ./my-plugin

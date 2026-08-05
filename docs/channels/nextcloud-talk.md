@@ -10,21 +10,13 @@ Status: bundled plugin (webhook bot). Direct messages, rooms, reactions, and mar
 ## Bundled plugin
 
 Nextcloud Talk ships as a bundled plugin in current RemoteClaw releases, so
-normal packaged builds do not need a separate install.
+normal packaged builds do not need a separate install. Enable it with
+`remoteclaw plugins enable nextcloud-talk`.
 
 If you are on an older build or a custom install that excludes Nextcloud Talk,
-install the npm package directly:
-
-Install via CLI (npm registry):
-
-```bash
-remoteclaw plugins install @remoteclaw/nextcloud-talk
-```
-
-Use the bare package to follow the current official release tag. Pin an exact
-version only when you need a reproducible install.
-
-Local checkout (when running from a git repo):
+there is no registry install to fall back to: the `@remoteclaw` npm scope is not
+registered, and RemoteClaw refuses to resolve it. Install from a local checkout
+instead:
 
 ```bash
 remoteclaw plugins install ./path/to/local/nextcloud-talk-plugin

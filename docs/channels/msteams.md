@@ -10,19 +10,13 @@ Status: text + DM attachments are supported; channel/group file sending requires
 ## Bundled plugin
 
 Microsoft Teams ships as a bundled plugin in current RemoteClaw releases, so no
-separate install is required in the normal packaged build.
+separate install is required in the normal packaged build. Enable it with
+`remoteclaw plugins enable msteams`.
 
 If you are on an older build or a custom install that excludes bundled Teams,
-install the npm package directly:
-
-```bash
-remoteclaw plugins install @remoteclaw/msteams
-```
-
-Use the bare package to follow the current official release tag. Pin an exact
-version only when you need a reproducible install.
-
-Local checkout (when running from a git repo):
+there is no registry install to fall back to: the `@remoteclaw` npm scope is not
+registered, and RemoteClaw refuses to resolve it. Install from a local checkout
+instead:
 
 ```bash
 remoteclaw plugins install ./path/to/local/msteams-plugin

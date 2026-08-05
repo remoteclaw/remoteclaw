@@ -18,10 +18,10 @@ Zalo Personal ships as a bundled plugin in current RemoteClaw releases, so norma
 packaged builds do not need a separate install.
 
 If you are on an older build or a custom install that excludes Zalo Personal,
-install the npm package directly:
+there is no registry install to fall back to: the `@remoteclaw` npm scope is not
+registered, and RemoteClaw refuses to resolve it.
 
-- Install via CLI: `remoteclaw plugins install @remoteclaw/zalouser`
-- Pinned version: `remoteclaw plugins install @remoteclaw/zalouser@2026.5.2`
+- Enable the bundled plugin: `remoteclaw plugins enable zalouser`
 - Or from a source checkout: `remoteclaw plugins install ./path/to/local/zalouser-plugin`
 - Details: [Plugins](/tools/plugin)
 

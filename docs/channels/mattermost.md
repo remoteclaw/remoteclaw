@@ -7,16 +7,17 @@ title: "Mattermost"
 sidebarTitle: "Mattermost"
 ---
 
-Status: downloadable plugin (bot token + WebSocket events). Channels, groups, and DMs are supported. Mattermost is a self-hostable team messaging platform; see the official site at [mattermost.com](https://mattermost.com) for product details and downloads.
+Status: bundled plugin (bot token + WebSocket events). Channels, groups, and DMs are supported. Mattermost is a self-hostable team messaging platform; see the official site at [mattermost.com](https://mattermost.com) for product details and downloads.
 
 ## Install
 
-Install Mattermost before configuring the channel:
+Mattermost ships as a bundled plugin, so there is nothing to download. Enable it
+before configuring the channel:
 
 <Tabs>
-  <Tab title="npm registry">
+  <Tab title="Bundled plugin">
     ```bash
-    remoteclaw plugins install @remoteclaw/mattermost
+    remoteclaw plugins enable mattermost
     ```
   </Tab>
   <Tab title="Local checkout">

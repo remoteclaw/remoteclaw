@@ -524,11 +524,11 @@ WhatsApp runs through the gateway's web channel (Baileys Web). It starts automat
 
 ### Mattermost
 
-Mattermost ships as a bundled plugin in current RemoteClaw releases. Older or
-custom builds can install a current npm package with
-`remoteclaw plugins install @remoteclaw/mattermost`. Check
-[npmjs.com/package/@remoteclaw/mattermost](https://www.npmjs.com/package/@remoteclaw/mattermost)
-for the current dist-tags before pinning a version.
+Mattermost ships as a bundled plugin in current RemoteClaw releases; enable it
+with `remoteclaw plugins enable mattermost`. There is no npm registry install:
+the `@remoteclaw` scope is not registered, and RemoteClaw refuses to resolve it.
+Older or custom builds that exclude the bundled plugin must install from a local
+checkout with `remoteclaw plugins install ./path/to/local/mattermost-plugin`.
 
 ```json5
 {

@@ -5,14 +5,15 @@ read_when:
 title: "Google Chat"
 ---
 
-Status: downloadable plugin for DMs + spaces via Google Chat API webhooks (HTTP only).
+Status: bundled plugin for DMs + spaces via Google Chat API webhooks (HTTP only).
 
 ## Install
 
-Install Google Chat before configuring the channel:
+Google Chat ships as a bundled plugin, so there is nothing to download. Enable it
+before configuring the channel:
 
 ```bash
-remoteclaw plugins install @remoteclaw/googlechat
+remoteclaw plugins enable googlechat
 ```
 
 Local checkout (when running from a git repo):

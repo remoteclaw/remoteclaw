@@ -7,14 +7,14 @@ read_when:
 ---
 
 Use IRC when you want RemoteClaw in classic channels (`#room`) and direct messages.
-Install the official IRC plugin, then configure it under `channels.irc`.
+Enable the bundled IRC plugin, then configure it under `channels.irc`.
 
 ## Quick start
 
-1. Install the plugin:
+1. Enable the bundled plugin:
 
 ```bash
-remoteclaw plugins install @remoteclaw/irc
+remoteclaw plugins enable irc
 ```
 
 2. Enable IRC config in `~/.remoteclaw/remoteclaw.json`.

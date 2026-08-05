@@ -51,23 +51,42 @@ Use `trusted-proxy` auth mode when:
 
 ## Control UI pairing behavior
 
-When `gateway.auth.mode = "trusted-proxy"` is active and the request passes trusted-proxy checks, Control UI WebSocket sessions can connect without device pairing identity.
+When `gateway.auth.mode = "trusted-proxy"` is active, **device pairing is still
+required** for Control UI WebSocket sessions that present a device identity.
+Passing trusted-proxy checks does not skip the pairing gate.
+
+The two are answering different questions, and only one of them is delegated to
+your proxy:
+
+- Trusted-proxy auth establishes **who the user is**.
+- Device pairing establishes **which device** is speaking for that user.
 
 Implications:
 
-- Pairing is no longer the primary gate for Control UI access in this mode.
-- Your reverse proxy auth policy and `allowUsers` become the effective access control.
+- Your reverse proxy auth policy and `allowUsers` gate _who_ may reach the Gateway;
+  pairing remains the gate on _what device_ may act.
 - Keep gateway ingress locked to trusted proxy IPs only (`gateway.trustedProxies` + firewall).
+- A trusted-proxy Control UI session is **not issued a device token**. Device tokens
+  are bearer credentials that would outlive the proxy-fronted session and would
+  authorize a direct connection that never traverses the proxy.
+
+Two cases behave differently, and the difference is deliberate:
+
+**A device identity that is not paired is rejected.** The connect fails with
+`pairing required` (detail code `PAIRING_REQUIRED`) and a pairing request is
+raised for approval, exactly as on any other transport. Previously such a device
+was admitted on the strength of proxy auth alone and received the scopes it had
+declared for itself, without ever having been paired.
 
 **Scope clearing without device identity:** Because the browser over plain HTTP
 cannot create the device identity that RemoteClaw uses to bind operator scopes,
-trusted-proxy WebSocket connections that lack device identity have their
-self-declared scopes cleared to an empty set. The connection is allowed, but
-scope-gated methods (`operator.read`, `operator.write`, etc.) fail with
-`missing scope`.
+trusted-proxy WebSocket connections that lack device identity _entirely_ still
+connect, but have their self-declared scopes cleared to an empty set. Scope-gated
+methods (`operator.read`, `operator.write`, etc.) then fail with `missing scope`.
 
 To preserve operator scopes on trusted-proxy WebSocket connections without
-device identity, set `gateway.controlUi.dangerouslyDisableDeviceAuth: true`.
+device identity — and to opt out of the pairing requirement above — set
+`gateway.controlUi.dangerouslyDisableDeviceAuth: true`.
 This is a break-glass flag (`remoteclaw security audit` reports it as critical).
 Use it only when the reverse proxy is the sole path to the Gateway and device
 identity cannot be established.

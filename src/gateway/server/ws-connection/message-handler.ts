@@ -1065,9 +1065,16 @@ export function attachGatewayWsMessageHandler(params: {
           }
         }
 
-        const deviceToken = device
-          ? await ensureDeviceToken({ deviceId: device.id, role, scopes })
-          : null;
+        // A trusted-proxy Control UI session is authenticated by the proxy, not by
+        // a paired device, so it must not be issued a device token — that token is
+        // a bearer credential which would outlive the proxy-fronted session and
+        // grant these scopes on a direct connection that never passes the proxy.
+        // Adopts upstream #81288 (remoteclaw#2843).
+        const shouldIssueDeviceToken = !trustedProxyAuthOk;
+        const deviceToken =
+          shouldIssueDeviceToken && device
+            ? await ensureDeviceToken({ deviceId: device.id, role, scopes })
+            : null;
 
         if (role === "node") {
           // Version skew: close the co-located local node host so its OS supervisor

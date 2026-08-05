@@ -171,7 +171,7 @@ describe("ws connect policy", () => {
     ).toBe("allow");
   });
 
-  test("pairing bypass requires control-ui bypass + shared auth (or trusted-proxy auth)", () => {
+  test("pairing bypass requires control-ui bypass + shared auth, never trusted-proxy auth", () => {
     const bypass = resolveControlUiAuthPolicy({
       isControlUi: true,
       controlUiConfig: { dangerouslyDisableDeviceAuth: true },
@@ -185,7 +185,12 @@ describe("ws connect policy", () => {
     expect(shouldSkipControlUiPairing(bypass, true, false)).toBe(true);
     expect(shouldSkipControlUiPairing(bypass, false, false)).toBe(false);
     expect(shouldSkipControlUiPairing(strict, true, false)).toBe(false);
-    expect(shouldSkipControlUiPairing(strict, false, true)).toBe(true);
+    // Trusted-proxy auth alone must NOT skip pairing (remoteclaw#2843).
+    expect(shouldSkipControlUiPairing(strict, false, true)).toBe(false);
+    // ...and it must not rescue a strict policy even alongside shared auth.
+    expect(shouldSkipControlUiPairing(strict, true, true)).toBe(false);
+    // The break-glass path is unaffected: bypass + shared auth still skips.
+    expect(shouldSkipControlUiPairing(bypass, true, true)).toBe(true);
   });
 
   test("trusted-proxy control-ui bypass only applies to operator + trusted-proxy auth", () => {

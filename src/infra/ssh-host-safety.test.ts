@@ -34,4 +34,15 @@ describe("isUnsafeSshHost", () => {
     expect(isUnsafeSshHost("100.64.0.9")).toBe(false);
     expect(isUnsafeSshHost("under_score")).toBe(false);
   });
+
+  // Scope pin for the dig(1) operand predicate (`isUnsafeDigOperand`). dig reads
+  // a leading '@' as a nameserver selector and a leading '+' as an option; ssh(1)
+  // reads neither that way, so those prefixes must NOT have leaked into this
+  // guard when the dig path was hardened. A failure here means the shared
+  // primitive was widened instead of composed, changing ssh host admission.
+  it("is unchanged by dig's operand rules: '@' and '+' are not ssh options", () => {
+    expect(isUnsafeSshHost("@127.0.0.1")).toBe(false);
+    expect(isUnsafeSshHost("+tcp")).toBe(false);
+    expect(isUnsafeSshHost("user@studio.ts.net")).toBe(false);
+  });
 });

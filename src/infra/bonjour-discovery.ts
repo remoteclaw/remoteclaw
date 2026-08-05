@@ -2,7 +2,7 @@ import { logDebug } from "../logger.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 import { normalizeStringEntries, uniqueStrings } from "../shared/string-normalization.js";
-import { isArgvOptionLike } from "./argv-safety.js";
+import { isArgvOptionLike, isUnsafeDigOperand } from "./argv-safety.js";
 import { parseStrictInteger } from "./parse-finite-number.js";
 import { isTailnetIPv4 } from "./tailnet.js";
 import { resolveWideAreaDiscoveryDomain } from "./widearea-dns.js";
@@ -117,16 +117,26 @@ function decodeDnsSdEscapes(value: string): string {
 // is supplied by whoever answered on the network: an mDNS instance name is
 // publishable by any LAN peer, a PTR answer by any DNS server that responds.
 //
+// What counts as unsafe differs by tool, so the predicate is a parameter rather
+// than baked in: dig also reads a leading '@' as a nameserver selector — last
+// one wins, so an '@'-prefixed PTR answer re-points the follow-up SRV/TXT query
+// at an arbitrary host:53 — and a leading '+' as an option. dns-sd gives neither
+// character any meaning. See argv-safety.ts for the probes behind that.
+//
 // Neither tool accepts "--", so a hostile value cannot be neutralized in place;
 // it is dropped instead. Dropping is per record, so one hostile publisher costs
 // only its own entry and cannot suppress discovery of well-behaved peers.
-function dropArgvOptionLike(values: readonly string[], kind: string): string[] {
+function dropUnsafeArgvOperands(
+  values: readonly string[],
+  kind: string,
+  isUnsafe: (value: string) => boolean,
+): string[] {
   const safe: string[] = [];
   for (const value of values) {
-    if (isArgvOptionLike(value)) {
+    if (isUnsafe(value)) {
       // JSON.stringify so a value carrying newlines cannot forge log lines.
       logDebug(
-        `bonjour discovery: dropped ${kind} that argv would parse as an option: ${JSON.stringify(
+        `bonjour discovery: dropped ${kind} that argv would not carry as a plain operand: ${JSON.stringify(
           value,
         )}`,
       );
@@ -138,7 +148,12 @@ function dropArgvOptionLike(values: readonly string[], kind: string): string[] {
 }
 
 function parseDigShortLines(stdout: string): string[] {
-  return dropArgvOptionLike(normalizeStringEntries(stdout.split("\n")), "DNS answer");
+  // These become dig(1) query names, so they carry dig's wider prefix set.
+  return dropUnsafeArgvOperands(
+    normalizeStringEntries(stdout.split("\n")),
+    "DNS answer",
+    isUnsafeDigOperand,
+  );
 }
 
 function parseDigTxt(stdout: string): string[] {
@@ -262,7 +277,15 @@ function parseDnsSdBrowse(stdout: string): string[] {
   // Filtered after decodeDnsSdEscapes, never on the wire form: the escape
   // sequence "\045evil" decodes to "-evil", so a check upstream of the decode
   // would pass the very value that reaches argv.
-  return dropArgvOptionLike(Array.from(instances.values()), "mDNS instance name");
+  //
+  // Narrow predicate on purpose: dns-sd's operand slot gives '@' and '+' no
+  // meaning, and instance names are free-form UTF-8, so widening here would
+  // drop well-formed names for nothing.
+  return dropUnsafeArgvOperands(
+    Array.from(instances.values()),
+    "mDNS instance name",
+    isArgvOptionLike,
+  );
 }
 
 function parseDnsSdResolve(stdout: string, instanceName: string): GatewayBonjourBeacon | null {

@@ -531,6 +531,201 @@ describe("bonjour-discovery", () => {
     expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
   });
 
+  // The dig-specific half of the producer guard. dig(1)'s dangerous prefix set is
+  // wider than '-', and both extras were probed against the system dig with a
+  // loopback listener:
+  //   '@' selects the nameserver POSITIONALLY and the LAST one wins, so an
+  //       '@'-prefixed PTR answer landing after the pinned tailnet nameserver
+  //       sends the follow-up SRV/TXT query to an arbitrary host:53 — the beacon
+  //       then comes from the attacker's server, not the tailnet's.
+  //   '+' introduces a dig option, so a '+tcp' answer is consumed as one and the
+  //       query name collapses to ".".
+  // Neither is caught by `isArgvOptionLike`, which is why the dig path uses the
+  // wider `isUnsafeDigOperand` rather than that shared predicate being widened.
+  //
+  // Split per prefix rather than asserted in one test: a single test stops at its
+  // first failing expect, so one hostile prefix would mask the other.
+  const HOSTILE_PTR_NAMESERVER = "@127.0.0.1";
+  const HOSTILE_PTR_OPTION = "+tcp";
+  const PINNED_NAMESERVER = "100.69.232.64";
+
+  // Drives the wide-area dig fallback with `hostile` present in the PTR answer
+  // set alongside one well-formed service, and returns every argv it spawned.
+  async function runWideAreaWithHostilePtr(hostile: string): Promise<{
+    calls: string[][];
+    beacons: GatewayBonjourBeacon[];
+  }> {
+    const calls: string[][] = [];
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+    const serviceBase = `_remoteclaw-gw._tcp.${zone}`;
+    const goodService = `studio-gateway.${serviceBase}`;
+
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      const cmd = argv[0];
+
+      if (cmd === "dns-sd" && argv[1] === "-B") {
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      if (cmd === "tailscale" && argv[1] === "status") {
+        return {
+          stdout: JSON.stringify({ Self: { TailscaleIPs: [PINNED_NAMESERVER] } }),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (cmd === "dig") {
+        const qname = argv[argv.length - 2] ?? "";
+        const qtype = argv[argv.length - 1] ?? "";
+        if (qtype === "PTR" && qname === serviceBase) {
+          // A hostile DNS server answering the PTR probe with dig syntax rather
+          // than a name. Both payloads survive a leading-'-' check untouched.
+          return {
+            stdout: `${hostile}\n${goodService}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        if (qtype === "SRV" && qname === goodService) {
+          return {
+            stdout: `0 0 18789 studio.${zone}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 1200,
+      domains: [WIDE_AREA_DOMAIN],
+      wideAreaDomain: WIDE_AREA_DOMAIN,
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+    return { calls, beacons };
+  }
+
+  it("never lets an '@'-prefixed PTR answer reach dig argv", async () => {
+    const { calls, beacons } = await runWideAreaWithHostilePtr(HOSTILE_PTR_NAMESERVER);
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+
+    const digCalls = calls.filter((c) => c[0] === "dig");
+    expect(digCalls.length).toBeGreaterThan(0);
+
+    // The assertion that bites: the attack is a SECOND '@' argument after the
+    // pinned one, which dig resolves last-wins. So no dig invocation may carry
+    // any nameserver selector other than the one this code pinned itself.
+    const extraNameservers = digCalls.flatMap((argv) =>
+      argv.filter((a) => a.startsWith("@") && a !== `@${PINNED_NAMESERVER}`),
+    );
+    expect(extraNameservers).toEqual([]);
+
+    // Over-rejection guard: the clean PTR in the same answer set still resolves.
+    expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
+  });
+
+  it("never lets a '+'-prefixed PTR answer reach dig argv", async () => {
+    const { calls, beacons } = await runWideAreaWithHostilePtr(HOSTILE_PTR_OPTION);
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+
+    // dig takes the query name as an operand; a '+' there is eaten as an option
+    // and the query name collapses, so the slot must never start with one.
+    const digOperands = collectMatching(
+      calls,
+      (c) => c[0] === "dig",
+      (c) => c[c.length - 2] ?? "",
+    );
+    expect(digOperands.filter((arg) => arg.startsWith("+"))).toEqual([]);
+    // Belt and braces across dig's whole prefix set.
+    expect(digOperands.filter((arg) => /^[-@+]/.test(arg))).toEqual([]);
+
+    expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
+  });
+
+  // The regression a too-eager dig guard would cause. Only the LEADING character
+  // is structural to dig — '@' and '+' anywhere else are ordinary bytes in a
+  // name, and DNS-SD instance labels are free-form, so rejecting them outright
+  // would drop well-formed peers while still reading as "hardened".
+  it("still passes PTR answers with interior '@' or '+' through to dig", async () => {
+    const calls: string[][] = [];
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+    const serviceBase = `_remoteclaw-gw._tcp.${zone}`;
+    const services = [
+      `studio+lab.${serviceBase}`, // interior '+'
+      `desk@home.${serviceBase}`, // interior '@'
+      `plain-gw.${serviceBase}`, // interior '-'
+    ];
+
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      const cmd = argv[0];
+
+      if (cmd === "dns-sd" && argv[1] === "-B") {
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      if (cmd === "tailscale" && argv[1] === "status") {
+        return {
+          stdout: JSON.stringify({ Self: { TailscaleIPs: ["100.69.232.64"] } }),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (cmd === "dig") {
+        const qname = argv[argv.length - 2] ?? "";
+        const qtype = argv[argv.length - 1] ?? "";
+        if (qtype === "PTR" && qname === serviceBase) {
+          return {
+            stdout: `${services.map((s) => `${s}.`).join("\n")}\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        const idx = services.indexOf(qname);
+        if (qtype === "SRV" && idx >= 0) {
+          return {
+            stdout: `0 0 1878${idx} host${idx}.${zone}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 1200,
+      domains: [WIDE_AREA_DOMAIN],
+      wideAreaDomain: WIDE_AREA_DOMAIN,
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+
+    const srvOperands = collectMatching(
+      calls,
+      (c) => c[0] === "dig" && c[c.length - 1] === "SRV",
+      (c) => c[c.length - 2] ?? "",
+    );
+    expect(srvOperands).toEqual(services);
+    expect(beacons.map((b) => b.host)).toEqual([`host0.${zone}`, `host1.${zone}`, `host2.${zone}`]);
+    expect(beacons.map((b) => b.instanceName)).toEqual(["studio+lab", "desk@home", "plain-gw"]);
+  });
+
   it("normalizes domains and respects domains override", async () => {
     const calls: string[][] = [];
     const run = vi.fn(async (argv: string[]) => {

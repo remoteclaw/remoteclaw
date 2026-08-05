@@ -3,7 +3,7 @@ import path from "node:path";
 import type { BrowserProfileConfig, RemoteClawConfig } from "../config/config.js";
 import { loadConfig, writeConfigFile } from "../config/config.js";
 import { deriveDefaultBrowserCdpPortRange } from "../config/port-defaults.js";
-import { movePathToTrash } from "../infra/trash.js";
+import { movePathToTrash } from "../infra/fs-safe-trash.js";
 import { parseHttpUrl, resolveProfile } from "./config.js";
 import { DEFAULT_BROWSER_DEFAULT_PROFILE_NAME } from "./constants.js";
 import { resolveRemoteClawUserDataDir } from "./profile-paths.js";

@@ -5,7 +5,7 @@ import type { Command } from "commander";
 import { resolveStateDir } from "../config/paths.js";
 import { danger, info } from "../globals.js";
 import { copyToClipboard } from "../infra/clipboard.js";
-import { movePathToTrash } from "../infra/trash.js";
+import { movePathToTrash } from "../infra/fs-safe-trash.js";
 import { defaultRuntime } from "../runtime.js";
 import { formatDocsLink } from "../terminal/links.js";
 import { theme } from "../terminal/theme.js";

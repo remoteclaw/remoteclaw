@@ -1,15 +1,22 @@
 // Moves a path to the user's trash directory without spawning a helper binary.
 //
-// This exists alongside `infra/trash.ts` (the browser-profile mover — same
-// export name, still shells out to a PATH-resolved `trash`). Resolving `trash`
-// through %PATH% lets whatever comes first on the path run in our process
-// context — the untrusted-search-path class this fork already closed for
-// Windows system binaries — so the onboarding reset path uses this module.
+// This is the ONLY `movePathToTrash` in the tree. It used to have a twin in
+// `infra/trash.ts` that shelled out to a PATH-resolved `trash` — the
+// untrusted-search-path class this fork already closed for Windows system
+// binaries — reachable from the browser profile movers AND from the
+// `agents.delete` gateway RPC. #3102 removed that module and repointed its
+// callers here, so a stray `import { movePathToTrash }` can no longer resolve
+// to a spawning implementation. Dropping the spawn gives up desktop-trash
+// restore metadata (macOS "Put Back", FreeDesktop `.trashinfo`); the twin's own
+// fallback never wrote that metadata either, so only installs that actually had
+// a `trash` binary on PATH lose it.
 //
 // `allowedRoots` is the CALLER's assertion of where the target is expected to
-// live, checked against the fully-resolved target. It is not a defence against
-// a local attacker: there is an unavoidable window between the check and the
-// rename (no `renameat` binding).
+// live, checked against the fully-resolved target. It bounds nothing unless the
+// caller knows those roots independently of the target — see
+// `config/trash-roots.ts`. It is also not a defence against a local attacker:
+// there is an unavoidable window between the check and the rename (no
+// `renameat` binding).
 
 import fs from "node:fs/promises";
 import os from "node:os";
@@ -39,9 +46,7 @@ async function realpathOrResolve(candidate: string): Promise<string> {
 function resolveTrashDir(): string {
   // Linux desktops read ~/.local/share/Trash. No companion `info/*.trashinfo`
   // is written, so entries land in the right place but cannot be restored from
-  // a desktop trash UI — same as `infra/trash.ts`'s fallback. Elsewhere
-  // (darwin, win32) use ~/.Trash, matching that module's convention rather than
-  // inventing a second one.
+  // a desktop trash UI. Elsewhere (darwin, win32) use ~/.Trash.
   if (process.platform === "linux") {
     const dataHome = process.env.XDG_DATA_HOME?.trim();
     const base =

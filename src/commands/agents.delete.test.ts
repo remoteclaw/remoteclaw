@@ -17,7 +17,9 @@ const processMocks = vi.hoisted(() => ({
 }));
 
 const fsSafeMocks = vi.hoisted(() => ({
-  movePathToTrash: vi.fn(async (targetPath: string) => `${targetPath}.trashed`),
+  movePathToTrash: vi.fn(
+    async (targetPath: string, _options?: { allowedRoots?: string[] }) => `${targetPath}.trashed`,
+  ),
 }));
 
 const gatewayMocks = vi.hoisted(() => ({
@@ -464,7 +466,7 @@ describe("agents delete command", () => {
     },
   );
 
-  it("trashes workspace when no other agent shares it", async () => {
+  it("trashes only RemoteClaw-owned dirs, bounded by roots it did not derive from them", async () => {
     await withStateDirEnv("remoteclaw-agents-delete-unique-workspace-", async ({ stateDir }) => {
       const opsWorkspace = path.join(stateDir, "workspace-ops");
       const mainWorkspace = path.join(stateDir, "workspace-main");
@@ -494,12 +496,30 @@ describe("agents delete command", () => {
         await fs.realpath(path.dirname(opsWorkspace)),
         path.basename(opsWorkspace),
       );
+      const realStateDir = await fs.realpath(stateDir);
+      const expectedAgentDir = path.join(realStateDir, "agents", "ops", "agent");
+      const expectedSessionsDir = path.join(realStateDir, "agents", "ops", "sessions");
 
       await agentsDeleteCommand({ id: "ops", force: true, json: true }, runtime);
 
-      expect(fsSafeMocks.movePathToTrash).toHaveBeenCalledWith(expectedOpsWorkspace, {
-        allowedRoots: [path.dirname(expectedOpsWorkspace)],
-      });
+      const calls = fsSafeMocks.movePathToTrash.mock.calls as unknown as Array<
+        [string, { allowedRoots: string[] }]
+      >;
+      const rootsFor = (target: string) =>
+        calls.find(([targetPath]) => targetPath === target)?.[1]?.allowedRoots ?? [];
+
+      // The user-owned workspace is never trashed on agent delete.
+      expect(calls.map(([targetPath]) => targetPath)).not.toContain(expectedOpsWorkspace);
+
+      // #3102: roots come from the config/state resolvers, plus — for the
+      // config-declared agent dir only — its declared parent. Never the target
+      // itself, which the containment check would satisfy trivially.
+      expect(rootsFor(expectedAgentDir)).toContain(stateDir);
+      expect(rootsFor(expectedAgentDir)).toContain(path.join(stateDir, "agents", "ops"));
+      expect(rootsFor(expectedAgentDir)).not.toContain(expectedAgentDir);
+      expect(rootsFor(expectedSessionsDir)).toContain(stateDir);
+      expect(rootsFor(expectedSessionsDir)).not.toContain(expectedSessionsDir);
+      expect(rootsFor(expectedSessionsDir)).not.toContain(path.dirname(expectedSessionsDir));
       expect(processMocks.runCommandWithTimeout).not.toHaveBeenCalled();
     });
   });

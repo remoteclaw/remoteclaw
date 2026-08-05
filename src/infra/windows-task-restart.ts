@@ -86,8 +86,15 @@ export function relaunchGatewayScheduledTask(env: NodeJS.ProcessEnv = process.en
   // already use — rather than a PowerShell literal).
   //
   // Scope, so this is not read as more than it closes: only the two `schtasks` invocations
-  // are pinned. `powershell.exe`, `findstr` and the `cmd.exe` startup fallback further down
-  // the same emitted script are still bare.
+  // are pinned. Still bare in the same emitted script, in emission order: `timeout` in the
+  // `:retry` loop, `powershell.exe` and `findstr` on the task-state probe, and `cmd.exe` in
+  // the startup fallback. `timeout` is the easiest of those to skip — it reads like a
+  // `cmd.exe` builtin and is not one. It is `%SystemRoot%\System32\timeout.exe`, it sits
+  // BETWEEN the two lines pinned here, and it resolves through this detached script's
+  // inherited cwd and %PATH% exactly as they did. Treat that as an inventory of what is
+  // KNOWN bare at time of writing, not a proof the set is closed: nothing scans emitted
+  // script content for binary names, so a binary added to this script later joins the set
+  // without failing anything.
   const schtasksPath = resolveWindowsSystem32Path("schtasks.exe", { ...process.env, ...env });
   const quotedSchtasksPath = quoteCmdScriptArg(schtasksPath);
   const scriptPath = path.join(

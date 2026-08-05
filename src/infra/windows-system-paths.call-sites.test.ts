@@ -81,8 +81,9 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
   "src/infra/windows-port-pids.ts": [POWERSHELL, `${SYSTEM32}\\netstat.exe`, POWERSHELL, WMIC],
   // The schtasks.exe entry is interpolated into the emitted `.cmd` (both the /Query probe
   // and the /Run retry), not spawned as argv from this module. CMD_EXE is the argv spawn of
-  // that script. The `powershell.exe`, `findstr` and `cmd.exe` names ALSO inside that
-  // emitted script are still bare — see the scope note below.
+  // that script. Other binary names ALSO inside that emitted script are still bare — the
+  // scope note below enumerates them. Deliberately not re-listed here: this row carried its
+  // own copy of that set and the copy went stale, which is the defect the note now warns about.
   "src/infra/windows-task-restart.ts": [`${SYSTEM32}\\schtasks.exe`, CMD_EXE],
   "src/node-host/invoke-system-run.ts": [CMD_EXE],
   "src/process/exec.ts": [CMD_EXE],
@@ -109,12 +110,22 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
 // NOT covered: bare binaries inside emitted script content generally. Known-bare today,
 // deliberately out of scope, and invisible to this suite because it scans for resolver
 // CALLS rather than for binary names in emitted strings:
-//   - `cli/update-cli/restart-helper.ts` — `& netstat.exe -ano -p tcp` (emitted PowerShell)
-//   - `cli/update-cli/restart-helper.ts` — `powershell -NoProfile …` (emitted `.cmd` header)
-//   - `infra/windows-task-restart.ts`    — `powershell.exe …` and `findstr` (emitted `.cmd`)
-//   - `infra/windows-task-restart.ts`    — `start "" /min cmd.exe /d /c …` (startup fallback)
-// So this is an inventory of a covered surface, not a closed class. Do not read it as
-// "emitted scripts are fully pinned".
+//   - `cli/update-cli/restart-helper.ts:193` — `powershell -NoProfile …` (`.cmd` header)
+//   - `cli/update-cli/restart-helper.ts:306` — `& netstat.exe -ano -p tcp` (PowerShell body)
+//   - `infra/windows-task-restart.ts:52`     — `timeout /t … /nobreak` (in the `:retry` loop)
+//   - `infra/windows-task-restart.ts:55`     — `powershell.exe …` and `findstr` (`.cmd`)
+//   - `infra/windows-task-restart.ts:66`     — `start "" /min cmd.exe /d /c …` (fallback)
+//   - `daemon/schtasks.ts:372`               — `start "" /min cmd.exe /d /c …` (login item)
+// `timeout` is the one most easily skipped: it reads like a `cmd.exe` builtin and is not one.
+// It is `%SystemRoot%\System32\timeout.exe`, and it sits BETWEEN the two `schtasks` lines
+// #3116 pinned — same emitted script, same inherited-cwd-then-%PATH% resolution. Line numbers
+// above are a finding aid, not a pin; nothing re-checks them.
+//
+// So this is an inventory of a covered surface, not a closed class — and the bullets are an
+// inventory of what is KNOWN bare at time of writing, not a proof the set is complete. Nothing
+// in CI scans emitted script content for binary names, so a binary added to an emitted script
+// later joins that set without failing anything here. Do not read this as "emitted scripts are
+// fully pinned", and do not read pinning these six as closing the class.
 //
 // One more limit worth knowing before trusting a green run: this suite scans for resolver
 // CALLS, so for an emitted-script row it proves the parent RESOLVES the path — not that the

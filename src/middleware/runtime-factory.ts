@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { resolvePathLookupCommand } from "../infra/path-lookup.js";
 import { logDebug } from "../logger.js";
 import { ClaudeCliRuntime } from "./runtimes/claude.js";
 import { CodexCliRuntime } from "./runtimes/codex.js";
@@ -17,8 +18,15 @@ const validatedCommands = new Set<string>();
 /**
  * Verify that a CLI binary exists on PATH.
  *
- * Results are cached per process lifetime so the `which` lookup runs at most
- * once per command.
+ * The lookup command is platform-resolved (`which` on POSIX, a pinned
+ * `where.exe` on Windows). It used to be a hardcoded `which`, which does not
+ * exist on Windows: the spawn failed with ENOENT, so EVERY configured runtime
+ * was reported as missing and RemoteClaw could not start on the platform its
+ * own README advertises an installer for.
+ *
+ * Results are cached per process lifetime so the lookup runs at most once per
+ * command. The cache is keyed on the binary name, not the resolved lookup
+ * command, because the lookup command cannot change within a process.
  */
 function validateExecutable(command: string): void {
   if (validatedCommands.has(command)) {
@@ -26,7 +34,7 @@ function validateExecutable(command: string): void {
     return;
   }
   try {
-    execFileSync("which", [command], { stdio: "ignore" });
+    execFileSync(resolvePathLookupCommand(), [command], { stdio: "ignore" });
     logDebug(`[runtime-factory] executable validated: ${command}`);
     validatedCommands.add(command);
   } catch {

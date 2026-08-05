@@ -12,6 +12,7 @@ import {
 } from "../shared/string-coerce.js";
 import { colorize, isRich, theme } from "../terminal/theme.js";
 import { ensureBinary } from "./binaries.js";
+import { resolvePathLookupCommand } from "./path-lookup.js";
 
 function parsePossiblyNoisyJsonObject(stdout: string): Record<string, unknown> {
   const trimmed = stdout.trim();
@@ -50,15 +51,20 @@ export async function findTailscaleBinary(): Promise<string | null> {
     }
   };
 
-  // Strategy 1: which command
+  // Strategy 1: PATH lookup. Platform-resolved — a hardcoded `which` makes this
+  // strategy unconditionally fail on Windows, where the command does not exist.
   try {
-    const { stdout } = await runExec("which", ["tailscale"]);
-    const fromPath = stdout.trim();
+    const { stdout } = await runExec(resolvePathLookupCommand(), ["tailscale"]);
+    // First line only: `where.exe` prints EVERY match, one per line, so taking the
+    // whole trimmed output would hand `checkBinary` a multi-line string whenever
+    // Windows has more than one tailscale on PATH. `which` prints one line, so
+    // this is a no-op there.
+    const fromPath = stdout.split(/\r?\n/)[0]?.trim() ?? "";
     if (fromPath && (await checkBinary(fromPath))) {
       return fromPath;
     }
   } catch {
-    // which failed, continue
+    // PATH lookup failed, continue
   }
 
   // Strategy 2: Known macOS app path

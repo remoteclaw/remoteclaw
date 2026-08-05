@@ -430,6 +430,58 @@ jobs:
       - name: UI smoke tests (browser-mode)
         run: pnpm test:ui:smoke
 
+  test-windows:
+    # The project's FIRST Windows runner. README.md advertises a Windows install
+    # path (`irm https://remoteclaw.ps | iex`) while every other `runs-on:` in this
+    # directory is Ubuntu, so Windows-targeted work has been merging on static
+    # reasoning alone (#3088, #3116) against a resolver census whose own header
+    # documents a mutation-proven blind spot.
+    #
+    # A NARROW SPIKE, deliberately not a full-suite port: 397 of 2,302 tracked
+    # `*.test.ts` files hardcode POSIX absolute paths (2,184 occurrences), so a
+    # `pnpm test` here could only ever be red. The membership rule and the
+    # per-file exclusions live in `vitest.windows.config.ts` — that file, not this
+    # job, is where widening the lane gets reviewed.
+    #
+    # NOT WIRED INTO THE `CI` ROLLUP, on purpose: this lane is one PR old and has
+    # no flake history on a runner class this repo has never used. It runs on every
+    # PR and is visible in the checks list, but it does not block merge yet.
+    # Promoting it is a two-line change — add `test-windows` to the rollup's
+    # `needs:` AND to its result-check condition. Both, or neither: `needs:` alone
+    # makes the rollup wait on a job whose failure it then ignores, and the
+    # condition alone evaluates `needs.test-windows.result` to empty and blocks
+    # every merge permanently.
+    #
+    # No `pnpm canvas:a2ui:bundle` step: verified that none of the included suites
+    # import the bundle (the lane passes with `vendor/a2ui/renderers/lit/dist`
+    # absent). Add it here if the include list ever grows into canvas territory.
+    runs-on: windows-latest
+    # A hung child process on a first-time runner class must fail fast, not hold
+    # the runner for the 6h job default.
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      # Cheap (~5s locally) and genuinely platform-sensitive: case-insensitive
+      # path resolution surfaces import-casing bugs that Ubuntu never sees.
+      # `pnpm build` is deliberately NOT run — it is heavy and its Windows signal
+      # is not established yet.
+      - name: Typecheck
+        shell: bash
+        run: pnpm tsgo
+
+      - name: Windows-relevant suites
+        shell: bash
+        run: pnpm test:windows
+
   CI:
     if: always()
     needs:

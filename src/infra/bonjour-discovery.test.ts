@@ -341,6 +341,444 @@ describe("bonjour-discovery", () => {
     expect(calls.map((c) => c.argv[0])).toContain("dig");
   });
 
+  // Producer-side argv guard (#3101). An mDNS instance name is publishable by
+  // any LAN peer and a PTR answer by any responding DNS server; both land in an
+  // argv operand slot where a leading '-' is read as a flag. Neither dns-sd nor
+  // dig accepts "--", so the hostile record is dropped rather than neutralized.
+  it("never lets a dash-prefixed mDNS instance name reach dns-sd argv", async () => {
+    const calls: string[][] = [];
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      if (argv[0] === "dns-sd" && argv[1] === "-B") {
+        return {
+          stdout: [
+            "Add 2 3 local. _remoteclaw-gw._tcp. -f/etc/passwd",
+            // The same attack smuggled through a dns-sd octal escape: "\045" is
+            // '-', so this decodes to "-oEscaped" and is caught only if the guard
+            // runs after decodeDnsSdEscapes. Kept distinct from the literal case
+            // above so the Set cannot dedupe the two into one assertion.
+            "Add 2 3 local. _remoteclaw-gw._tcp. \\045oEscaped",
+            "Add 2 3 local. _remoteclaw-gw._tcp. Laptop Gateway",
+            "",
+          ].join("\n"),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (argv[0] === "dns-sd" && argv[1] === "-L") {
+        return {
+          stdout: [
+            `${argv[2]}._remoteclaw-gw._tcp. can be reached at laptop.local:18789`,
+            "txtvers=1 gatewayPort=18789",
+            "",
+          ].join("\n"),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 800,
+      domains: ["local."],
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+
+    const resolveArgs = collectMatching(
+      calls,
+      (c) => c[0] === "dns-sd" && c[1] === "-L",
+      (c) => c[2] ?? "",
+    );
+    // The assertion that bites: nothing option-shaped occupies the operand slot.
+    expect(resolveArgs.filter((arg) => arg.startsWith("-"))).toEqual([]);
+    expect(resolveArgs).toEqual(["Laptop Gateway"]);
+
+    // Over-rejection guard: one hostile publisher must not suppress its
+    // well-behaved neighbours, or the fix is worse than the bug.
+    expect(beacons.map((b) => b.instanceName)).toEqual(["Laptop Gateway"]);
+  });
+
+  // The regression a too-eager guard would cause. RFC 6763 §4.1.1 instance names
+  // are free-form UTF-8, so a guard rejecting '-' anywhere (or non-ASCII, or
+  // spaces, the way the SSH host denylist does) would silently stop discovering
+  // most real gateways while still reading as "hardened".
+  //
+  // The last two entries are what make the dns-sd path's narrowness an INVARIANT
+  // rather than a comment. `parseDnsSdBrowse` passes `isArgvOptionLike`, not
+  // `isUnsafeDigOperand`, because dig's extra prefixes carry no meaning in a
+  // `dns-sd -L` operand slot; without a leading-'@' and a leading-'+' name here,
+  // transposing the wider dig predicate onto that call site leaves every test in
+  // this file green, and the over-rejection it would cause ships unnoticed.
+  it("still passes well-formed instance names through to dns-sd unchanged", async () => {
+    const wellFormed = [
+      "Laptop Gateway", // spaces
+      "peters-mac-studio-1", // interior and trailing hyphens
+      "Peter’s Mac Studio", // non-ASCII punctuation
+      "studio.local", // dots
+      "gw_01", // underscore
+      "@lobby-gw", // leading '@': meaningless to dns-sd, must NOT be dropped
+      "+studio", // leading '+': meaningless to dns-sd, must NOT be dropped
+    ];
+
+    const calls: string[][] = [];
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      if (argv[0] === "dns-sd" && argv[1] === "-B") {
+        return {
+          stdout: [
+            ...wellFormed.map((name) => `Add 2 3 local. _remoteclaw-gw._tcp. ${name}`),
+            "",
+          ].join("\n"),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (argv[0] === "dns-sd" && argv[1] === "-L") {
+        return {
+          stdout: [`${argv[2]}._remoteclaw-gw._tcp. can be reached at host.local:18789`, ""].join(
+            "\n",
+          ),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 800,
+      domains: ["local."],
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+
+    const resolveArgs = collectMatching(
+      calls,
+      (c) => c[0] === "dns-sd" && c[1] === "-L",
+      (c) => c[2] ?? "",
+    );
+    expect(resolveArgs).toEqual(wellFormed);
+    expect(beacons.map((b) => b.instanceName)).toEqual(wellFormed);
+  });
+
+  it("never lets a dash-prefixed PTR answer reach dig argv", async () => {
+    const calls: string[][] = [];
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+    const serviceBase = `_remoteclaw-gw._tcp.${zone}`;
+    const goodService = `studio-gateway.${serviceBase}`;
+
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      const cmd = argv[0];
+
+      if (cmd === "dns-sd" && argv[1] === "-B") {
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      if (cmd === "tailscale" && argv[1] === "status") {
+        return {
+          stdout: JSON.stringify({ Self: { TailscaleIPs: ["100.69.232.64"] } }),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (cmd === "dig") {
+        const qname = argv[argv.length - 2] ?? "";
+        const qtype = argv[argv.length - 1] ?? "";
+        if (qtype === "PTR" && qname === serviceBase) {
+          // A hostile DNS server answering the PTR probe with a flag.
+          return {
+            stdout: `-f/etc/passwd\n${goodService}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        if (qtype === "SRV" && qname === goodService) {
+          return {
+            stdout: `0 0 18789 studio.${zone}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 1200,
+      domains: [WIDE_AREA_DOMAIN],
+      wideAreaDomain: WIDE_AREA_DOMAIN,
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+
+    // dig takes the query name as an operand; nothing there may start with '-'.
+    const digOperands = collectMatching(
+      calls,
+      (c) => c[0] === "dig",
+      (c) => c[c.length - 2] ?? "",
+    );
+    expect(digOperands.filter((arg) => arg.startsWith("-"))).toEqual([]);
+
+    // The clean PTR from the same answer set still resolves.
+    expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
+  });
+
+  // The dig-specific half of the producer guard. dig(1)'s dangerous prefix set is
+  // wider than '-', and every extra was probed against the system dig (DiG
+  // 9.10.6) with a loopback listener:
+  //   '+' introduces a dig option, so a '+tcp' answer is consumed as one and the
+  //       query name collapses to ".". Reachable: dig prints a leading '+' bare.
+  //   '%' is discarded as a positional, so a '%evil' answer collapses the query
+  //       to a root ". IN NS". Also reachable, and printed bare. NOT a redirect —
+  //       that query still goes to the pinned nameserver, `parseDigSrv` rejects
+  //       the non-SRV answer, and the record drops itself; driven through this
+  //       producer against /usr/bin/dig, no beacon resulted. Same class as '+',
+  //       strictly less impact.
+  //   '@' selects the nameserver, and is kept as DEFENCE IN DEPTH rather than a
+  //       demonstrated path: DiG 9.10.6 escapes '@' when printing a name, so a
+  //       PTR answer of "@evil…" comes back as "\@evil…", never trips the guard,
+  //       and is read as an ordinary name sent to the pinned nameserver. Driven
+  //       through this producer against /usr/bin/dig, that is what happened — a
+  //       DNS server cannot make `dig +short … PTR` emit a bare leading '@'. The
+  //       guard covers a dig earlier on PATH that does not escape it; only 9.10.6
+  //       was probed. See argv-safety.ts, which also corrects the earlier
+  //       last-'@'-wins claim: dig's server list is first-wins-with-fallback.
+  // None is caught by `isArgvOptionLike`, which is why the dig path uses the
+  // wider `isUnsafeDigOperand` rather than that shared predicate being widened.
+  //
+  // Split per prefix rather than asserted in one test: a single test stops at its
+  // first failing expect, so one hostile prefix would mask the others.
+  const HOSTILE_PTR_NAMESERVER = "@127.0.0.1";
+  const HOSTILE_PTR_OPTION = "+tcp";
+  const HOSTILE_PTR_DISCARDED_POSITIONAL = "%evil";
+  const PINNED_NAMESERVER = "100.69.232.64";
+
+  // Drives the wide-area dig fallback with `hostile` present in the PTR answer
+  // set alongside one well-formed service, and returns every argv it spawned.
+  async function runWideAreaWithHostilePtr(hostile: string): Promise<{
+    calls: string[][];
+    beacons: GatewayBonjourBeacon[];
+  }> {
+    const calls: string[][] = [];
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+    const serviceBase = `_remoteclaw-gw._tcp.${zone}`;
+    const goodService = `studio-gateway.${serviceBase}`;
+
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      const cmd = argv[0];
+
+      if (cmd === "dns-sd" && argv[1] === "-B") {
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      if (cmd === "tailscale" && argv[1] === "status") {
+        return {
+          stdout: JSON.stringify({ Self: { TailscaleIPs: [PINNED_NAMESERVER] } }),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (cmd === "dig") {
+        const qname = argv[argv.length - 2] ?? "";
+        const qtype = argv[argv.length - 1] ?? "";
+        if (qtype === "PTR" && qname === serviceBase) {
+          // A hostile DNS server answering the PTR probe with dig syntax rather
+          // than a name. Both payloads survive a leading-'-' check untouched.
+          return {
+            stdout: `${hostile}\n${goodService}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        if (qtype === "SRV" && qname === goodService) {
+          return {
+            stdout: `0 0 18789 studio.${zone}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 1200,
+      domains: [WIDE_AREA_DOMAIN],
+      wideAreaDomain: WIDE_AREA_DOMAIN,
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+    return { calls, beacons };
+  }
+
+  // Defence-in-depth, not a demonstrated end-to-end outcome: real dig escapes a
+  // leading '@', so this argv shape is one only a non-escaping dig could produce.
+  // The assertion is scoped to what the producer controls — argv — and claims
+  // nothing about where the beacon would have come from.
+  it("never lets an '@'-prefixed PTR answer reach dig argv", async () => {
+    const { calls, beacons } = await runWideAreaWithHostilePtr(HOSTILE_PTR_NAMESERVER);
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+
+    const digCalls = calls.filter((c) => c[0] === "dig");
+    expect(digCalls.length).toBeGreaterThan(0);
+
+    // The assertion that bites: no dig invocation may carry any nameserver
+    // selector other than the one this code pinned itself.
+    const extraNameservers = digCalls.flatMap((argv) =>
+      argv.filter((a) => a.startsWith("@") && a !== `@${PINNED_NAMESERVER}`),
+    );
+    expect(extraNameservers).toEqual([]);
+
+    // Over-rejection guard: the clean PTR in the same answer set still resolves.
+    expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
+  });
+
+  it("never lets a '+'-prefixed PTR answer reach dig argv", async () => {
+    const { calls, beacons } = await runWideAreaWithHostilePtr(HOSTILE_PTR_OPTION);
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+
+    // dig takes the query name as an operand; a '+' there is eaten as an option
+    // and the query name collapses, so the slot must never start with one.
+    const digOperands = collectMatching(
+      calls,
+      (c) => c[0] === "dig",
+      (c) => c[c.length - 2] ?? "",
+    );
+    expect(digOperands.filter((arg) => arg.startsWith("+"))).toEqual([]);
+    // Belt and braces across dig's whole prefix set.
+    expect(digOperands.filter((arg) => /^[-@+%]/.test(arg))).toEqual([]);
+
+    expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
+  });
+
+  it("never lets a '%'-prefixed PTR answer reach dig argv", async () => {
+    const { calls, beacons } = await runWideAreaWithHostilePtr(HOSTILE_PTR_DISCARDED_POSITIONAL);
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+
+    // dig discards a leading-'%' positional, so the query name collapses to the
+    // root and the SRV lookup this producer meant to make never happens. The
+    // slot must never start with one.
+    const digOperands = collectMatching(
+      calls,
+      (c) => c[0] === "dig",
+      (c) => c[c.length - 2] ?? "",
+    );
+    expect(digOperands.filter((arg) => arg.startsWith("%"))).toEqual([]);
+    expect(digOperands.filter((arg) => /^[-@+%]/.test(arg))).toEqual([]);
+
+    expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
+  });
+
+  // The regression a too-eager dig guard would cause. Only the LEADING character
+  // is structural to dig — '+', '%' and '@' anywhere else are ordinary bytes in
+  // a name, and DNS-SD instance labels are free-form, so rejecting them outright
+  // would drop well-formed peers while still reading as "hardened".
+  it("still passes PTR answers with interior '+', '%' or '@' through to dig", async () => {
+    const calls: string[][] = [];
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+    const serviceBase = `_remoteclaw-gw._tcp.${zone}`;
+    const services = [
+      `studio+lab.${serviceBase}`, // interior '+'
+      `desk@home.${serviceBase}`, // interior '@'
+      `rate%limit.${serviceBase}`, // interior '%'
+      `plain-gw.${serviceBase}`, // interior '-'
+    ];
+
+    const run = vi.fn(async (argv: string[]) => {
+      calls.push(argv);
+      const cmd = argv[0];
+
+      if (cmd === "dns-sd" && argv[1] === "-B") {
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      if (cmd === "tailscale" && argv[1] === "status") {
+        return {
+          stdout: JSON.stringify({ Self: { TailscaleIPs: ["100.69.232.64"] } }),
+          stderr: "",
+          code: 0,
+          signal: null,
+          killed: false,
+        };
+      }
+      if (cmd === "dig") {
+        const qname = argv[argv.length - 2] ?? "";
+        const qtype = argv[argv.length - 1] ?? "";
+        if (qtype === "PTR" && qname === serviceBase) {
+          return {
+            stdout: `${services.map((s) => `${s}.`).join("\n")}\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        const idx = services.indexOf(qname);
+        if (qtype === "SRV" && idx >= 0) {
+          return {
+            stdout: `0 0 1878${idx} host${idx}.${zone}.\n`,
+            stderr: "",
+            code: 0,
+            signal: null,
+            killed: false,
+          };
+        }
+        return { stdout: "", stderr: "", code: 0, signal: null, killed: false };
+      }
+      throw new Error(`unexpected argv: ${argv.join(" ")}`);
+    });
+
+    const beacons = await discoverGatewayBeacons({
+      platform: "darwin",
+      timeoutMs: 1200,
+      domains: [WIDE_AREA_DOMAIN],
+      wideAreaDomain: WIDE_AREA_DOMAIN,
+      run: run as unknown as typeof runCommandWithTimeout,
+    });
+
+    const srvOperands = collectMatching(
+      calls,
+      (c) => c[0] === "dig" && c[c.length - 1] === "SRV",
+      (c) => c[c.length - 2] ?? "",
+    );
+    expect(srvOperands).toEqual(services);
+    expect(beacons.map((b) => b.host)).toEqual([
+      `host0.${zone}`,
+      `host1.${zone}`,
+      `host2.${zone}`,
+      `host3.${zone}`,
+    ]);
+    expect(beacons.map((b) => b.instanceName)).toEqual([
+      "studio+lab",
+      "desk@home",
+      "rate%limit",
+      "plain-gw",
+    ]);
+  });
+
   it("normalizes domains and respects domains override", async () => {
     const calls: string[][] = [];
     const run = vi.fn(async (argv: string[]) => {

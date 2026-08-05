@@ -1,6 +1,8 @@
+import { logDebug } from "../logger.js";
 import { runCommandWithTimeout } from "../process/exec.js";
 import { normalizeOptionalLowercaseString } from "../shared/string-coerce.js";
 import { normalizeStringEntries, uniqueStrings } from "../shared/string-normalization.js";
+import { isArgvOptionLike, isUnsafeDigOperand } from "./argv-safety.js";
 import { parseStrictInteger } from "./parse-finite-number.js";
 import { isTailnetIPv4 } from "./tailnet.js";
 import { resolveWideAreaDiscoveryDomain } from "./widearea-dns.js";
@@ -110,8 +112,50 @@ function decodeDnsSdEscapes(value: string): string {
   return Buffer.from(bytes).toString("utf8");
 }
 
+// Both discovery paths hand a parsed value straight to an argv operand slot —
+// `dns-sd -L <instance>` and `dig … <ptrName> SRV` — and in both cases the value
+// is supplied by whoever answered on the network: an mDNS instance name is
+// publishable by any LAN peer, a PTR answer by any DNS server that responds.
+//
+// What counts as unsafe differs by tool, so the predicate is a parameter rather
+// than baked in: dig consumes a leading '+' as an option and discards a leading
+// '%' positional, either of which collapses the follow-up SRV/TXT query to the
+// root name, and reads a leading '@' as a nameserver selector. dns-sd gives none
+// of the three any meaning. See argv-safety.ts for the probes behind that,
+// including why '@' is defence-in-depth rather than a reachable path, and why
+// dig's server list is first-wins-with-fallback rather than last-wins.
+//
+// Neither tool accepts "--", so a hostile value cannot be neutralized in place;
+// it is dropped instead. Dropping is per record, so one hostile publisher costs
+// only its own entry and cannot suppress discovery of well-behaved peers.
+function dropUnsafeArgvOperands(
+  values: readonly string[],
+  kind: string,
+  isUnsafe: (value: string) => boolean,
+): string[] {
+  const safe: string[] = [];
+  for (const value of values) {
+    if (isUnsafe(value)) {
+      // JSON.stringify so a value carrying newlines cannot forge log lines.
+      logDebug(
+        `bonjour discovery: dropped ${kind} that argv would not carry as a plain operand: ${JSON.stringify(
+          value,
+        )}`,
+      );
+      continue;
+    }
+    safe.push(value);
+  }
+  return safe;
+}
+
 function parseDigShortLines(stdout: string): string[] {
-  return normalizeStringEntries(stdout.split("\n"));
+  // These become dig(1) query names, so they carry dig's wider prefix set.
+  return dropUnsafeArgvOperands(
+    normalizeStringEntries(stdout.split("\n")),
+    "DNS answer",
+    isUnsafeDigOperand,
+  );
 }
 
 function parseDigTxt(stdout: string): string[] {
@@ -232,7 +276,20 @@ function parseDnsSdBrowse(stdout: string): string[] {
       instances.add(decodeDnsSdEscapes(match[1].trim()));
     }
   }
-  return Array.from(instances.values());
+  // Filtered after decodeDnsSdEscapes, never on the wire form: the escape
+  // sequence "\045evil" decodes to "-evil", so a check upstream of the decode
+  // would pass the very value that reaches argv.
+  //
+  // Narrow predicate on purpose: dns-sd's operand slot gives '+', '%' and '@' no
+  // meaning, and instance names are free-form UTF-8, so widening here would
+  // drop well-formed names for nothing. Guarded, not merely asserted: the
+  // well-formed fixture in bonjour-discovery.test.ts carries a leading-'@' and a
+  // leading-'+' instance name, so transposing `isUnsafeDigOperand` here fails.
+  return dropUnsafeArgvOperands(
+    Array.from(instances.values()),
+    "mDNS instance name",
+    isArgvOptionLike,
+  );
 }
 
 function parseDnsSdResolve(stdout: string, instanceName: string): GatewayBonjourBeacon | null {

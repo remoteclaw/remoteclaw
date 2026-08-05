@@ -33,6 +33,7 @@ import {
   resolveWindowsPowerShellPath,
   resolveWindowsSystem32Path,
   resolveWindowsWmicPath,
+  selectWindowsShellPath,
 } from "./windows-system-paths.js";
 
 const repoRoot = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -57,7 +58,9 @@ const WMIC = `${SYSTEM32}\\wbem\\WMIC.exe`;
 const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
   "src/agents/date-time.ts": [POWERSHELL],
   "src/cli/ports.ts": [`${SYSTEM32}\\netstat.exe`],
-  "src/cli/update-cli/restart-helper.ts": [CMD_EXE],
+  // The schtasks.exe entry is interpolated into emitted PowerShell, not spawned as argv
+  // from this module — see `selectWindowsShellPath` note below on emitted-script pinning.
+  "src/cli/update-cli/restart-helper.ts": [`${SYSTEM32}\\schtasks.exe`, CMD_EXE],
   "src/commands/onboard-helpers.ts": [`${SYSTEM32}\\rundll32.exe`, `${SYSTEM32}\\where.exe`],
   "src/daemon/launchd.ts": [CMD_EXE],
   "src/daemon/program-args.ts": [`${SYSTEM32}\\where.exe`],
@@ -72,31 +75,86 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
     `${SYSTEM32}\\netstat.exe`,
     `${SYSTEM32}\\netstat.exe`,
   ],
+  // The schtasks.exe entry is the runner path carried into the emitted handoff script.
+  "src/infra/update-managed-service-handoff.ts": [`${SYSTEM32}\\schtasks.exe`],
   "src/infra/windows-encoding.ts": [CMD_EXE, POWERSHELL],
   "src/infra/windows-port-pids.ts": [POWERSHELL, `${SYSTEM32}\\netstat.exe`, POWERSHELL, WMIC],
-  "src/infra/windows-task-restart.ts": [CMD_EXE],
+  // The schtasks.exe entry is interpolated into the emitted `.cmd` (both the /Query probe
+  // and the /Run retry), not spawned as argv from this module. CMD_EXE is the argv spawn of
+  // that script. Other binary names ALSO inside that emitted script are still bare — the
+  // scope note below enumerates them. Deliberately not re-listed here: this row carried its
+  // own copy of that set and the copy went stale, which is the defect the note now warns about.
+  "src/infra/windows-task-restart.ts": [`${SYSTEM32}\\schtasks.exe`, CMD_EXE],
   "src/node-host/invoke-system-run.ts": [CMD_EXE],
   "src/process/exec.ts": [CMD_EXE],
   "src/process/kill-tree.ts": [`${SYSTEM32}\\taskkill.exe`],
+  "src/security/windows-acl.ts": [
+    `${SYSTEM32}\\whoami.exe`,
+    `${SYSTEM32}\\icacls.exe`,
+    `${SYSTEM32}\\icacls.exe`,
+  ],
 };
 
 // #3088 pinned 27 executable-position sites; #3099 added the 28th — the `rundll32.exe`
 // in `onboard-helpers.ts`, which replaced a `cmd /c start` that re-parsed the URL through
-// the shell. Stated independently of the table above so a merge that drops rows cannot
+// the shell. #3112 added five more: `windows-acl.ts` had a third, unhardened copy of the
+// resolver (whoami + icacls) plus a bare `icacls` on the ACL-reset path, and `schtasks`
+// named inside *emitted script content* — the detached update handoff and the update
+// restart helper's PowerShell — was pinned at emission time. #3116 added the 34th, the
+// `schtasks` pair inside the scheduled-task restart `.cmd`, which #3112 §4 named alongside
+// the other two and the first pass left bare.
+//
+// SCOPE — what a green run here does and does NOT establish. Covered:
+//   - every argv-position spawn of a Windows system binary under `src/`;
+//   - the `schtasks` invocations inside emitted script content that #3112 §4 NAMED.
+// NOT covered: bare binaries inside emitted script content generally. Known-bare today,
+// deliberately out of scope, and invisible to this suite because it scans for resolver
+// CALLS rather than for binary names in emitted strings:
+//   - `cli/update-cli/restart-helper.ts:193` — `powershell -NoProfile …` (`.cmd` header)
+//   - `cli/update-cli/restart-helper.ts:306` — `& netstat.exe -ano -p tcp` (PowerShell body)
+//   - `infra/windows-task-restart.ts:52`     — `timeout /t … /nobreak` (in the `:retry` loop)
+//   - `infra/windows-task-restart.ts:55`     — `powershell.exe …` and `findstr` (`.cmd`)
+//   - `infra/windows-task-restart.ts:66`     — `start "" /min cmd.exe /d /c …` (fallback)
+//   - `daemon/schtasks.ts:372`               — `start "" /min cmd.exe /d /c …` (login item)
+// `timeout` is the one most easily skipped: it reads like a `cmd.exe` builtin and is not one.
+// It is `%SystemRoot%\System32\timeout.exe`, and it sits BETWEEN the two `schtasks` lines
+// #3116 pinned — same emitted script, same inherited-cwd-then-%PATH% resolution. Line numbers
+// above are a finding aid, not a pin; nothing re-checks them.
+//
+// So this is an inventory of a covered surface, not a closed class — and the bullets are an
+// inventory of what is KNOWN bare at time of writing, not a proof the set is complete. Nothing
+// in CI scans emitted script content for binary names, so a binary added to an emitted script
+// later joins that set without failing anything here. Do not read this as "emitted scripts are
+// fully pinned", and do not read pinning these six as closing the class.
+//
+// One more limit worth knowing before trusting a green run: this suite scans for resolver
+// CALLS, so for an emitted-script row it proves the parent RESOLVES the path — not that the
+// emitted text still USES it. Reverting an emitted `${quotedSchtasksPath}` to a bare name
+// while leaving the call in place passes here; only the behavioural suite next to each
+// emitter (`windows-task-restart.test.ts`, `restart-helper.test.ts`) fails on that. Verified
+// by mutation, not assumed.
+//
+// The count is stated independently of the table above so a merge that drops rows cannot
 // quietly shrink the covered surface.
-const EXPECTED_CALL_SITE_COUNT = 28;
+const EXPECTED_CALL_SITE_COUNT = 34;
 
+// `selectWindowsShellPath` is the fifth name because #3100 moved the `%ComSpec%` decision
+// behind it: `exec.ts` and `launchd.ts` used to call `resolveWindowsCmdExePath` directly as
+// the right-hand side of a `??`, which honoured a set-but-hostile ComSpec unchecked. Listing
+// it here is what keeps both of those spawn sites in the inventory rather than dropping them
+// as "no resolver mentioned" — the failure mode #3112 named for unscanned files.
 const RESOLVER_NAMES = [
   "resolveWindowsSystem32Path",
   "resolveWindowsCmdExePath",
   "resolveWindowsPowerShellPath",
   "resolveWindowsWmicPath",
+  "selectWindowsShellPath",
 ] as const;
 
 // Ordered so `resolveWindowsSystem32Path` (which takes the executable name) is
 // distinguishable from the fixed-target resolvers.
 const CALL_RE =
-  /\bresolveWindows(?:(System32Path)\(\s*"([^"]*)"|(CmdExePath)\(|(PowerShellPath)\(|(WmicPath)\()/gu;
+  /\b(?:resolveWindows(?:(System32Path)\(\s*"([^"]*)"|(CmdExePath)\(|(PowerShellPath)\(|(WmicPath)\()|(selectWindowsShellPath)\()/gu;
 
 /** Drop comments so a commented-out call, or a resolver named in prose, is not scanned. */
 function stripComments(source: string): string {
@@ -133,7 +191,7 @@ function listProductionSources(dir: string): string[] {
 
 /** Resolve the absolute path a single scanned call site produces. */
 function resolveScannedCall(match: RegExpExecArray): string {
-  const [, system32, executableName, cmdExe, powerShell] = match;
+  const [, system32, executableName, cmdExe, powerShell, wmic] = match;
   if (system32) {
     return resolveWindowsSystem32Path(executableName ?? "", TEST_ENV);
   }
@@ -143,7 +201,13 @@ function resolveScannedCall(match: RegExpExecArray): string {
   if (powerShell) {
     return resolveWindowsPowerShellPath(TEST_ENV);
   }
-  return resolveWindowsWmicPath(TEST_ENV);
+  if (wmic) {
+    return resolveWindowsWmicPath(TEST_ENV);
+  }
+  // TEST_ENV carries no ComSpec, so this is the pinned branch. The override branch is
+  // behavioural and lives in `exec.windows.test.ts`; here it would make the inventory
+  // depend on whatever ComSpec the host running the suite happens to have.
+  return selectWindowsShellPath(TEST_ENV).path;
 }
 
 type ScannedFile = { relPath: string; code: string; paths: string[] };

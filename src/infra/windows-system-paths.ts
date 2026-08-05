@@ -11,7 +11,13 @@
 // (so it cannot import TypeScript), it lives outside the tsconfig `include`,
 // and `scripts/lib/docker-e2e-package.sh` bind-mounts it into a container as a
 // single standalone file. Keep the two in sync by hand when either changes.
+//
+// What is shared is the RESOLVER family (`resolveWindowsSystemRoot` and the pinned-path
+// helpers built on it). The `%ComSpec%` selector and its operator-facing message below have
+// no counterpart in the `.mjs` — build tooling never reads ComSpec — so the `sanitizeForLog`
+// import they need is not twin drift and nothing is owed to the other copy for it.
 import path from "node:path";
+import { sanitizeForLog } from "../terminal/ansi.js";
 
 const DEFAULT_WINDOWS_SYSTEM_ROOT = "C:\\Windows";
 const WINDOWS_SYSTEM32_EXE_NAME_RE = /^[A-Za-z0-9_.-]+\.exe$/u;
@@ -37,7 +43,15 @@ function hasParentTraversalSegment(rawPath: string): boolean {
   return rawPath.split(/[\\/]/u).includes("..");
 }
 
-function normalizeWindowsSystemRoot(raw: string | undefined): string | null {
+/**
+ * The single shape gate every operator-supplied Windows path in this module passes
+ * through: `%SystemRoot%` / `%WINDIR%` (the install root) and `%ComSpec%` (the shell
+ * override). Returns the normalized path, or null when the value is unusable.
+ *
+ * Deliberately one implementation rather than one per consumer: a second copy of this
+ * predicate is how a hardening pass silently misses a caller.
+ */
+function normalizeAbsoluteWindowsPath(raw: string | undefined): string | null {
   const trimmed = raw?.trim();
   if (
     !trimmed ||
@@ -68,8 +82,8 @@ function normalizeWindowsSystemRoot(raw: string | undefined): string | null {
 /** Resolve the Windows install root, falling back to `C:\Windows` when unusable. */
 export function resolveWindowsSystemRoot(env: NodeJS.ProcessEnv = process.env): string {
   return (
-    normalizeWindowsSystemRoot(getEnvValueCaseInsensitive(env, "SystemRoot")) ??
-    normalizeWindowsSystemRoot(getEnvValueCaseInsensitive(env, "WINDIR")) ??
+    normalizeAbsoluteWindowsPath(getEnvValueCaseInsensitive(env, "SystemRoot")) ??
+    normalizeAbsoluteWindowsPath(getEnvValueCaseInsensitive(env, "WINDIR")) ??
     DEFAULT_WINDOWS_SYSTEM_ROOT
   );
 }
@@ -93,6 +107,70 @@ export function resolveWindowsSystem32Path(
 /** Resolve the absolute path to `cmd.exe`. */
 export function resolveWindowsCmdExePath(env: NodeJS.ProcessEnv = process.env): string {
   return resolveWindowsSystem32Path("cmd.exe", env);
+}
+
+export type WindowsShellSelection = {
+  /** The absolute path the caller must spawn. */
+  path: string;
+  /**
+   * The `%ComSpec%` value that was refused. Present only when ComSpec carried a
+   * non-blank value that failed the shape gate — an unset or blank ComSpec is
+   * "no override", not a refusal, and reports nothing.
+   */
+  rejectedComSpec?: string;
+};
+
+/**
+ * Select the Windows command shell: honour a WELL-FORMED `%ComSpec%`, pin to
+ * `%SystemRoot%\System32\cmd.exe` otherwise.
+ *
+ * `process.env.ComSpec ?? resolveWindowsCmdExePath()` — the expression this replaces —
+ * fell through only on `null`/`undefined`. A set-but-malformed ComSpec therefore skipped
+ * every check the resolver performs, leaving the shell selector as the one unguarded input
+ * in a subsystem that pins every other Windows system-binary spawn. ComSpec now passes the
+ * SAME gate as `%SystemRoot%`.
+ *
+ * Scope, stated plainly: this equalizes ComSpec with SystemRoot, it does not make ComSpec
+ * trustworthy. A caller who controls the environment block can still name a well-formed
+ * absolute path to an executable of their choosing — that is true of `%SystemRoot%` too,
+ * and closing it needs an allowlist or a signature check, not a shape gate.
+ *
+ * Existence is deliberately NOT checked: this module stays free of `node:fs`, the check
+ * would be TOCTOU against the spawn, and a planted `cmd.exe` exists just as much as the
+ * real one.
+ */
+export function selectWindowsShellPath(
+  env: NodeJS.ProcessEnv = process.env,
+): WindowsShellSelection {
+  const raw = getEnvValueCaseInsensitive(env, "ComSpec");
+  const accepted = normalizeAbsoluteWindowsPath(raw);
+  if (accepted) {
+    return { path: accepted };
+  }
+  const pinned = resolveWindowsCmdExePath(env);
+  return raw?.trim() ? { path: pinned, rejectedComSpec: raw } : { path: pinned };
+}
+
+/**
+ * Operator-facing explanation for a refused `%ComSpec%`. Lives next to the gate so both
+ * call sites emit the same wording without either owning a copy of it.
+ *
+ * BOTH interpolated values are sanitized, because both are environment-derived and this
+ * string goes straight to `logError` (CWE-117):
+ *
+ *  - `selection.path` is `%SystemRoot%`-derived, and the shape gate above rejects NUL, CR,
+ *    LF and `;` but NOT ESC — so `SystemRoot=C:\W<ESC>[31mnt` is ACCEPTED and would carry a
+ *    live terminal escape into the log through the fallback path.
+ *  - `rejectedComSpec` is JSON-escaped, which covers ESC and every other C0 control, but
+ *    `JSON.stringify` leaves DEL (0x7f) and C1 (0x80-0x9f) raw.
+ */
+export function formatRejectedWindowsShellOverride(selection: WindowsShellSelection): string {
+  return [
+    `Refusing ComSpec=${sanitizeForLog(JSON.stringify(selection.rejectedComSpec ?? ""))}:`,
+    "a Windows shell override must be an absolute drive-letter path (not UNC),",
+    "with no `..` segment and no NUL, CR, LF or `;` character.",
+    `Using ${sanitizeForLog(selection.path)} instead.`,
+  ].join(" ");
 }
 
 /** Resolve the absolute path to Windows PowerShell (not in System32 directly). */

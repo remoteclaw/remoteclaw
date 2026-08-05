@@ -9,7 +9,10 @@ import {
   decodeWindowsOutputBuffer,
   resolveWindowsConsoleEncoding,
 } from "../infra/windows-encoding.js";
-import { resolveWindowsCmdExePath } from "../infra/windows-system-paths.js";
+import {
+  formatRejectedWindowsShellOverride,
+  selectWindowsShellPath,
+} from "../infra/windows-system-paths.js";
 import { logDebug, logError } from "../logger.js";
 import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { resolveCommandStdio } from "./spawn-utils.js";
@@ -89,6 +92,20 @@ function resolveCommand(command: string): string {
   });
 }
 
+/**
+ * ComSpec stays the documented Windows override, but it is validated rather than
+ * trusted — an unusable value falls back to the pinned `cmd.exe` and is reported, so
+ * an operator who set it deliberately learns it was refused instead of debugging a
+ * silently-different shell.
+ */
+function resolveCmdWrapperCommand(): string {
+  const selection = selectWindowsShellPath();
+  if (selection.rejectedComSpec !== undefined) {
+    logError(formatRejectedWindowsShellOverride(selection));
+  }
+  return selection.path;
+}
+
 function resolveChildProcessInvocation(params: {
   argv: string[];
   windowsVerbatimArguments?: boolean;
@@ -108,10 +125,7 @@ function resolveChildProcessInvocation(params: {
   const useCmdWrapper = isWindowsBatchCommand(resolvedCommand);
 
   return {
-    // ComSpec stays the primary (it is the documented Windows override), but the
-    // fallback is pinned rather than a bare name so an unset ComSpec cannot fall
-    // through to a %PATH% lookup (CWE-426).
-    command: useCmdWrapper ? (process.env.ComSpec ?? resolveWindowsCmdExePath()) : resolvedCommand,
+    command: useCmdWrapper ? resolveCmdWrapperCommand() : resolvedCommand,
     args: useCmdWrapper
       ? ["/d", "/s", "/c", buildCmdExeCommandLine(resolvedCommand, finalArgv.slice(1))]
       : finalArgv.slice(1),

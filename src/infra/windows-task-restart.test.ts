@@ -32,6 +32,21 @@ vi.mock("../daemon/schtasks.js", () => ({
     resolveTaskScriptPathMock(env),
 }));
 
+// A non-default install root, so the literal `schtasks.exe` paths asserted below cannot be
+// satisfied by the `C:\Windows` fallback — the emission has to actually read this env. Same
+// rationale as `TEST_ENV` in `windows-system-paths.call-sites.test.ts`.
+const TEST_SYSTEM_ROOT = "D:\\WinNT";
+const PINNED_SCHTASKS = "D:\\WinNT\\System32\\schtasks.exe";
+
+/**
+ * Every `schtasks` line in the emitted script, so the pinning can be asserted as "these
+ * exact lines" rather than "the pinned path appears somewhere". A `toContain` on the pinned
+ * path alone stays green if an unpinned invocation is added next to it.
+ */
+function schtasksLines(script: string): string[] {
+  return script.split(/\r?\n/u).filter((line) => /schtasks/iu.test(line));
+}
+
 type WindowsTaskRestartModule = typeof import("./windows-task-restart.js");
 
 let relaunchGatewayScheduledTask: WindowsTaskRestartModule["relaunchGatewayScheduledTask"];
@@ -100,11 +115,14 @@ describe("relaunchGatewayScheduledTask", () => {
       return { unref };
     });
 
-    const result = relaunchGatewayScheduledTask({ REMOTECLAW_PROFILE: "work" });
+    const result = relaunchGatewayScheduledTask({
+      REMOTECLAW_PROFILE: "work",
+      SystemRoot: TEST_SYSTEM_ROOT,
+    });
 
     expect(result.ok).toBe(true);
     expect(result.method).toBe("schtasks");
-    expect(result.tried).toContain('schtasks /Run /TN "RemoteClaw Gateway (work)"');
+    expect(result.tried).toContain(`${PINNED_SCHTASKS} /Run /TN "RemoteClaw Gateway (work)"`);
     expect(result.tried).toContain(`cmd.exe /d /s /c ${seenCommandArg}`);
     const spawnCall = requireFirstMockCall(spawnMock, "restart helper spawn");
     expect(spawnCall[0]).toBe(resolveWindowsCmdExePath());
@@ -130,10 +148,18 @@ describe("relaunchGatewayScheduledTask", () => {
     expect(script).toContain(
       `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "(Get-ScheduledTask -TaskName 'RemoteClaw Gateway (work)' -ErrorAction SilentlyContinue).State" 2>nul | findstr /I /C:"Running" >nul 2>&1`,
     );
-    expect(script).toContain('schtasks /Run /TN "RemoteClaw Gateway (work)" >>');
+    expect(script).toContain(`${PINNED_SCHTASKS} /Run /TN "RemoteClaw Gateway (work)" >>`);
     expect(script.indexOf("powershell.exe -NoProfile")).toBeLessThan(
-      script.indexOf('schtasks /Run /TN "RemoteClaw Gateway (work)"'),
+      script.indexOf(`${PINNED_SCHTASKS} /Run /TN "RemoteClaw Gateway (work)"`),
     );
+    // EVERY emitted `schtasks` invocation, not just one: a bare name resolves through the
+    // detached script's inherited %PATH% and cwd (CWE-426, #3112 §4). Asserting the whole
+    // set is what makes removing the pinning fail, rather than leaving one occurrence
+    // pinned and the other bare — which is exactly the state #3116 found.
+    expect(schtasksLines(script).map((line) => line.split(" /TN ")[0])).toStrictEqual([
+      `${PINNED_SCHTASKS} /Query`,
+      `${PINNED_SCHTASKS} /Run`,
+    ]);
     expect(script).toContain('del "%~f0" >nul 2>&1');
   });
 
@@ -146,11 +172,34 @@ describe("relaunchGatewayScheduledTask", () => {
     relaunchGatewayScheduledTask({
       REMOTECLAW_PROFILE: "work",
       REMOTECLAW_WINDOWS_TASK_NAME: "RemoteClaw Gateway (custom)",
+      SystemRoot: TEST_SYSTEM_ROOT,
     });
 
     const scriptPath = [...createdScriptPaths][0];
     const script = fs.readFileSync(scriptPath, "utf8");
-    expect(script).toContain('schtasks /Run /TN "RemoteClaw Gateway (custom)" >>');
+    expect(script).toContain(`${PINNED_SCHTASKS} /Run /TN "RemoteClaw Gateway (custom)" >>`);
+  });
+
+  // The pinned path is interpolated into a cmd script, where an unquoted space would split
+  // it into a command plus an argument. `%SystemRoot%` is operator-supplied and the shape
+  // gate accepts spaces, so this is reachable rather than theoretical.
+  it("quotes the pinned schtasks path when SystemRoot contains a space", () => {
+    spawnMock.mockImplementation((_file: string, args: string[]) => {
+      createdScriptPaths.add(decodeCmdPathArg(args[3]));
+      return { unref: vi.fn() };
+    });
+
+    relaunchGatewayScheduledTask({
+      REMOTECLAW_PROFILE: "work",
+      SystemRoot: "D:\\Win NT",
+    });
+
+    const scriptPath = [...createdScriptPaths][0];
+    const script = fs.readFileSync(scriptPath, "utf8");
+    expect(schtasksLines(script).map((line) => line.split(" /TN ")[0])).toStrictEqual([
+      '"D:\\Win NT\\System32\\schtasks.exe" /Query',
+      '"D:\\Win NT\\System32\\schtasks.exe" /Run',
+    ]);
   });
 
   it("escapes custom task names in the PowerShell running-task probe", () => {
@@ -225,12 +274,15 @@ describe("relaunchGatewayScheduledTask", () => {
       return { unref: vi.fn() };
     });
 
-    const result = relaunchGatewayScheduledTask({ REMOTECLAW_PROFILE: "work" });
+    const result = relaunchGatewayScheduledTask({
+      REMOTECLAW_PROFILE: "work",
+      SystemRoot: TEST_SYSTEM_ROOT,
+    });
 
     expect(result.ok).toBe(true);
     const scriptPath = [...createdScriptPaths][0];
     const script = fs.readFileSync(scriptPath, "utf8");
-    expect(script).toContain(`schtasks /Query /TN`);
+    expect(script).toContain(`${PINNED_SCHTASKS} /Query /TN`);
     expect(script).toContain(":fallback");
     expect(script).toContain(`start "" /min cmd.exe /d /c`);
     expect(script).toContain(taskScriptPath);

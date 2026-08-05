@@ -16,7 +16,10 @@ import {
   resolveGatewayRestartLogPath,
   shellEscapeRestartLogValue,
 } from "../../daemon/restart-logs.js";
-import { resolveWindowsCmdExePath } from "../../infra/windows-system-paths.js";
+import {
+  resolveWindowsCmdExePath,
+  resolveWindowsSystem32Path,
+} from "../../infra/windows-system-paths.js";
 
 /**
  * Shell-escape a string for embedding in single-quoted shell arguments.
@@ -172,6 +175,14 @@ exit "$status"
       const restartLogPath = resolveGatewayRestartLogPath({ ...process.env, ...env });
       const quotedLogPath = powerShellSingleQuote(restartLogPath);
       const quotedTaskName = powerShellSingleQuote(taskName);
+      // Pinned at emission time, for the same reason as every argv site: a binary named
+      // inside generated script content resolves through the *script's* %PATH% when it
+      // finally runs, which no source scan of this repo can see. The substrate differs
+      // (a PowerShell literal, not argv) but the escape hatch is the same one already
+      // used for the log path and task name above.
+      const quotedSchtasksPath = powerShellSingleQuote(
+        resolveWindowsSystem32Path("schtasks.exe", { ...process.env, ...env }),
+      );
       filename = `remoteclaw-restart-${timestamp}.cmd`;
       scriptContent = `@echo off
 REM Standalone restart script - survives parent process termination.
@@ -224,7 +235,7 @@ function Invoke-RemoteClawSchtasksWithTimeout {
   $process = $null
   try {
     $startInfo = [System.Diagnostics.ProcessStartInfo]::new()
-    $startInfo.FileName = "schtasks.exe"
+    $startInfo.FileName = ${quotedSchtasksPath}
     $startInfo.Arguments = Join-RemoteClawProcessArguments -Arguments $Arguments
     $startInfo.UseShellExecute = $false
     $startInfo.RedirectStandardOutput = $true
@@ -264,7 +275,7 @@ function Get-RemoteClawScheduledTaskState {
   }
 
   try {
-    $queryOutput = & schtasks.exe /Query /TN $TaskName /FO LIST 2>$null
+    $queryOutput = & ${quotedSchtasksPath} /Query /TN $TaskName /FO LIST 2>$null
     foreach ($line in $queryOutput) {
       if ($line -match "^\\s*Status:\\s*(.+?)\\s*$") {
         return $Matches[1]

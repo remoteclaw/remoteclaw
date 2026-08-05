@@ -149,6 +149,7 @@ export async function getReplyFromConfig(
     isGroup,
     triggerBodyNormalized,
   } = sessionState;
+  const { acpInPlaceReset } = sessionState;
 
   const directiveResult = await resolveReplyDirectives({
     ctx: finalized,
@@ -304,6 +305,7 @@ export async function getReplyFromConfig(
     timeoutMs,
     isNewSession,
     resetTriggered,
+    acpInPlaceReset,
     systemSent,
     sessionEntry,
     sessionStore,

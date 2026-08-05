@@ -285,7 +285,10 @@ Fast operator flow:
 
 - Run `/acp spawn codex --bind here` inside the DM or allowed group chat.
 - Future messages in that same BlueBubbles conversation route to the spawned ACP session.
-- `/new` and `/reset` reset the same bound ACP session in place.
+- `/new` and `/reset` target the bound ACP session rather than rotating the local
+  RemoteClaw session. Resetting an ACP session in place is **not yet implemented**
+  in this fork, so both commands reply that the reset did not take effect and leave
+  the conversation running (#2929).
 - `/acp close` closes the ACP session and removes the binding.
 
 Configured persistent bindings are also supported through top-level `bindings[]` entries with `type: "acp"` and `match.channel: "bluebubbles"`.

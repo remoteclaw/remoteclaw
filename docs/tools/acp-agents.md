@@ -267,8 +267,10 @@ For operators, the practical rule is:
 `/acp spawn <harness> --bind here` pins the current conversation to the
 spawned ACP session - no child thread, same chat surface. RemoteClaw keeps
 owning transport, auth, safety, and delivery. Follow-up messages in that
-conversation route to the same session; `/new` and `/reset` reset the
-session in place; `/acp close` removes the binding.
+conversation route to the same session; `/new` and `/reset` target the bound ACP
+session instead of rotating the local session, but resetting an ACP session in
+place is **not yet implemented** in this fork, so they reply that the reset did
+not take effect (#2929); `/acp close` removes the binding.
 
 Examples:
 
@@ -455,7 +457,12 @@ Use `agents.list[].runtime` to define ACP defaults once per agent:
 
 - RemoteClaw ensures the configured ACP session exists before use.
 - Messages in that channel or topic route to the configured ACP session.
-- In bound conversations, `/new` and `/reset` reset the same ACP session key in place.
+- In bound conversations, `/new` and `/reset` target the bound ACP session key
+  instead of rotating the local RemoteClaw session. In-place ACP session reset is
+  **not yet implemented** in this fork: both commands reply that the reset did not
+  take effect and leave the existing conversation running (#2929). Only a
+  genuinely-bound conversation takes this path — an unbound ACP-shaped session key
+  still gets a normal local reset.
 - Temporary runtime bindings (for example created by thread-focus flows) still apply where present.
 - For cross-agent ACP spawns without an explicit `cwd`, RemoteClaw inherits the target agent workspace from agent config.
 - Missing inherited workspace paths fall back to the backend default cwd; non-missing access failures surface as spawn errors.

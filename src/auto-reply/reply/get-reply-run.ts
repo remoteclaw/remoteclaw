@@ -1,4 +1,5 @@
 import crypto from "node:crypto";
+import { resetAcpSessionInPlace } from "../../acp/persistent-bindings.js";
 import { isSessionRunActive, killSessionRun } from "../../agents/session-run-registry.js";
 import type { RemoteClawConfig } from "../../config/config.js";
 import {
@@ -27,6 +28,7 @@ import { resolveQueueSettings } from "./queue.js";
 import { routeReply } from "./route-reply.js";
 import { buildBareSessionResetPrompt } from "./session-reset-prompt.js";
 import { drainFormattedSystemEvents, ensureSkillSnapshot } from "./session-updates.js";
+import type { SessionInitResult } from "./session.js";
 import { resolveTypingMode } from "./typing-mode.js";
 import { resolveRunTypingPolicy } from "./typing-policy.js";
 import type { TypingController } from "./typing.js";
@@ -105,6 +107,75 @@ async function sendResetSessionNotice(params: {
   });
 }
 
+function buildAcpResetNoticeText(params: {
+  reason: "new" | "reset";
+  ok: boolean;
+  error?: string;
+}): string {
+  const action = params.reason === "reset" ? "/reset" : "/new";
+  if (params.ok) {
+    return "✅ New session started";
+  }
+  const detail = params.error ? ` — ${params.error}` : "";
+  return (
+    `⚠️ ${action} did not take effect${detail}. This conversation is bound to an ACP ` +
+    `agent that owns its own session, so the previous conversation is still active.`
+  );
+}
+
+/**
+ * Apply a `/new` or `/reset` that `initSessionState` handed off because the
+ * conversation is bound to an ACP session, and tell the user what happened.
+ *
+ * The local session was deliberately NOT rotated, so this is the only thing
+ * standing between the user and a silent no-op — never return early without
+ * either resetting or reporting (#2929).
+ */
+async function applyAcpInPlaceReset(params: {
+  ctx: MsgContext;
+  command: ReturnType<typeof buildCommandContext>;
+  cfg: RemoteClawConfig;
+  acpInPlaceReset: NonNullable<SessionInitResult["acpInPlaceReset"]>;
+  accountId: string | undefined;
+  threadId: string | number | undefined;
+}): Promise<void> {
+  const { reason, sessionKey } = params.acpInPlaceReset;
+  const outcome = await resetAcpSessionInPlace({
+    cfg: params.cfg,
+    sessionKey,
+    reason,
+  });
+  if (!outcome.ok) {
+    logVerbose(
+      `acp in-place ${reason} reset not applied for ${sessionKey}: ${
+        outcome.error ?? (outcome.skipped ? "no ACP session to reset" : "unknown error")
+      }`,
+    );
+  }
+  const route = resolveResetSessionNoticeRoute({
+    ctx: params.ctx,
+    command: params.command,
+  });
+  if (!route) {
+    return;
+  }
+  await routeReply({
+    payload: {
+      text: buildAcpResetNoticeText({
+        reason,
+        ok: outcome.ok,
+        error: outcome.ok ? undefined : outcome.error,
+      }),
+    },
+    channel: route.channel,
+    to: route.to,
+    sessionKey,
+    accountId: params.accountId,
+    threadId: params.threadId,
+    cfg: params.cfg,
+  });
+}
+
 type RunPreparedReplyParams = {
   ctx: MsgContext;
   sessionCtx: TemplateContext;
@@ -148,6 +219,7 @@ type RunPreparedReplyParams = {
   timeoutMs: number;
   isNewSession: boolean;
   resetTriggered: boolean;
+  acpInPlaceReset?: SessionInitResult["acpInPlaceReset"];
   systemSent: boolean;
   sessionEntry?: SessionEntry;
   sessionStore?: Record<string, SessionEntry>;
@@ -188,6 +260,7 @@ export async function runPreparedReply(
     timeoutMs,
     isNewSession,
     resetTriggered,
+    acpInPlaceReset,
     systemSent,
     sessionKey,
     sessionId,
@@ -354,6 +427,17 @@ export async function runPreparedReply(
       model,
       defaultProvider,
       defaultModel,
+    });
+  } else if (acpInPlaceReset && command.isAuthorizedSender) {
+    // The local session was intentionally left alone because this conversation
+    // is bound to an ACP session. Actuate that reset and report the outcome.
+    await applyAcpInPlaceReset({
+      ctx,
+      command,
+      cfg,
+      acpInPlaceReset,
+      accountId: ctx.AccountId,
+      threadId: ctx.MessageThreadId,
     });
   }
   const sessionIdFinal = sessionId ?? crypto.randomUUID();

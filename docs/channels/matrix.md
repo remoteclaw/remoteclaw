@@ -556,7 +556,10 @@ Fast operator flow:
 - Run `/acp spawn codex --bind here` inside the Matrix DM, room, or existing thread you want to keep using.
 - In a top-level Matrix DM or room, the current DM/room stays the chat surface and future messages route to the spawned ACP session.
 - Inside an existing Matrix thread, `--bind here` binds that current thread in place.
-- `/new` and `/reset` reset the same bound ACP session in place.
+- `/new` and `/reset` target the bound ACP session rather than rotating the local
+  RemoteClaw session. Resetting an ACP session in place is **not yet implemented**
+  in this fork, so both commands reply that the reset did not take effect and leave
+  the conversation running (#2929).
 - `/acp close` closes the ACP session and removes the binding.
 
 Notes:

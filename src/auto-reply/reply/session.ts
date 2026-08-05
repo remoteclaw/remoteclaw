@@ -3,6 +3,7 @@ import path from "node:path";
 import {
   buildTelegramTopicConversationId,
   parseTelegramChatIdFromTarget,
+  resolveConversationIdFromTargets,
 } from "../../acp/conversation-id.js";
 import { resolveSessionAgentId } from "../../agents/agent-scope.js";
 import { normalizeChatType } from "../../channels/chat-type.js";
@@ -28,9 +29,6 @@ import {
 } from "../../config/sessions.js";
 import type { TtsAutoMode } from "../../config/types.tts.js";
 import { archiveSessionTranscripts } from "../../gateway/session-utils.fs.js";
-// Outbound conversation-id resolver was gutted — always returns undefined.
-// oxlint-disable-next-line typescript/no-explicit-any
-const resolveConversationIdFromTargets = (..._args: unknown[]) => undefined as any;
 import { deliverSessionMaintenanceWarning } from "../../infra/session-maintenance-warning.js";
 import { createSubsystemLogger } from "../../logging/subsystem.js";
 import { getGlobalHookRunner } from "../../plugins/hook-runner-global.js";
@@ -68,6 +66,17 @@ export type SessionInitResult = {
   isGroup: boolean;
   bodyStripped?: string;
   triggerBodyNormalized: string;
+  /**
+   * Set when a `/new` or `/reset` was NOT applied to the local session because
+   * the conversation resolves to a bound ACP session, which owns its own
+   * runtime lifecycle. The caller must actuate that reset and report the
+   * outcome to the user — resolving silently here is what made the command a
+   * silent no-op (#2929).
+   */
+  acpInPlaceReset?: {
+    sessionKey: string;
+    reason: "new" | "reset";
+  };
 };
 
 function normalizeSessionText(value: unknown): string {
@@ -265,15 +274,25 @@ export async function initSessionState(params: {
   const strippedForReset = isGroup
     ? stripMentions(triggerBodyNormalized, ctx, cfg, agentId)
     : triggerBodyNormalized;
-  const shouldUseAcpInPlaceReset = Boolean(
-    resolveBoundAcpSessionForReset({
-      cfg,
-      ctx: sessionCtxForState,
-    }),
-  );
+  // Only a genuinely-bound ACP session may take over `/new` and `/reset`. When
+  // this is undefined the local session is reset normally.
+  const boundAcpResetSessionKey = resolveBoundAcpSessionForReset({
+    cfg,
+    ctx: sessionCtxForState,
+  });
+  let acpInPlaceReset: SessionInitResult["acpInPlaceReset"];
   const shouldBypassAcpResetForTrigger = (triggerLower: string): boolean =>
-    shouldUseAcpInPlaceReset &&
+    Boolean(boundAcpResetSessionKey) &&
     DEFAULT_RESET_TRIGGERS.some((defaultTrigger) => defaultTrigger.toLowerCase() === triggerLower);
+  const deferResetToBoundAcpSession = (triggerLower: string): void => {
+    if (!boundAcpResetSessionKey) {
+      return;
+    }
+    acpInPlaceReset = {
+      sessionKey: boundAcpResetSessionKey,
+      reason: triggerLower === "/reset" ? "reset" : "new",
+    };
+  };
 
   // Reset triggers are configured as lowercased commands (e.g. "/new"), but users may type
   // "/NEW" etc. Match case-insensitively while keeping the original casing for any stripped body.
@@ -290,9 +309,11 @@ export async function initSessionState(params: {
     const triggerLower = trigger.toLowerCase();
     if (trimmedBodyLower === triggerLower || strippedForResetLower === triggerLower) {
       if (shouldBypassAcpResetForTrigger(triggerLower)) {
-        // ACP-bound conversations handle /new and /reset in command handling
-        // so the bound ACP runtime can be reset in place without rotating the
-        // normal RemoteClaw session/transcript.
+        // The conversation resolves to a bound ACP session, which owns its own
+        // runtime lifecycle — rotating the local session/transcript here would
+        // desync the two. Hand the reset to the caller via `acpInPlaceReset`;
+        // it must actuate it and tell the user if it could not be applied.
+        deferResetToBoundAcpSession(triggerLower);
         break;
       }
       isNewSession = true;
@@ -306,6 +327,7 @@ export async function initSessionState(params: {
       strippedForResetLower.startsWith(triggerPrefixLower)
     ) {
       if (shouldBypassAcpResetForTrigger(triggerLower)) {
+        deferResetToBoundAcpSession(triggerLower);
         break;
       }
       isNewSession = true;
@@ -648,5 +670,6 @@ export async function initSessionState(params: {
     isGroup,
     bodyStripped,
     triggerBodyNormalized,
+    acpInPlaceReset,
   };
 }

@@ -14,6 +14,54 @@ export function normalizeConversationText(value: unknown): string {
   return "";
 }
 
+function normalizeOptionalConversationText(value: unknown): string | undefined {
+  return normalizeConversationText(value) || undefined;
+}
+
+/**
+ * Resolve the conversation id a message belongs to from its delivery targets.
+ *
+ * Restored in the fork: the upstream home (`src/infra/outbound/conversation-id.ts`)
+ * was already a `() => undefined` stub when the gut wave deleted it (#2374), and
+ * its single caller in `session.ts` inherited that stub inline. With the resolver
+ * inert, every ACP binding lookup fell back to "conversation unidentifiable", so
+ * `/new` and `/reset` were suppressed for *every* ACP-shaped session key instead
+ * of only genuinely-bound ones (#2929).
+ */
+export function resolveConversationIdFromTargets(params: {
+  threadId?: string | number;
+  targets: Array<string | undefined | null>;
+}): string | undefined {
+  const threadId =
+    params.threadId != null ? normalizeOptionalConversationText(params.threadId) : undefined;
+  if (threadId) {
+    return threadId;
+  }
+
+  for (const rawTarget of params.targets) {
+    const target = normalizeOptionalConversationText(rawTarget);
+    if (!target) {
+      continue;
+    }
+    if (target.startsWith("channel:")) {
+      const channelId = normalizeOptionalConversationText(target.slice("channel:".length));
+      if (channelId) {
+        return channelId;
+      }
+      continue;
+    }
+    const mentionMatch = target.match(/^<#(\d+)>$/);
+    if (mentionMatch?.[1]) {
+      return mentionMatch[1];
+    }
+    if (/^\d{6,}$/.test(target)) {
+      return target;
+    }
+  }
+
+  return undefined;
+}
+
 export function parseTelegramChatIdFromTarget(raw: unknown): string | undefined {
   const text = normalizeConversationText(raw);
   if (!text) {

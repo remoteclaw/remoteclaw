@@ -408,6 +408,13 @@ describe("bonjour-discovery", () => {
   // are free-form UTF-8, so a guard rejecting '-' anywhere (or non-ASCII, or
   // spaces, the way the SSH host denylist does) would silently stop discovering
   // most real gateways while still reading as "hardened".
+  //
+  // The last two entries are what make the dns-sd path's narrowness an INVARIANT
+  // rather than a comment. `parseDnsSdBrowse` passes `isArgvOptionLike`, not
+  // `isUnsafeDigOperand`, because dig's extra prefixes carry no meaning in a
+  // `dns-sd -L` operand slot; without a leading-'@' and a leading-'+' name here,
+  // transposing the wider dig predicate onto that call site leaves every test in
+  // this file green, and the over-rejection it would cause ships unnoticed.
   it("still passes well-formed instance names through to dns-sd unchanged", async () => {
     const wellFormed = [
       "Laptop Gateway", // spaces
@@ -415,6 +422,8 @@ describe("bonjour-discovery", () => {
       "Peter’s Mac Studio", // non-ASCII punctuation
       "studio.local", // dots
       "gw_01", // underscore
+      "@lobby-gw", // leading '@': meaningless to dns-sd, must NOT be dropped
+      "+studio", // leading '+': meaningless to dns-sd, must NOT be dropped
     ];
 
     const calls: string[][] = [];
@@ -532,21 +541,33 @@ describe("bonjour-discovery", () => {
   });
 
   // The dig-specific half of the producer guard. dig(1)'s dangerous prefix set is
-  // wider than '-', and both extras were probed against the system dig with a
-  // loopback listener:
-  //   '@' selects the nameserver POSITIONALLY and the LAST one wins, so an
-  //       '@'-prefixed PTR answer landing after the pinned tailnet nameserver
-  //       sends the follow-up SRV/TXT query to an arbitrary host:53 — the beacon
-  //       then comes from the attacker's server, not the tailnet's.
+  // wider than '-', and every extra was probed against the system dig (DiG
+  // 9.10.6) with a loopback listener:
   //   '+' introduces a dig option, so a '+tcp' answer is consumed as one and the
-  //       query name collapses to ".".
-  // Neither is caught by `isArgvOptionLike`, which is why the dig path uses the
+  //       query name collapses to ".". Reachable: dig prints a leading '+' bare.
+  //   '%' is discarded as a positional, so a '%evil' answer collapses the query
+  //       to a root ". IN NS". Also reachable, and printed bare. NOT a redirect —
+  //       that query still goes to the pinned nameserver, `parseDigSrv` rejects
+  //       the non-SRV answer, and the record drops itself; driven through this
+  //       producer against /usr/bin/dig, no beacon resulted. Same class as '+',
+  //       strictly less impact.
+  //   '@' selects the nameserver, and is kept as DEFENCE IN DEPTH rather than a
+  //       demonstrated path: DiG 9.10.6 escapes '@' when printing a name, so a
+  //       PTR answer of "@evil…" comes back as "\@evil…", never trips the guard,
+  //       and is read as an ordinary name sent to the pinned nameserver. Driven
+  //       through this producer against /usr/bin/dig, that is what happened — a
+  //       DNS server cannot make `dig +short … PTR` emit a bare leading '@'. The
+  //       guard covers a dig earlier on PATH that does not escape it; only 9.10.6
+  //       was probed. See argv-safety.ts, which also corrects the earlier
+  //       last-'@'-wins claim: dig's server list is first-wins-with-fallback.
+  // None is caught by `isArgvOptionLike`, which is why the dig path uses the
   // wider `isUnsafeDigOperand` rather than that shared predicate being widened.
   //
   // Split per prefix rather than asserted in one test: a single test stops at its
-  // first failing expect, so one hostile prefix would mask the other.
+  // first failing expect, so one hostile prefix would mask the others.
   const HOSTILE_PTR_NAMESERVER = "@127.0.0.1";
   const HOSTILE_PTR_OPTION = "+tcp";
+  const HOSTILE_PTR_DISCARDED_POSITIONAL = "%evil";
   const PINNED_NAMESERVER = "100.69.232.64";
 
   // Drives the wide-area dig fallback with `hostile` present in the PTR answer
@@ -614,6 +635,10 @@ describe("bonjour-discovery", () => {
     return { calls, beacons };
   }
 
+  // Defence-in-depth, not a demonstrated end-to-end outcome: real dig escapes a
+  // leading '@', so this argv shape is one only a non-escaping dig could produce.
+  // The assertion is scoped to what the producer controls — argv — and claims
+  // nothing about where the beacon would have come from.
   it("never lets an '@'-prefixed PTR answer reach dig argv", async () => {
     const { calls, beacons } = await runWideAreaWithHostilePtr(HOSTILE_PTR_NAMESERVER);
     const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
@@ -621,9 +646,8 @@ describe("bonjour-discovery", () => {
     const digCalls = calls.filter((c) => c[0] === "dig");
     expect(digCalls.length).toBeGreaterThan(0);
 
-    // The assertion that bites: the attack is a SECOND '@' argument after the
-    // pinned one, which dig resolves last-wins. So no dig invocation may carry
-    // any nameserver selector other than the one this code pinned itself.
+    // The assertion that bites: no dig invocation may carry any nameserver
+    // selector other than the one this code pinned itself.
     const extraNameservers = digCalls.flatMap((argv) =>
       argv.filter((a) => a.startsWith("@") && a !== `@${PINNED_NAMESERVER}`),
     );
@@ -646,22 +670,41 @@ describe("bonjour-discovery", () => {
     );
     expect(digOperands.filter((arg) => arg.startsWith("+"))).toEqual([]);
     // Belt and braces across dig's whole prefix set.
-    expect(digOperands.filter((arg) => /^[-@+]/.test(arg))).toEqual([]);
+    expect(digOperands.filter((arg) => /^[-@+%]/.test(arg))).toEqual([]);
+
+    expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
+  });
+
+  it("never lets a '%'-prefixed PTR answer reach dig argv", async () => {
+    const { calls, beacons } = await runWideAreaWithHostilePtr(HOSTILE_PTR_DISCARDED_POSITIONAL);
+    const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
+
+    // dig discards a leading-'%' positional, so the query name collapses to the
+    // root and the SRV lookup this producer meant to make never happens. The
+    // slot must never start with one.
+    const digOperands = collectMatching(
+      calls,
+      (c) => c[0] === "dig",
+      (c) => c[c.length - 2] ?? "",
+    );
+    expect(digOperands.filter((arg) => arg.startsWith("%"))).toEqual([]);
+    expect(digOperands.filter((arg) => /^[-@+%]/.test(arg))).toEqual([]);
 
     expect(beacons.map((b) => b.host)).toEqual([`studio.${zone}`]);
   });
 
   // The regression a too-eager dig guard would cause. Only the LEADING character
-  // is structural to dig — '@' and '+' anywhere else are ordinary bytes in a
-  // name, and DNS-SD instance labels are free-form, so rejecting them outright
+  // is structural to dig — '+', '%' and '@' anywhere else are ordinary bytes in
+  // a name, and DNS-SD instance labels are free-form, so rejecting them outright
   // would drop well-formed peers while still reading as "hardened".
-  it("still passes PTR answers with interior '@' or '+' through to dig", async () => {
+  it("still passes PTR answers with interior '+', '%' or '@' through to dig", async () => {
     const calls: string[][] = [];
     const zone = WIDE_AREA_DOMAIN.replace(/\.$/, "");
     const serviceBase = `_remoteclaw-gw._tcp.${zone}`;
     const services = [
       `studio+lab.${serviceBase}`, // interior '+'
       `desk@home.${serviceBase}`, // interior '@'
+      `rate%limit.${serviceBase}`, // interior '%'
       `plain-gw.${serviceBase}`, // interior '-'
     ];
 
@@ -722,8 +765,18 @@ describe("bonjour-discovery", () => {
       (c) => c[c.length - 2] ?? "",
     );
     expect(srvOperands).toEqual(services);
-    expect(beacons.map((b) => b.host)).toEqual([`host0.${zone}`, `host1.${zone}`, `host2.${zone}`]);
-    expect(beacons.map((b) => b.instanceName)).toEqual(["studio+lab", "desk@home", "plain-gw"]);
+    expect(beacons.map((b) => b.host)).toEqual([
+      `host0.${zone}`,
+      `host1.${zone}`,
+      `host2.${zone}`,
+      `host3.${zone}`,
+    ]);
+    expect(beacons.map((b) => b.instanceName)).toEqual([
+      "studio+lab",
+      "desk@home",
+      "rate%limit",
+      "plain-gw",
+    ]);
   });
 
   it("normalizes domains and respects domains override", async () => {

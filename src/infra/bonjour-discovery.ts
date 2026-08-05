@@ -118,10 +118,12 @@ function decodeDnsSdEscapes(value: string): string {
 // publishable by any LAN peer, a PTR answer by any DNS server that responds.
 //
 // What counts as unsafe differs by tool, so the predicate is a parameter rather
-// than baked in: dig also reads a leading '@' as a nameserver selector — last
-// one wins, so an '@'-prefixed PTR answer re-points the follow-up SRV/TXT query
-// at an arbitrary host:53 — and a leading '+' as an option. dns-sd gives neither
-// character any meaning. See argv-safety.ts for the probes behind that.
+// than baked in: dig consumes a leading '+' as an option and discards a leading
+// '%' positional, either of which collapses the follow-up SRV/TXT query to the
+// root name, and reads a leading '@' as a nameserver selector. dns-sd gives none
+// of the three any meaning. See argv-safety.ts for the probes behind that,
+// including why '@' is defence-in-depth rather than a reachable path, and why
+// dig's server list is first-wins-with-fallback rather than last-wins.
 //
 // Neither tool accepts "--", so a hostile value cannot be neutralized in place;
 // it is dropped instead. Dropping is per record, so one hostile publisher costs
@@ -278,9 +280,11 @@ function parseDnsSdBrowse(stdout: string): string[] {
   // sequence "\045evil" decodes to "-evil", so a check upstream of the decode
   // would pass the very value that reaches argv.
   //
-  // Narrow predicate on purpose: dns-sd's operand slot gives '@' and '+' no
+  // Narrow predicate on purpose: dns-sd's operand slot gives '+', '%' and '@' no
   // meaning, and instance names are free-form UTF-8, so widening here would
-  // drop well-formed names for nothing.
+  // drop well-formed names for nothing. Guarded, not merely asserted: the
+  // well-formed fixture in bonjour-discovery.test.ts carries a leading-'@' and a
+  // leading-'+' instance name, so transposing `isUnsafeDigOperand` here fails.
   return dropUnsafeArgvOperands(
     Array.from(instances.values()),
     "mDNS instance name",

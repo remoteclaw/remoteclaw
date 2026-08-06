@@ -443,14 +443,18 @@ jobs:
     # per-file exclusions live in `vitest.windows.config.ts` — that file, not this
     # job, is where widening the lane gets reviewed.
     #
-    # NOT WIRED INTO THE `CI` ROLLUP, on purpose: this lane is one PR old and has
-    # no flake history on a runner class this repo has never used. It runs on every
-    # PR and is visible in the checks list, but it does not block merge yet.
-    # Promoting it is a two-line change — add `test-windows` to the rollup's
-    # `needs:` AND to its result-check condition. Both, or neither: `needs:` alone
-    # makes the rollup wait on a job whose failure it then ignores, and the
-    # condition alone evaluates `needs.test-windows.result` to empty and blocks
-    # every merge permanently.
+    # WIRED INTO THE `CI` ROLLUP (maintainer decision, 2026-08-06): a Windows
+    # regression must fail the merge, not merely show a red check nobody is
+    # required to read. The lane ships blocking from its first PR.
+    #
+    # The wiring is in TWO places and must stay that way — `test-windows` in the
+    # rollup's `needs:` AND in its result-check condition. Both, or neither:
+    # `needs:` alone makes the rollup wait on a job whose failure it then ignores,
+    # and the condition alone evaluates `needs.test-windows.result` to empty and
+    # blocks every merge permanently.
+    #
+    # If this lane proves flaky on a runner class this repo has never used before,
+    # demote it by removing it from BOTH sites rather than by weakening the suite.
     #
     # No `pnpm canvas:a2ui:bundle` step: verified that none of the included suites
     # import the bundle (the lane passes with `vendor/a2ui/renderers/lit/dist`
@@ -502,12 +506,13 @@ jobs:
         test-extensions,
         test-auto-reply,
         test-ui-smoke,
+        test-windows,
       ]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" || "${{ needs.test-windows.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

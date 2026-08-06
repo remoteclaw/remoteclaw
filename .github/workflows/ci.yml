@@ -430,6 +430,62 @@ jobs:
       - name: UI smoke tests (browser-mode)
         run: pnpm test:ui:smoke
 
+  test-windows:
+    # The project's FIRST Windows runner. README.md advertises a Windows install
+    # path (`irm https://remoteclaw.ps | iex`) while every other `runs-on:` in this
+    # directory is Ubuntu, so Windows-targeted work has been merging on static
+    # reasoning alone (#3088, #3116) against a resolver census whose own header
+    # documents a mutation-proven blind spot.
+    #
+    # A NARROW SPIKE, deliberately not a full-suite port: 397 of 2,302 tracked
+    # `*.test.ts` files hardcode POSIX absolute paths (2,184 occurrences), so a
+    # `pnpm test` here could only ever be red. The membership rule and the
+    # per-file exclusions live in `vitest.windows.config.ts` — that file, not this
+    # job, is where widening the lane gets reviewed.
+    #
+    # WIRED INTO THE `CI` ROLLUP (maintainer decision, 2026-08-06): a Windows
+    # regression must fail the merge, not merely show a red check nobody is
+    # required to read. The lane ships blocking from its first PR.
+    #
+    # The wiring is in TWO places and must stay that way — `test-windows` in the
+    # rollup's `needs:` AND in its result-check condition. Both, or neither:
+    # `needs:` alone makes the rollup wait on a job whose failure it then ignores,
+    # and the condition alone evaluates `needs.test-windows.result` to empty and
+    # blocks every merge permanently.
+    #
+    # If this lane proves flaky on a runner class this repo has never used before,
+    # demote it by removing it from BOTH sites rather than by weakening the suite.
+    #
+    # No `pnpm canvas:a2ui:bundle` step: verified that none of the included suites
+    # import the bundle (the lane passes with `vendor/a2ui/renderers/lit/dist`
+    # absent). Add it here if the include list ever grows into canvas territory.
+    runs-on: windows-latest
+    # A hung child process on a first-time runner class must fail fast, not hold
+    # the runner for the 6h job default.
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      # Cheap (~5s locally) and genuinely platform-sensitive: case-insensitive
+      # path resolution surfaces import-casing bugs that Ubuntu never sees.
+      # `pnpm build` is deliberately NOT run — it is heavy and its Windows signal
+      # is not established yet.
+      - name: Typecheck
+        shell: bash
+        run: pnpm tsgo
+
+      - name: Windows-relevant suites
+        shell: bash
+        run: pnpm test:windows
+
   CI:
     if: always()
     needs:
@@ -450,12 +506,13 @@ jobs:
         test-extensions,
         test-auto-reply,
         test-ui-smoke,
+        test-windows,
       ]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" || "${{ needs.test-windows.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

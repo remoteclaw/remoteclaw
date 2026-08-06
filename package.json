@@ -379,6 +379,7 @@
     "test:ui:smoke": "pnpm --dir ui exec vitest run --config vitest.config.ts src/ui/app.smoke.test.ts src/ui/app.computed-style.test.ts",
     "test:voicecall:closedloop": "vitest run extensions/voice-call/src/manager.test.ts extensions/voice-call/src/media-stream.test.ts src/plugins/voice-call.plugin.test.ts --maxWorkers=1",
     "test:watch": "vitest",
+    "test:windows": "vitest run --config vitest.windows.config.ts",
     "tui": "node scripts/run-node.mjs tui",
     "tui:dev": "node scripts/run-with-env.mjs REMOTECLAW_PROFILE=dev -- node scripts/run-node.mjs --dev tui",
     "typecheck:scripts": "node scripts/check-scripts-typecheck.mjs",

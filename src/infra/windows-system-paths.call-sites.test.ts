@@ -13,10 +13,13 @@
 // green, and yields `C:\Windows\System32\wmic.exe` — a path that exists on no Windows
 // install. This suite fails on exactly that swap (#3092).
 //
-// Why a source scan rather than 28 behavioural harnesses: no workflow runs a Windows
-// runner (`git grep -l "windows-latest" .github/workflows/` is empty), most of these
-// sites sit behind `process.platform === "win32"` guards deep in daemon/clipboard/
-// encoding paths, and the property under test is a *static* binary->resolver mapping.
+// Why a source scan rather than 28 behavioural harnesses: most of these sites sit behind
+// `process.platform === "win32"` guards deep in daemon/clipboard/encoding paths, and the
+// property under test is a *static* binary->resolver mapping. There is now a Windows
+// runner — the narrow `test-windows` lane — but it is deliberately scoped to a handful of
+// suites (this one among them) and does NOT execute those guarded paths, so it does not
+// displace this scan. It was previously accurate to say no workflow ran a Windows runner
+// at all; that is no longer true, and the reason the scan stays is the one above it.
 // The sites that DO have argv capture are additionally pinned behaviourally — see
 // `ports.test.ts` (all five ports-inspect sites) and `exec.windows.test.ts`.
 //
@@ -63,11 +66,17 @@ const EXPECTED_CALL_SITES: Readonly<Record<string, readonly string[]>> = {
   "src/cli/update-cli/restart-helper.ts": [`${SYSTEM32}\\schtasks.exe`, CMD_EXE],
   "src/commands/onboard-helpers.ts": [`${SYSTEM32}\\rundll32.exe`, `${SYSTEM32}\\where.exe`],
   "src/daemon/launchd.ts": [CMD_EXE],
-  "src/daemon/program-args.ts": [`${SYSTEM32}\\where.exe`],
   "src/daemon/schtasks-exec.ts": [`${SYSTEM32}\\schtasks.exe`],
   "src/daemon/schtasks.ts": [CMD_EXE, `${SYSTEM32}\\taskkill.exe`],
   "src/infra/clipboard.ts": [`${SYSTEM32}\\clip.exe`, POWERSHELL],
   "src/infra/node-shell.ts": [CMD_EXE],
+  // The sole PATH-lookup selector. `daemon/program-args.ts` used to open-code the
+  // same `win32 ? where.exe : which` ternary and held this row; it now calls
+  // `resolvePathLookupCommand`, so the resolver call moved here rather than
+  // multiplying. `commands/onboard-helpers.ts` above keeps its own `where.exe`
+  // deliberately — it spawns an argv array whose POSIX form is
+  // `["/usr/bin/env", "which", …]`, not a bare command word.
+  "src/infra/path-lookup.ts": [`${SYSTEM32}\\where.exe`],
   "src/infra/ports-inspect.ts": [
     `${SYSTEM32}\\tasklist.exe`,
     POWERSHELL,

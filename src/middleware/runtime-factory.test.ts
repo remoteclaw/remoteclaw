@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { _resetValidationCache, createCliRuntime, SUPPORTED_PROVIDERS } from "./runtime-factory.js";
 import { ClaudeCliRuntime } from "./runtimes/claude.js";
 import { CodexCliRuntime } from "./runtimes/codex.js";
@@ -12,9 +12,25 @@ vi.mock("node:child_process", () => ({
 
 const mockedExecFileSync = vi.mocked(execFileSync);
 
+// Both PATH-lookup branches are asserted here, on every host, by forcing the platform.
+// Without this the POSIX assertions below would fail on a Windows runner and the Windows
+// ones would be unreachable off Windows — which is how the `which`-on-Windows defect
+// stayed invisible: nothing ever evaluated the branch it got wrong.
+const realPlatformDescriptor = Object.getOwnPropertyDescriptor(process, "platform");
+
+function stubPlatform(platform: NodeJS.Platform): void {
+  Object.defineProperty(process, "platform", { value: platform, configurable: true });
+}
+
 beforeEach(() => {
   _resetValidationCache();
   mockedExecFileSync.mockReset();
+});
+
+afterEach(() => {
+  if (realPlatformDescriptor) {
+    Object.defineProperty(process, "platform", realPlatformDescriptor);
+  }
 });
 
 // ── Provider mapping ──────────────────────────────────────────────────────
@@ -110,6 +126,10 @@ describe("createCliRuntime", () => {
   // ── Executable validation ─────────────────────────────────────────────
 
   describe("executable validation", () => {
+    beforeEach(() => {
+      stubPlatform("linux");
+    });
+
     it("calls which to validate the binary exists on PATH", () => {
       createCliRuntime("claude");
       expect(mockedExecFileSync).toHaveBeenCalledWith("which", ["claude"], { stdio: "ignore" });
@@ -158,6 +178,67 @@ describe("createCliRuntime", () => {
         createCliRuntime(provider);
       }
       expect(mockedExecFileSync).toHaveBeenCalledTimes(4);
+    });
+  });
+
+  // ── Executable validation on Windows ──────────────────────────────────
+  //
+  // `which` does not exist on Windows. Spawning it threw ENOENT, which
+  // validateExecutable cannot distinguish from "binary absent" — so EVERY
+  // configured runtime reported `Runtime '<x>' is configured but the '<x>'
+  // binary was not found on PATH` and RemoteClaw could not start at all on the
+  // platform README.md ships an installer for.
+  //
+  // The expected command is written as a LITERAL rather than derived by calling
+  // the resolver: re-deriving it would restate the implementation and pass no
+  // matter which command the factory picks.
+  describe("executable validation on Windows", () => {
+    const WHERE_EXE = "D:\\WinNT\\System32\\where.exe";
+
+    beforeEach(() => {
+      stubPlatform("win32");
+      // Non-default root, so a green assertion cannot come from the C:\Windows fallback.
+      vi.stubEnv("SystemRoot", "D:\\WinNT");
+    });
+
+    it("looks the binary up with where.exe, not which", () => {
+      createCliRuntime("claude");
+      expect(mockedExecFileSync).toHaveBeenCalledWith(WHERE_EXE, ["claude"], { stdio: "ignore" });
+      expect(mockedExecFileSync).not.toHaveBeenCalledWith("which", expect.anything(), {
+        stdio: "ignore",
+      });
+    });
+
+    it("pins where.exe to an absolute %SystemRoot% path rather than a bare name", () => {
+      // A bare `where` would leave the lookup to %PATH% and, under some
+      // configurations, the CWD — CWE-426, the class #3088/#3116 closed elsewhere.
+      createCliRuntime("codex");
+      const [command] = mockedExecFileSync.mock.calls[0] ?? [];
+      expect(command).toBe(WHERE_EXE);
+    });
+
+    it("still reports a missing binary through the same error", () => {
+      mockedExecFileSync.mockImplementation(() => {
+        throw new Error("not found");
+      });
+      expect(() => createCliRuntime("gemini")).toThrow(
+        "Runtime 'gemini' is configured but the 'gemini' binary was not found on PATH",
+      );
+    });
+
+    it("keeps the per-process validation cache", () => {
+      createCliRuntime("opencode");
+      createCliRuntime("opencode");
+      createCliRuntime("opencode");
+      expect(mockedExecFileSync).toHaveBeenCalledTimes(1);
+    });
+
+    it("validates each provider independently", () => {
+      createCliRuntime("claude");
+      createCliRuntime("gemini");
+      expect(mockedExecFileSync).toHaveBeenCalledTimes(2);
+      expect(mockedExecFileSync).toHaveBeenCalledWith(WHERE_EXE, ["claude"], { stdio: "ignore" });
+      expect(mockedExecFileSync).toHaveBeenCalledWith(WHERE_EXE, ["gemini"], { stdio: "ignore" });
     });
   });
 });

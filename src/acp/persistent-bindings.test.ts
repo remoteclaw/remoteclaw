@@ -16,6 +16,7 @@ vi.mock("./runtime/session-meta.js", () => ({
 }));
 
 import {
+  ACP_SESSION_LIFECYCLE_UNAVAILABLE,
   buildConfiguredAcpSessionKey,
   ensureConfiguredAcpBindingSession,
   resetAcpSessionInPlace,
@@ -501,8 +502,11 @@ describe("ensureConfiguredAcpBindingSession", () => {
   });
 });
 
+// #2929: these previously asserted `{ ok: true }` for every path, which is what
+// let `/new` and `/reset` report success while resetting nothing. A no-op must
+// now report itself so the caller can tell the user.
 describe("resetAcpSessionInPlace", () => {
-  it("returns ok when ACP metadata is missing but configured binding exists (gutted)", async () => {
+  it("reports failure when ACP metadata is missing but configured binding exists", async () => {
     const cfg = {
       ...baseCfg,
       bindings: [
@@ -536,11 +540,12 @@ describe("resetAcpSessionInPlace", () => {
       reason: "new",
     });
 
-    expect(result).toEqual({ ok: true });
+    expect(result.ok).toBe(false);
+    expect(result).toMatchObject({ error: ACP_SESSION_LIFECYCLE_UNAVAILABLE });
     expect(managerMocks.initializeSession).not.toHaveBeenCalled();
   });
 
-  it("returns ok when meta is present (gutted; no manager calls happen)", async () => {
+  it("reports failure when meta is present but no session manager can reset it", async () => {
     const sessionKey = "agent:claude:acp:binding:discord:default:9373ab192b2317f4";
     sessionMetaMocks.readAcpSessionEntry.mockReturnValue({
       acp: {
@@ -557,12 +562,13 @@ describe("resetAcpSessionInPlace", () => {
       reason: "reset",
     });
 
-    expect(result).toEqual({ ok: true });
+    expect(result.ok).toBe(false);
+    expect(result).toMatchObject({ error: ACP_SESSION_LIFECYCLE_UNAVAILABLE });
     expect(managerMocks.closeSession).not.toHaveBeenCalled();
     expect(managerMocks.initializeSession).not.toHaveBeenCalled();
   });
 
-  it("returns ok during in-place reset when agent id is not in agents.list (gutted)", async () => {
+  it("reports failure during in-place reset when agent id is not in agents.list", async () => {
     const cfg = {
       ...baseCfg,
       agents: {
@@ -584,7 +590,20 @@ describe("resetAcpSessionInPlace", () => {
       reason: "reset",
     });
 
-    expect(result).toEqual({ ok: true });
+    expect(result.ok).toBe(false);
+    expect(result).toMatchObject({ error: ACP_SESSION_LIFECYCLE_UNAVAILABLE });
     expect(managerMocks.initializeSession).not.toHaveBeenCalled();
+  });
+
+  it("skips without an error when the key addresses no ACP session at all", async () => {
+    sessionMetaMocks.readAcpSessionEntry.mockReturnValue(undefined);
+
+    const result = await resetAcpSessionInPlace({
+      cfg: baseCfg,
+      sessionKey: "agent:main:discord:channel:24680",
+      reason: "new",
+    });
+
+    expect(result).toEqual({ ok: false, skipped: true });
   });
 });

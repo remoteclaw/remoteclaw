@@ -222,5 +222,18 @@ export const AUTO_REPLY_QUARANTINE: string[] = [
   "src/auto-reply/reply/followup-runner.channel-bridge.test.ts", // #2782: premise gutted in #2377 (followup-runner is a no-op; ChannelBridge wiring moved to agent-runner-execution.ts) — port the assertions there
   "src/auto-reply/reply/reply-media-paths.test.ts", // #2782: not triaged (delegated agent aborted mid-run) — left quarantined pending investigation
   "src/auto-reply/reply/reply-plumbing.test.ts", // #2782: SOURCE bug — subagents-utils.ts formatRunLabel missing stripInternalRuntimeContext → internal runtime-context info leak into user-facing subagent labels
-  "src/auto-reply/reply/session.test.ts", // #2782: SOURCE bug — session.ts resolveConversationIdFromTargets gutted to ()=>undefined → /new silently suppressed for all ACP-shaped session keys
+  // #2929: the named ACP SOURCE bug is FIXED — session.ts no longer stubs
+  // resolveConversationIdFromTargets to ()=>undefined, so /new and /reset are suppressed only
+  // for genuinely-bound ACP sessions. Its 6 ACP-reset specs were re-homed verbatim to
+  // session.acp-reset.test.ts (un-quarantined, so that behavior gates CI) — the #2953/#2970
+  // focused-spec re-homing precedent. This file stays quarantined on an UNRELATED cluster: 3
+  // "internal channel routing preservation" cases ("lets direct webchat turns override persisted
+  // external routes for per-channel-peer sessions", "does not reuse stale external lastTo for
+  // webchat/main turns without destination", "prefers webchat route over persisted external route
+  // for main session turns") assert that a webchat turn OVERRIDES a persisted external route,
+  // which session-delivery.ts resolveLastChannelRaw/resolveLastToRaw deliberately refuse to do
+  // per #47745 (overwriting the route delivers subagent completion events to the dashboard
+  // instead of the originating channel). Which semantic wins is a delivery-routing product
+  // decision, not a test fix — un-quarantine once it is settled.
+  "src/auto-reply/reply/session.test.ts",
 ];

@@ -7,7 +7,6 @@ import { normalizeLowercaseStringOrEmpty } from "../shared/string-coerce.js";
 import { resolveConfiguredAcpBindingSpecBySessionKey } from "./persistent-bindings.resolve.js";
 import {
   buildConfiguredAcpSessionKey,
-  normalizeText,
   type ConfiguredAcpBindingSpec,
 } from "./persistent-bindings.types.js";
 import { readAcpSessionEntry } from "./runtime/session-meta.js";
@@ -48,6 +47,23 @@ function sessionMatchesConfiguredBinding(params: {
   return true;
 }
 
+/**
+ * The ACP session manager (`initializeSession` / `closeSession` /
+ * `updateSessionRuntimeOptions`) is gutted in the RemoteClaw fork — the Pi-era
+ * implementation was removed and AgentRuntime does not own ACP session
+ * lifecycle yet. Anything that needs it to have *acted* must report that it
+ * could not, instead of resolving as though it had (#2929).
+ */
+export const ACP_SESSION_LIFECYCLE_UNAVAILABLE =
+  "ACP session lifecycle is not available in RemoteClaw fork";
+
+/**
+ * Route-readiness gate: `ok` means "this bound route may carry traffic", NOT
+ * "a session was (re)initialized". Callers drop inbound messages when this is
+ * not ok (see extensions/discord message-handler.preflight.ts), so it must stay
+ * permissive while the session manager is gutted. It is deliberately NOT
+ * evidence that a reset happened — see `resetAcpSessionInPlace`.
+ */
 export async function ensureConfiguredAcpBindingSession(params: {
   cfg: RemoteClawConfig;
   spec: ConfiguredAcpBindingSpec;
@@ -106,6 +122,21 @@ export async function ensureConfiguredAcpBindingSession(params: {
   }
 }
 
+/**
+ * Reset actuator for `/new` and `/reset` on a bound ACP session.
+ *
+ * `ok: true` means the ACP runtime was actually closed and re-initialized. It
+ * MUST NOT be returned for a no-op: `session.ts` suppresses the normal session
+ * rotation whenever a conversation resolves to a bound ACP session, so a
+ * falsely-successful result here is exactly what let the user be told the reset
+ * worked while nothing happened (#2929).
+ *
+ * Restoring a working reset means driving the gutted session manager:
+ * `closeSession` (reason `${reason}-in-place-reset`, `clearMeta: false`) then
+ * `initializeSession` with the stored agent/mode/cwd/backend, then re-applying
+ * `meta.runtimeOptions` via `updateSessionRuntimeOptions`. Until that manager
+ * exists, report the failure so callers can surface it.
+ */
 export async function resetAcpSessionInPlace(params: {
   cfg: RemoteClawConfig;
   sessionKey: string;
@@ -127,71 +158,23 @@ export async function resetAcpSessionInPlace(params: {
     cfg: params.cfg,
     sessionKey,
   })?.acp;
-  if (!meta) {
-    if (configuredBinding) {
-      const ensured = await ensureConfiguredAcpBindingSession({
-        cfg: params.cfg,
-        spec: configuredBinding,
-      });
-      if (ensured.ok) {
-        return { ok: true };
-      }
-      return {
-        ok: false,
-        error: ensured.error,
-      };
-    }
+  if (!meta && !configuredBinding) {
+    // Nothing addressed by this key — there is no ACP session to reset.
     return {
       ok: false,
       skipped: true,
     };
   }
 
-  const agent =
-    normalizeText(meta.agent) ??
-    configuredBinding?.acpAgentId ??
-    configuredBinding?.agentId ??
-    undefined;
-  const mode = meta.mode === "oneshot" ? "oneshot" : "persistent";
-  const runtimeOptions = { ...meta.runtimeOptions };
-  const cwd = normalizeText(runtimeOptions.cwd ?? meta.cwd);
-
-  try {
-    await (undefined as any)?.closeSession({
-      cfg: params.cfg,
-      sessionKey,
-      reason: `${params.reason}-in-place-reset`,
-      clearMeta: false,
-      allowBackendUnavailable: true,
-      requireAcpSession: false,
-    });
-
-    await (undefined as any)?.initializeSession({
-      cfg: params.cfg,
-      sessionKey,
-      agent,
-      mode,
-      cwd,
-      backendId: normalizeText(meta?.backend) ?? normalizeText((params.cfg.acp as any)?.backend),
-    });
-
-    const runtimeOptionsPatch = Object.fromEntries(
-      Object.entries(runtimeOptions).filter(([, value]) => value !== undefined),
-    ) as SessionAcpMeta["runtimeOptions"];
-    if (runtimeOptionsPatch && Object.keys(runtimeOptionsPatch).length > 0) {
-      await (undefined as any)?.updateSessionRuntimeOptions({
-        cfg: params.cfg,
-        sessionKey,
-        patch: runtimeOptionsPatch,
-      });
-    }
-    return { ok: true };
-  } catch (error) {
-    const message = formatErrorMessage(error);
-    logVerbose(`acp-persistent-binding: failed reset for ${sessionKey}: ${message}`);
-    return {
-      ok: false,
-      error: message,
-    };
-  }
+  // There IS an ACP session (or a configured binding for one) that should have
+  // been reset, and no session manager to do it with. Note this is deliberately
+  // not delegated to ensureConfiguredAcpBindingSession: that gate answers
+  // "may this route carry traffic", never "was this session reset".
+  logVerbose(
+    `acp-persistent-binding: cannot ${params.reason}-in-place-reset ${sessionKey}: ${ACP_SESSION_LIFECYCLE_UNAVAILABLE}`,
+  );
+  return {
+    ok: false,
+    error: ACP_SESSION_LIFECYCLE_UNAVAILABLE,
+  };
 }

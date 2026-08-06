@@ -10,6 +10,7 @@ export {
   type ResolvedConfiguredAcpBinding,
 } from "./persistent-bindings.types.js";
 export {
+  ACP_SESSION_LIFECYCLE_UNAVAILABLE,
   ensureConfiguredAcpBindingSession,
   resetAcpSessionInPlace,
 } from "./persistent-bindings.lifecycle.js";

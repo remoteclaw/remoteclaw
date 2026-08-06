@@ -756,7 +756,7 @@ lives on the [First-run FAQ](/help/faq-first-run).
     - For password auth, set `gateway.auth.mode: "password"` plus `gateway.auth.password` (or `REMOTECLAW_GATEWAY_PASSWORD`) instead.
     - If `gateway.auth.token` / `gateway.auth.password` is explicitly configured via SecretRef and unresolved, resolution fails closed (no remote fallback masking).
     - Shared-secret Control UI setups authenticate via `connect.params.auth.token` or `connect.params.auth.password` (stored in app/UI settings). Identity-bearing modes such as Tailscale Serve or `trusted-proxy` use request headers instead. Avoid putting shared secrets in URLs.
-    - With `gateway.auth.mode: "trusted-proxy"`, same-host (loopback-source) reverse proxies are not supported and cannot satisfy the mode. Reach the Gateway from a non-loopback proxy address, or use `gateway.auth.password` for same-host callers.
+    - With `gateway.auth.mode: "trusted-proxy"`, a proxy connecting from loopback or from one of the Gateway's own interface addresses cannot satisfy the mode. Reach the Gateway from an address the Gateway does not hold, or use `gateway.auth.password` for those callers.
 
   </Accordion>
 

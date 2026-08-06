@@ -200,6 +200,15 @@ export const LEGACY_CONFIG_RULES: LegacyConfigRule[] = [
     requireSourceLiteral: true,
   },
   {
+    // Pairs with the strip-gateway-trusted-proxy-allow-loopback migration (#3131). Without a
+    // rule here the migration is unreachable: both repair call sites (src/gateway/server.impl.ts
+    // and src/commands/doctor-config-flow.ts) gate on findLegacyConfigIssues() returning a
+    // non-empty list, which is driven by this table alone.
+    path: ["gateway", "auth", "trustedProxy", "allowLoopback"],
+    message:
+      "gateway.auth.trustedProxy.allowLoopback is not supported and never was — trusted-proxy auth always rejects a proxy whose source address is loopback or one of the Gateway's own interface addresses. Use gateway.auth.password for those callers (auto-migrated on load).",
+  },
+  {
     path: ["heartbeat"],
     message:
       "top-level heartbeat is not a valid config path; use agents.defaults.heartbeat (cadence/target settings) or channels.defaults.heartbeat (showOk/showAlerts/useIndicator).",

@@ -1,12 +1,23 @@
 import { describe, expect, it } from "vitest";
+import { migrateLegacyConfig, readConfigFileSnapshot } from "./config.js";
 import { applyLegacyMigrations } from "./legacy.js";
+import { withTempHome, writeRemoteClawConfig } from "./test-helpers.js";
 import { RemoteClawSchema } from "./zod-schema.js";
 
-// The dead gateway.auth.trustedProxy.allowLoopback knob (#3128). It was declared in the TS
+// The dead gateway.auth.trustedProxy.allowLoopback knob (#3131). It was declared in the TS
 // type and the served JSON schema and documented as the way to run a same-host proxy, but no
-// gateway code read it — authorizeTrustedProxy rejects loopback sources unconditionally. It
-// was never in the zod schema, and the trustedProxy object is `.strict()`, so a persisted
-// config carrying the key fails to load rather than being silently ignored.
+// gateway code read it — authorizeTrustedProxy rejects loopback and Gateway-interface sources
+// unconditionally. It was never in the zod schema, and the trustedProxy zod object is
+// `.strict()`, so a persisted config carrying the key fails to load rather than being
+// silently ignored.
+//
+// These tests drive the reachable repair path (readConfigFileSnapshot -> legacyIssues gate ->
+// migrateLegacyConfig), not applyLegacyMigrations in isolation. Both repair call sites
+// (src/gateway/server.impl.ts, src/commands/doctor-config-flow.ts) gate on
+// snapshot.legacyIssues being non-empty, so a migration whose key has no LEGACY_CONFIG_RULES
+// entry never runs. Asserting on legacyIssues is what pins that wiring.
+
+const LEGACY_PATH = "gateway.auth.trustedProxy.allowLoopback";
 
 /** The trusted-proxy config block exactly as docs/gateway/trusted-proxy-auth.md documented it. */
 function documentedExample(allowLoopback: boolean): Record<string, unknown> {
@@ -27,7 +38,7 @@ function documentedExample(allowLoopback: boolean): Record<string, unknown> {
   };
 }
 
-describe("legacy migration: dead gateway.auth.trustedProxy.allowLoopback knob (#3128)", () => {
+describe("legacy migration: dead gateway.auth.trustedProxy.allowLoopback knob (#3131)", () => {
   it("strict schema rejects the legacy key (so the migration is required)", () => {
     // Both values fail — `.strict()` rejects on key presence, not on value. The documented
     // example used `false`, so even the conservative copy-paste failed to load.
@@ -37,17 +48,63 @@ describe("legacy migration: dead gateway.auth.trustedProxy.allowLoopback knob (#
     }
   });
 
-  it("strips the legacy key from raw config and records a change message", () => {
-    const { next, changes } = applyLegacyMigrations(documentedExample(true));
-    expect(next).not.toBeNull();
-    const gateway = (next as Record<string, unknown>).gateway as Record<string, unknown>;
-    const auth = gateway.auth as Record<string, unknown>;
-    const trustedProxy = auth.trustedProxy as Record<string, unknown>;
-    expect(Object.prototype.hasOwnProperty.call(trustedProxy, "allowLoopback")).toBe(false);
-    // Sibling keys survive untouched.
-    expect(trustedProxy.userHeader).toBe("x-forwarded-user");
-    expect(trustedProxy.allowUsers).toEqual(["nick@example.com", "admin@company.org"]);
-    expect(changes.some((c) => c.includes("gateway.auth.trustedProxy.allowLoopback"))).toBe(true);
+  it("a real config file carrying the key is reported as a legacy issue, not just invalid", async () => {
+    // This is the gate input for both repair call sites. Without the LEGACY_CONFIG_RULES
+    // entry this list is empty, the gate is false, and the migration never runs.
+    await withTempHome(async (home) => {
+      await writeRemoteClawConfig(home, documentedExample(false));
+
+      const snap = await readConfigFileSnapshot();
+
+      expect(snap.legacyIssues.some((issue) => issue.path === LEGACY_PATH)).toBe(true);
+      // The key also makes the file fail strict validation today, which is why the repair
+      // has to happen before validation rather than being left to the operator.
+      expect(snap.valid).toBe(false);
+    });
+  });
+
+  it("the legacy-issue message names gateway.auth.password as the real alternative", async () => {
+    await withTempHome(async (home) => {
+      await writeRemoteClawConfig(home, documentedExample(true));
+
+      const snap = await readConfigFileSnapshot();
+      const issue = snap.legacyIssues.find((entry) => entry.path === LEGACY_PATH);
+
+      expect(issue).toBeDefined();
+      expect(issue?.message).toContain("gateway.auth.password");
+    });
+  });
+
+  it("the server.impl.ts repair path strips the key and yields a loadable config", async () => {
+    // Mirrors src/gateway/server.impl.ts: read snapshot, gate on legacyIssues, then migrate
+    // snapshot.parsed and log the returned changes.
+    await withTempHome(async (home) => {
+      await writeRemoteClawConfig(home, documentedExample(false));
+
+      const snap = await readConfigFileSnapshot();
+      expect(snap.legacyIssues.length).toBeGreaterThan(0);
+
+      const { config: migrated, changes } = migrateLegacyConfig(snap.parsed);
+
+      // config is non-null only when the migrated object passes full validation, so this
+      // asserts the gateway would go on to start rather than throw.
+      expect(migrated).not.toBeNull();
+      expect(migrated?.gateway?.auth?.trustedProxy).toBeDefined();
+      expect(
+        Object.prototype.hasOwnProperty.call(
+          migrated?.gateway?.auth?.trustedProxy ?? {},
+          "allowLoopback",
+        ),
+      ).toBe(false);
+      // Sibling keys survive untouched.
+      expect(migrated?.gateway?.auth?.trustedProxy?.userHeader).toBe("x-forwarded-user");
+      expect(migrated?.gateway?.auth?.trustedProxy?.allowUsers).toEqual([
+        "nick@example.com",
+        "admin@company.org",
+      ]);
+      expect(changes.some((entry) => entry.includes(LEGACY_PATH))).toBe(true);
+      expect(changes.some((entry) => entry.includes("gateway.auth.password"))).toBe(true);
+    });
   });
 
   it("migrated config then loads cleanly under the strict schema", () => {
@@ -58,15 +115,21 @@ describe("legacy migration: dead gateway.auth.trustedProxy.allowLoopback knob (#
     }
   });
 
-  it("is a no-op when the legacy key is absent", () => {
-    const raw = {
-      gateway: {
-        auth: { mode: "trusted-proxy", trustedProxy: { userHeader: "x-forwarded-user" } },
-      },
-    };
-    const { next, changes } = applyLegacyMigrations(raw);
-    expect(next).toBeNull();
-    expect(changes.length).toBe(0);
+  it("a config without the key produces no legacy issue and no migration", async () => {
+    await withTempHome(async (home) => {
+      await writeRemoteClawConfig(home, {
+        gateway: {
+          auth: { mode: "trusted-proxy", trustedProxy: { userHeader: "x-forwarded-user" } },
+        },
+      });
+
+      const snap = await readConfigFileSnapshot();
+
+      expect(snap.legacyIssues.some((issue) => issue.path === LEGACY_PATH)).toBe(false);
+      const { next, changes } = applyLegacyMigrations(snap.parsed);
+      expect(next).toBeNull();
+      expect(changes.length).toBe(0);
+    });
   });
 
   it("does not disturb unrelated trustedProxy-less gateway config", () => {

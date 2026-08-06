@@ -75,6 +75,25 @@ jobs:
       - name: Check throwing-stub-with-live-callers
         run: node scripts/check-throwing-stub-callers.mjs
 
+  trash-containment-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Self-test classifier (fixture-based)
+        run: node scripts/check-trash-containment.mjs --self-test
+
+      - name: Check trash containment
+        run: node scripts/check-trash-containment.mjs
+
   attestation-gate:
     runs-on: ubuntu-latest
     steps:
@@ -494,6 +513,7 @@ jobs:
         zombie-import-gate,
         stub-debt-gate,
         throwing-stub-callers-gate,
+        trash-containment-gate,
         obsolescence-audit-gate,
         policy-doctor-boundary-gate,
         raw-channel-fetch-gate,
@@ -512,7 +532,7 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" || "${{ needs.test-windows.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.trash-containment-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" || "${{ needs.test-windows.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

@@ -135,6 +135,11 @@ export type GatewayAuthMode = "none" | "token" | "password" | "trusted-proxy";
  * Configuration for trusted reverse proxy authentication.
  * Used when Clawdbot runs behind an identity-aware proxy (Pomerium, Caddy + OAuth, etc.)
  * that handles authentication and passes user identity via headers.
+ *
+ * Same-host (loopback-source) reverse proxies are NOT supported: `authorizeTrustedProxy`
+ * rejects loopback and host-interface sources unconditionally so the host cannot
+ * impersonate an upstream proxy. There is deliberately no opt-in escape hatch here —
+ * do not re-add one without an ADR (matches upstream, which also has none).
  */
 export type GatewayTrustedProxyConfig = {
   /**
@@ -154,11 +159,6 @@ export type GatewayTrustedProxyConfig = {
    * Example: ["nick@example.com", "admin@company.org"]
    */
   allowUsers?: string[];
-  /**
-   * Allow loopback (127.0.0.1/::1) connections to bypass proxy-header trust
-   * checks. Defaults to false; enable only for local development.
-   */
-  allowLoopback?: boolean;
 };
 
 export type GatewayAuthConfig = {

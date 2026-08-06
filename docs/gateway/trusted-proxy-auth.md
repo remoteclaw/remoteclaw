@@ -113,9 +113,6 @@ identity cannot be established.
 
         // Optional: restrict to specific users (empty = allow all)
         allowUsers: ["nick@example.com", "admin@company.org"],
-
-        // Optional: allow a same-host loopback proxy after explicit opt-in
-        allowLoopback: false,
       },
     },
   },
@@ -125,12 +122,11 @@ identity cannot be established.
 <Warning>
 **Important runtime rules**
 
-- Trusted-proxy auth rejects loopback-source requests (`127.0.0.1`, `::1`, loopback CIDRs) by default.
-- Same-host loopback reverse proxies do **not** satisfy trusted-proxy auth unless you explicitly set `gateway.auth.trustedProxy.allowLoopback = true` and include the loopback address in `gateway.trustedProxies`.
-- `allowLoopback` trusts local processes on the Gateway host to the same degree as the reverse proxy. Enable it only when the Gateway is still firewalled from direct remote access and the local proxy strips or overwrites client-supplied identity headers.
+- Trusted-proxy auth rejects loopback-source requests (`127.0.0.1`, `::1`, loopback CIDRs) unconditionally. It also rejects other host-interface addresses, so the Gateway host cannot impersonate an upstream proxy.
+- **Same-host reverse proxies are not supported.** A proxy that reaches the Gateway over loopback can never satisfy trusted-proxy auth, and there is no opt-in override. Either give the proxy a non-loopback path to the Gateway (separate host, or a non-loopback interface kept in `gateway.trustedProxies`), or authenticate those callers with `gateway.auth.password`.
 - Internal Gateway clients that do not travel through the reverse proxy should use `gateway.auth.password` / `REMOTECLAW_GATEWAY_PASSWORD`, not trusted-proxy identity headers.
 - Non-loopback Control UI deployments still need explicit `gateway.controlUi.allowedOrigins`.
-- **Forwarded-header evidence overrides loopback locality for local direct fallback.** If a request arrives on loopback but carries `Forwarded`, any `X-Forwarded-*`, or `X-Real-IP` header evidence, that evidence disqualifies local-direct password fallback and device-identity gating. With `allowLoopback: true`, trusted-proxy auth can still accept the request as a same-host proxy request, while `requiredHeaders` and `allowUsers` continue to apply.
+- **Forwarded-header evidence overrides loopback locality for local direct fallback.** If a request arrives on loopback but carries `Forwarded`, any `X-Forwarded-*`, or `X-Real-IP` header evidence, that evidence disqualifies local-direct password fallback and device-identity gating. Such a request is not rescued by trusted-proxy auth either, since its loopback source is rejected outright.
 
 </Warning>
 
@@ -151,12 +147,9 @@ identity cannot be established.
 <ParamField path="gateway.auth.trustedProxy.allowUsers" type="string[]">
   Allowlist of user identities. Empty means allow all authenticated users.
 </ParamField>
-<ParamField path="gateway.auth.trustedProxy.allowLoopback" type="boolean">
-  Opt-in support for same-host loopback reverse proxies. Defaults to `false`.
-</ParamField>
 
 <Warning>
-Only enable `allowLoopback` when the local reverse proxy is the intended trust boundary. Any local process that can connect to the Gateway can try to send proxy identity headers, so keep direct Gateway access private to the host and require proxy-owned headers such as `x-forwarded-proto` or a signed assertion header where your proxy supports one.
+There is no same-host escape hatch. Trusted-proxy auth deliberately offers no option to accept loopback-source requests: any local process that can connect to the Gateway could otherwise send proxy identity headers and impersonate an authenticated user. Run the proxy where it reaches the Gateway over a non-loopback address, and use `gateway.auth.password` for same-host callers.
 </Warning>
 
 ## TLS termination and HSTS
@@ -370,7 +363,7 @@ Before enabling trusted-proxy auth, verify:
 
 - [ ] **Proxy is the only path**: The Gateway port is firewalled from everything except your proxy.
 - [ ] **trustedProxies is minimal**: Only your actual proxy IPs, not entire subnets.
-- [ ] **Loopback proxy source is deliberate**: trusted-proxy auth fails closed for loopback-source requests unless `gateway.auth.trustedProxy.allowLoopback` is explicitly enabled for a same-host proxy.
+- [ ] **Proxy source is not loopback**: trusted-proxy auth fails closed for loopback-source and host-interface requests, with no override. A same-host proxy cannot be made to work; use `gateway.auth.password` for those callers.
 - [ ] **Proxy strips headers**: Your proxy overwrites (not appends) `x-forwarded-*` headers from clients.
 - [ ] **TLS termination**: Your proxy handles TLS; users connect via HTTPS.
 - [ ] **allowedOrigins is explicit**: Non-loopback Control UI uses explicit `gateway.controlUi.allowedOrigins`.
@@ -388,7 +381,6 @@ The audit checks for:
 - Missing `trustedProxies` configuration
 - Missing `userHeader` configuration
 - Empty `allowUsers` (allows any authenticated user)
-- Enabled `allowLoopback` for same-host proxy sources
 - Wildcard or missing browser-origin policy on exposed Control UI surfaces
 
 ## Troubleshooting
@@ -413,8 +405,9 @@ The audit checks for:
     Fix:
 
     - Prefer token/password auth for internal same-host clients that do not go through the proxy, or
-    - Route through a non-loopback trusted proxy address and keep that IP in `gateway.trustedProxies`, or
-    - For a deliberate same-host reverse proxy, set `gateway.auth.trustedProxy.allowLoopback = true`, keep the loopback address in `gateway.trustedProxies`, and make sure the proxy strips or overwrites identity headers.
+    - Route through a non-loopback trusted proxy address and keep that IP in `gateway.trustedProxies`.
+
+    There is no same-host opt-in. A reverse proxy that reaches the Gateway over loopback cannot satisfy trusted-proxy auth in any configuration — the loopback-source rejection is unconditional, so this is a deployment change, not a setting to flip.
 
   </Accordion>
   <Accordion title="trusted_proxy_user_missing">

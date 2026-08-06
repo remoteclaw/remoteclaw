@@ -756,7 +756,7 @@ lives on the [First-run FAQ](/help/faq-first-run).
     - For password auth, set `gateway.auth.mode: "password"` plus `gateway.auth.password` (or `REMOTECLAW_GATEWAY_PASSWORD`) instead.
     - If `gateway.auth.token` / `gateway.auth.password` is explicitly configured via SecretRef and unresolved, resolution fails closed (no remote fallback masking).
     - Shared-secret Control UI setups authenticate via `connect.params.auth.token` or `connect.params.auth.password` (stored in app/UI settings). Identity-bearing modes such as Tailscale Serve or `trusted-proxy` use request headers instead. Avoid putting shared secrets in URLs.
-    - With `gateway.auth.mode: "trusted-proxy"`, same-host loopback reverse proxies require explicit `gateway.auth.trustedProxy.allowLoopback = true` and a loopback entry in `gateway.trustedProxies`.
+    - With `gateway.auth.mode: "trusted-proxy"`, same-host (loopback-source) reverse proxies are not supported and cannot satisfy the mode. Reach the Gateway from a non-loopback proxy address, or use `gateway.auth.password` for same-host callers.
 
   </Accordion>
 
@@ -1536,7 +1536,7 @@ lives on the [Models FAQ](/help/faq-models).
     - If remote, tunnel first: `ssh -N -L 18789:127.0.0.1:18789 user@host` then open `http://127.0.0.1:18789/`.
     - Shared-secret mode: set `gateway.auth.token` / `REMOTECLAW_GATEWAY_TOKEN` or `gateway.auth.password` / `REMOTECLAW_GATEWAY_PASSWORD`, then paste the matching secret in Control UI settings.
     - Tailscale Serve mode: make sure `gateway.auth.allowTailscale` is enabled and you are opening the Serve URL, not a raw loopback/tailnet URL that bypasses Tailscale identity headers.
-    - Trusted-proxy mode: make sure you are coming through the configured identity-aware proxy, not a raw gateway URL. Same-host loopback proxies also need `gateway.auth.trustedProxy.allowLoopback = true`.
+    - Trusted-proxy mode: make sure you are coming through the configured identity-aware proxy, not a raw gateway URL. A same-host (loopback-source) proxy can never satisfy this mode — use `gateway.auth.password` for same-host callers.
     - If mismatch persists after the one retry, rotate/re-approve the paired device token:
       - `remoteclaw devices list`
       - `remoteclaw devices rotate --device <id> --role operator`

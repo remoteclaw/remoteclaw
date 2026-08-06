@@ -377,9 +377,9 @@ When the Gateway detects proxy headers from an address that is **not** in `trust
 
 `gateway.trustedProxies` also feeds `gateway.auth.mode: "trusted-proxy"`, but that auth mode is stricter:
 
-- trusted-proxy auth **fails closed on loopback-source proxies by default**
+- trusted-proxy auth **fails closed on loopback-source proxies**, with no opt-in override
 - same-host loopback reverse proxies can use `gateway.trustedProxies` for local-client detection and forwarded IP handling
-- same-host loopback reverse proxies can satisfy `gateway.auth.mode: "trusted-proxy"` only when `gateway.auth.trustedProxy.allowLoopback = true`; otherwise use token/password auth
+- same-host loopback reverse proxies can never satisfy `gateway.auth.mode: "trusted-proxy"`; use token/password auth for those callers
 
 ```yaml
 gateway:

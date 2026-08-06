@@ -44,7 +44,7 @@ export function registerControlUiAndPairingSuite(): void {
       // rejected unconditionally by `authorizeTrustedProxy` (auth.ts) — the
       // loopback-source guard fires before user-header verification. This
       // matches current upstream (which also rejects loopback trusted-proxy
-      // sources and has no `allowLoopback` escape hatch). Every gateway test
+      // sources and offers no same-host opt-in). Every gateway test
       // connects via `ws://127.0.0.1`, so the operator path can never reach
       // the trusted-proxy device-identity skip; it falls through to the
       // control-ui device-identity requirement.

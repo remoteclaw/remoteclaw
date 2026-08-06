@@ -276,4 +276,31 @@ export const LEGACY_CONFIG_MIGRATIONS: LegacyConfigMigration[] = [
       );
     },
   },
+  {
+    // Strip the dead gateway.auth.trustedProxy.allowLoopback knob (#3128). The key was
+    // declared in the TS type, carried in the served JSON schema, and documented, but no
+    // gateway code ever read it — authorizeTrustedProxy rejects loopback and host-interface
+    // sources unconditionally. It was never in the zod schema either, and
+    // GatewayTrustedProxyConfig is `.strict()`, so a persisted config carrying this key
+    // fails to load outright with "Unrecognized key(s)". That includes the `allowLoopback:
+    // false` value in our own documented trusted-proxy example, so operators who copy-pasted
+    // the docs currently have a config that does not load. Strip it so those configs load
+    // cleanly instead of hard-failing on a setting that never did anything.
+    id: "strip-gateway-trusted-proxy-allow-loopback",
+    describe: "Strip dead gateway.auth.trustedProxy.allowLoopback knob (#3128)",
+    apply(raw, changes) {
+      const gateway = getRecord(raw.gateway);
+      const auth = gateway ? getRecord(gateway.auth) : null;
+      const trustedProxy = auth ? getRecord(auth.trustedProxy) : null;
+      if (!trustedProxy || !Object.prototype.hasOwnProperty.call(trustedProxy, "allowLoopback")) {
+        return;
+      }
+      delete trustedProxy.allowLoopback;
+      changes.push(
+        "Removed unsupported gateway.auth.trustedProxy.allowLoopback — trusted-proxy auth " +
+          "always rejects loopback and host-interface sources; use gateway.auth.password for " +
+          "same-host callers.",
+      );
+    },
+  },
 ];

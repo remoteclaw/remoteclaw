@@ -11,16 +11,17 @@ LINE connects to RemoteClaw via the LINE Messaging API. The plugin runs as a web
 receiver on the gateway and uses your channel access token + channel secret for
 authentication.
 
-Status: downloadable plugin. Direct messages, group chats, media, locations, Flex
+Status: bundled plugin. Direct messages, group chats, media, locations, Flex
 messages, template messages, and quick replies are supported. Reactions and threads
 are not supported.
 
 ## Install
 
-Install LINE before configuring the channel:
+LINE ships as a bundled plugin, so there is nothing to download. Enable it before
+configuring the channel:
 
 ```bash
-remoteclaw plugins install @remoteclaw/line
+remoteclaw plugins enable line
 ```
 
 Local checkout (when running from a git repo):

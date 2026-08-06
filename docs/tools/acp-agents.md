@@ -39,15 +39,21 @@ directly to existing RemoteClaw channel conversations, use
 
 ## Does this work out of the box?
 
-Yes, after installing the official ACP runtime plugin:
+Only after the ACP runtime plugin is available locally.
+
+There is currently **no registry install** for it: the `@remoteclaw` npm scope is
+not registered, so `remoteclaw plugins install @remoteclaw/acpx` is refused, and
+`acpx` ships no plugin manifest, so it does not resolve as a bundled plugin
+either.
+
+Source checkouts can use the local `extensions/acpx` workspace plugin after
+`pnpm install`:
 
 ```bash
-remoteclaw plugins install @remoteclaw/acpx
 remoteclaw config set plugins.entries.acpx.enabled true
 ```
 
-Source checkouts can use the local `extensions/acpx` workspace plugin after
-`pnpm install`. Run `/acp doctor` for a readiness check.
+Run `/acp doctor` for a readiness check.
 
 RemoteClaw only teaches agents about ACP spawning when ACP is **truly
 usable**: ACP must be enabled, dispatch must not be disabled, the current

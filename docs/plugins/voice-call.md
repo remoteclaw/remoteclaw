@@ -25,24 +25,24 @@ the Gateway, then restart the Gateway to load it.
 ## Quick start
 
 <Steps>
-  <Step title="Install the plugin">
+  <Step title="Enable the plugin">
     <Tabs>
-      <Tab title="From npm">
+      <Tab title="Bundled plugin">
         ```bash
-        openclaw plugins install @remoteclaw/voice-call
+        remoteclaw plugins enable voice-call
         ```
       </Tab>
       <Tab title="From a local folder (dev)">
         ```bash
         PLUGIN_SRC=./path/to/local/voice-call-plugin
-        openclaw plugins install "$PLUGIN_SRC"
+        remoteclaw plugins install "$PLUGIN_SRC"
         cd "$PLUGIN_SRC" && pnpm install
         ```
       </Tab>
     </Tabs>
 
-    Use the bare package to follow the current official release tag. Pin an
-    exact version only when you need a reproducible install.
+    Voice Call ships with RemoteClaw, so there is no separate download and no
+    npm registry install: the `@remoteclaw` scope is not registered.
 
     Restart the Gateway afterwards so the plugin loads.
 

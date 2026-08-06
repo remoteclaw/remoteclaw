@@ -6,18 +6,17 @@ read_when:
 title: "Matrix"
 ---
 
-Matrix is a downloadable channel plugin for RemoteClaw.
+Matrix is a bundled channel plugin for RemoteClaw.
 It uses the official `matrix-js-sdk` and supports DMs, rooms, threads, media, reactions, polls, location, and E2EE.
 
 ## Install
 
-Install Matrix from ClawHub before configuring the channel:
+Matrix ships as a bundled plugin, so there is nothing to download. Enable it
+before configuring the channel:
 
 ```bash
-remoteclaw plugins install @remoteclaw/matrix
+remoteclaw plugins enable matrix
 ```
-
-Bare plugin specs try ClawHub first, then npm fallback. To force the registry source, use `remoteclaw plugins install clawhub:@remoteclaw/matrix` or `remoteclaw plugins install npm:@remoteclaw/matrix`.
 
 From a local checkout:
 

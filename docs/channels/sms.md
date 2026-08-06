@@ -26,7 +26,7 @@ SMS defers sender-initiated self-enrollment — no pairing challenge is sent to 
 
 You need:
 
-- The official SMS plugin installed with `remoteclaw plugins install @remoteclaw/sms`.
+- The bundled SMS plugin enabled with `remoteclaw plugins enable sms`.
 - A Twilio account with an SMS-capable phone number, or a Twilio Messaging Service.
 - The Twilio Account SID and Auth Token.
 - A public HTTPS URL that reaches your RemoteClaw Gateway.
@@ -37,9 +37,9 @@ Use one Twilio number for both SMS and Voice Call if the number has both capabil
 ## Quick Setup
 
 <Steps>
-  <Step title="Install the plugin">
+  <Step title="Enable the bundled plugin">
     ```bash
-    remoteclaw plugins install @remoteclaw/sms
+    remoteclaw plugins enable sms
     ```
   </Step>
   <Step title="Create or choose a Twilio sender">

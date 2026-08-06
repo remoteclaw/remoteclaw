@@ -26,14 +26,14 @@ No external `zca`/`openzca` CLI binary is required.
 
 ## Install
 
-### Option A: install from npm
+### Option A: enable the bundled plugin
 
 ```bash
-remoteclaw plugins install @remoteclaw/zalouser
+remoteclaw plugins enable zalouser
 ```
 
-Use the bare package to follow the current official release tag. Pin an exact
-version only when you need a reproducible install.
+Zalo Personal ships with RemoteClaw, so there is no separate download. There is
+no npm registry install: the `@remoteclaw` scope is not registered.
 
 Restart the Gateway afterwards.
 

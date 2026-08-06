@@ -18,15 +18,23 @@ the default built-in memory store.
 
 ## Installation
 
-Install `memory-lancedb` before setting `plugins.slots.memory = "memory-lancedb"`:
+<Warning>
+`memory-lancedb` has **no working install path in RemoteClaw today**. It is not
+bundled into the runtime image, and it is not installable from npm: the
+`@remoteclaw` scope is not registered, so
+`remoteclaw plugins install @remoteclaw/memory-lancedb` is refused.
+
+The rest of this page documents the plugin's configuration surface. It applies
+only if you build and install the plugin yourself from a local path or tarball:
 
 ```bash
-remoteclaw plugins install @remoteclaw/memory-lancedb
+remoteclaw plugins install ./path/to/local/memory-lancedb-plugin
 ```
 
-The plugin is published to npm and is not bundled into the RemoteClaw runtime image.
-The installer writes the plugin entry and switches the memory slot when no other
-plugin owns it.
+</Warning>
+
+Installing it writes the plugin entry and switches the memory slot when no other
+plugin owns it, before you set `plugins.slots.memory = "memory-lancedb"`.
 
 <Note>
 `memory-lancedb` is an active memory plugin. Enable it by selecting the memory

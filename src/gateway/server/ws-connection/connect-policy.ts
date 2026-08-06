@@ -32,14 +32,21 @@ export function resolveControlUiAuthPolicy(params: {
   };
 }
 
+// Trusted-proxy auth does NOT skip Control UI pairing. Proxy authentication
+// proves *who the user is*; pairing proves *which device* is speaking. A signed
+// but unpaired device presented over a trusted proxy used to be admitted here
+// and handed the scopes it declared for itself. `_trustedProxyAuthOk` is kept in
+// the signature (unused) so call sites stay stable and the parameter's absence
+// is not mistaken for a missing check. Adopts upstream #81288 (remoteclaw#2843).
+//
+// `dangerouslyDisableDeviceAuth` remains the documented break-glass opt-out: it
+// sets `allowBypass`, and under trusted-proxy `sharedAuthOk` is true, so the
+// bypass below still returns true.
 export function shouldSkipControlUiPairing(
   policy: ControlUiAuthPolicy,
   sharedAuthOk: boolean,
-  trustedProxyAuthOk = false,
+  _trustedProxyAuthOk = false,
 ): boolean {
-  if (trustedProxyAuthOk) {
-    return true;
-  }
   return policy.allowBypass && sharedAuthOk;
 }
 

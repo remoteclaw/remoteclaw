@@ -43,6 +43,25 @@
   OpenClaw #78864, dropped by a content-only sync when this fork's resolver had
   structurally diverged.
 
+- **Security — require Control UI device pairing under trusted-proxy auth
+  ([remoteclaw#2843](https://github.com/remoteclaw/remoteclaw/issues/2843)):**
+  Under `gateway.auth.mode: "trusted-proxy"`, a Control UI WebSocket session that
+  presented a device identity was admitted on the strength of proxy auth alone —
+  pairing was skipped outright, so a signed but **never-paired** device connected
+  successfully and received the operator scopes it had declared for itself. Proxy
+  auth establishes who the _user_ is; it does not establish which _device_ is
+  speaking. Such a device is now **rejected** with `pairing required`
+  (`PAIRING_REQUIRED`) and raises a pairing request for approval, and trusted-proxy
+  sessions are no longer issued a device token (a bearer credential that would
+  outlive the proxy-fronted session and authorize a direct connection bypassing the
+  proxy). Connections with **no** device identity at all are unchanged: they still
+  connect with self-declared scopes cleared to an empty set. To keep the prior
+  behavior, set `gateway.controlUi.dangerouslyDisableDeviceAuth: true` — the
+  documented break-glass opt-out, which `remoteclaw security audit` reports as
+  critical. Adopts upstream OpenClaw #81288, which withdrew the permissive
+  short-circuit upstream had added in #25293; this fork inherited the permissive
+  form by sync and four sync batches passed over the reversal.
+
 ### Fixed
 
 - **iMessage — stop leaking the `[[rc:reply:<id>]]` reply tag into delivered text

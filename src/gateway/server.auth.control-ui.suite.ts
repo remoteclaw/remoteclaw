@@ -326,6 +326,117 @@ export function registerControlUiAndPairingSuite(): void {
     }
   });
 
+  // Companion to the scope-clearing case above. That one connects with NO device
+  // (`device: null`) and proves self-declared scopes are stripped. This one
+  // presents a *signed but unpaired* device over the same trusted-proxy Control
+  // UI path and proves pairing is now REQUIRED: trusted-proxy auth no longer
+  // short-circuits the pairing gate (remoteclaw#2843, adopting upstream #81288).
+  // Before that change `shouldSkipControlUiPairing` returned true purely because
+  // the connection was trusted-proxy authenticated, so this connect succeeded and
+  // the device was handed operator scopes it had never been paired for.
+  //
+  // Uses the same process-global remote-address seam as the case above (the
+  // gateway test transport only dials `ws://127.0.0.1`, which `authorizeTrustedProxy`
+  // rejects as a loopback trusted-proxy source) — so it carries the same `finally`
+  // reset discipline; leaking it would break sibling tests in this worker.
+  test("requires pairing for trusted-proxy control ui device identity", async () => {
+    await configureTrustedProxyControlUiAuth();
+    const { identityPath } = await createOperatorIdentityFixture(
+      "remoteclaw-control-ui-trusted-proxy-pairing-",
+    );
+    setTestUpgradeRemoteAddressOverride(TRUSTED_PROXY_CONTROL_UI_REMOTE_IP);
+    try {
+      await withGatewayServer(async ({ port }) => {
+        const ws = await openWs(port, TRUSTED_PROXY_CONTROL_UI_HEADERS);
+        try {
+          const challengeNonce = await readConnectChallengeNonce(ws);
+          expect(challengeNonce).toBeTruthy();
+          // Signed against a fresh identity, so it is a well-formed device that
+          // has never been paired — the exact shape trusted-proxy used to admit.
+          const { device } = await createSignedDevice({
+            token: null,
+            scopes: ["operator.read"],
+            clientId: CONTROL_UI_CLIENT.id,
+            clientMode: CONTROL_UI_CLIENT.mode,
+            identityPath,
+            nonce: String(challengeNonce),
+          });
+          const res = await connectReq(ws, {
+            skipDefaultAuth: true,
+            scopes: ["operator.read"],
+            device,
+            client: { ...CONTROL_UI_CLIENT },
+          });
+          expect(res.ok).toBe(false);
+          expect(res.error?.message ?? "").toContain("pairing required");
+          expect((res.error?.details as { code?: string } | undefined)?.code).toBe(
+            ConnectErrorDetailCodes.PAIRING_REQUIRED,
+          );
+        } finally {
+          ws.close();
+        }
+      });
+    } finally {
+      setTestUpgradeRemoteAddressOverride(undefined);
+    }
+  });
+
+  // The other half of remoteclaw#2843: even once its device IS paired, a
+  // trusted-proxy Control UI session must not be issued a device token. That
+  // token is a bearer credential which would authorize a later *direct*
+  // connection that never traverses the proxy — outliving the proxy-fronted
+  // session that justified it. `payload.auth` is the wire surface carrying it,
+  // so its absence is the observable assertion (the same signal the device-less
+  // case above already uses).
+  test("does not issue a device token for trusted-proxy control ui paired devices", async () => {
+    await configureTrustedProxyControlUiAuth();
+    const { identityPath } = await seedApprovedOperatorReadPairing({
+      identityPrefix: "remoteclaw-control-ui-trusted-proxy-token-",
+      clientId: CONTROL_UI_CLIENT.id,
+      clientMode: CONTROL_UI_CLIENT.mode,
+      displayName: "trusted-proxy-control-ui",
+      platform: CONTROL_UI_CLIENT.platform,
+    });
+    setTestUpgradeRemoteAddressOverride(TRUSTED_PROXY_CONTROL_UI_REMOTE_IP);
+    try {
+      await withGatewayServer(async ({ port }) => {
+        const ws = await openWs(port, TRUSTED_PROXY_CONTROL_UI_HEADERS);
+        try {
+          const nonce = await readConnectChallengeNonce(ws);
+          expect(nonce).toBeTruthy();
+          // Signed with `token: null`: trusted-proxy mode has no shared secret,
+          // and the shared token is bound into the device signature — signing
+          // with one here yields DEVICE_AUTH_SIGNATURE_INVALID. (This is why the
+          // suite's `buildSignedDeviceForIdentity` helper, which hardcodes
+          // `token: "secret"`, is not usable on the trusted-proxy path.)
+          const { device } = await createSignedDevice({
+            token: null,
+            scopes: ["operator.read"],
+            clientId: CONTROL_UI_CLIENT.id,
+            clientMode: CONTROL_UI_CLIENT.mode,
+            identityPath,
+            nonce: String(nonce),
+          });
+          const res = await connectReq(ws, {
+            skipDefaultAuth: true,
+            scopes: ["operator.read"],
+            client: { ...CONTROL_UI_CLIENT },
+            device,
+          });
+          // Paired, so pairing itself is satisfied and the connect succeeds...
+          expect(res.error).toBeUndefined();
+          expect(res.ok).toBe(true);
+          // ...but no device token is minted for it.
+          expect((res.payload as { auth?: unknown } | undefined)?.auth).toBeUndefined();
+        } finally {
+          ws.close();
+        }
+      });
+    } finally {
+      setTestUpgradeRemoteAddressOverride(undefined);
+    }
+  });
+
   test("allows localhost control ui without device identity when insecure auth is enabled", async () => {
     testState.gatewayControlUi = { allowInsecureAuth: true };
     const { server, ws, prevToken } = await startServerWithClient("secret", {

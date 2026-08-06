@@ -60,19 +60,32 @@ export const EXTENSIONS_QUARANTINE: string[] = [
   "extensions/discord/src/monitor.tool-result.sends-status-replies-responseprefix.test.ts",
   "extensions/discord/src/monitor/auto-presence.test.ts",
   "extensions/discord/src/monitor/message-handler.preflight.test.ts",
-  // #2968 (discord): the inbound message-ID replay guard is now wired into
-  // inbound-worker.ts / message-handler.ts, and this file's 3 dedup cases were re-homed to
-  // message-handler.dedupe.test.ts (un-quarantined, so the dedup behavior gates CI) — the
-  // #2953/#2970 focused-spec re-homing precedent. message-handler.queue.test.ts STAYS
-  // quarantined ONLY on its 3 timeout-fallback-reply cases ("applies explicit inbound worker
-  // timeout ...", "waits for the timeout fallback reply before starting the next queued run",
-  // "routes the timeout fallback to the created auto-thread target"): they assert a
-  // user-facing "Discord inbound worker timed out." channel reply, but onTimeout is
-  // deliberately still log-only pending a separate, ratification-pending maintainer decision
-  // on whether that fallback reply should exist. (The file's remaining queue-behavior cases
-  // pass, but file-level quarantine is all-or-nothing.) Un-quarantine when the timeout-reply
-  // decision lands.
-  "extensions/discord/src/monitor/message-handler.queue.test.ts",
+  // #2998 (discord): message-handler.queue.test.ts is UN-quarantined; only the three
+  // timeout-fallback-reply cases re-homed here stay out of CI.
+  //
+  // This entry previously claimed the queue file failed on exactly 3 cases. That was wrong:
+  // it failed on 5, because message-handler.test-helpers.ts had a botched find-replace
+  // (`// workerRunTimeoutMs: overrides?.// workerRunTimeoutMs,`) that never threaded
+  // workerRunTimeoutMs into the handler params, so the worker timeout never fired and
+  // runtime.error was called 0 times. Two cases failed on that harness bug alone —
+  // "does not send the timeout fallback when a final reply already went out" and "does not
+  // send the timeout fallback when final reply delivery is already in flight", both of which
+  // assert runtime.error fires and the fallback is NOT sent. Repairing the helper dropped the
+  // queue file from 5 failures to 3, and those two now pass and gate CI in place.
+  //
+  // The 3 that remain are re-homed into message-handler.timeout-fallback-reply.test.ts (the
+  // #2953/#2970 focused-spec precedent, as with the #2968 dedup re-home to
+  // message-handler.dedupe.test.ts):
+  //   - "applies explicit inbound worker timeout to queued runs so stalled runs do not block
+  //     the queue"
+  //   - "waits for the timeout fallback reply before starting the next queued run"
+  //   - "routes the timeout fallback to the created auto-thread target"
+  // All three assert a user-facing "Discord inbound worker timed out." channel reply. The
+  // timeout now fires and is observable (runtime.error), but onTimeout in inbound-worker.ts is
+  // deliberately still log-only, pending a separate, ratification-pending maintainer decision
+  // on whether that fallback reply should exist at all (#2998 — still open). Un-quarantine
+  // when that decision lands.
+  "extensions/discord/src/monitor/message-handler.timeout-fallback-reply.test.ts",
   "extensions/discord/src/monitor/native-command.commands-allowfrom.test.ts",
   "extensions/discord/src/voice-message.test.ts",
   // #2782 (feishu): monitor.reaction remains — needs a separate SOURCE change

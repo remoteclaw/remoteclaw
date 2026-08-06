@@ -48,7 +48,7 @@ export function createDiscordHandlerParams(overrides?: {
     threadBindings: createNoopThreadBindingManager("default"),
     setStatus: overrides?.setStatus,
     abortSignal: overrides?.abortSignal,
-    // workerRunTimeoutMs: overrides?.// workerRunTimeoutMs,
+    workerRunTimeoutMs: overrides?.workerRunTimeoutMs,
   };
 }
 

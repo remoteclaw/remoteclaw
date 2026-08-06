@@ -132,7 +132,7 @@ For identity-aware proxies:
 - `gateway.trustedProxies` must contain only the proxy source IPs.
 - The proxy must strip or overwrite client-supplied identity and forwarding headers.
 - `gateway.auth.trustedProxy.allowUsers` should list expected users when the proxy serves more than one audience.
-- Same-host loopback proxy mode should use `allowLoopback` only when local processes are trusted and the proxy owns the identity headers.
+- Same-host (loopback-source) reverse proxies cannot satisfy trusted-proxy auth at all, and neither can a proxy connecting from one of the Gateway's own interface addresses. Reach the Gateway from an address the Gateway does not hold, or use `gateway.auth.password` for those callers.
 
 Run `remoteclaw security audit --deep` after proxy changes. Trusted-proxy findings
 are intentionally high-signal because the proxy becomes the authentication

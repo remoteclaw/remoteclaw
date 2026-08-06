@@ -170,8 +170,9 @@ Short version: **keep the Gateway loopback-only** unless you're sure you need a 
   use that Tailscale header auth and instead follow the gateway's normal HTTP
   auth mode. This tokenless flow assumes the gateway host is trusted. Set it to
   `false` if you want shared-secret auth everywhere.
-- **Trusted-proxy** auth expects non-loopback identity-aware proxy setups by default.
-  Same-host loopback reverse proxies require explicit `gateway.auth.trustedProxy.allowLoopback = true`.
+- **Trusted-proxy** auth requires a non-loopback identity-aware proxy setup.
+  Same-host (loopback-source) reverse proxies are not supported; use
+  `gateway.auth.password` for same-host callers.
 - Treat browser control like operator access: tailnet-only + deliberate node pairing.
 
 Deep dive: [Security](/gateway/security).

@@ -168,7 +168,7 @@ a real boundary bypass is demonstrated:
   explicit CIDR/IP entries, only applies to first-time `role: node` pairing with
   no requested scopes, and does not auto-approve operator/browser/Control UI,
   WebChat, role upgrades, scope upgrades, metadata changes, public-key changes,
-  or same-host loopback trusted-proxy header paths unless loopback trusted-proxy auth was explicitly enabled.
+  or same-host loopback trusted-proxy header paths.
 - "Missing per-user authorization" findings that treat `sessionKey` as an
   auth token.
 
@@ -377,9 +377,9 @@ When the Gateway detects proxy headers from an address that is **not** in `trust
 
 `gateway.trustedProxies` also feeds `gateway.auth.mode: "trusted-proxy"`, but that auth mode is stricter:
 
-- trusted-proxy auth **fails closed on loopback-source proxies by default**
+- trusted-proxy auth **fails closed on loopback-source proxies**, with no opt-in override
 - same-host loopback reverse proxies can use `gateway.trustedProxies` for local-client detection and forwarded IP handling
-- same-host loopback reverse proxies can satisfy `gateway.auth.mode: "trusted-proxy"` only when `gateway.auth.trustedProxy.allowLoopback = true`; otherwise use token/password auth
+- same-host loopback reverse proxies can never satisfy `gateway.auth.mode: "trusted-proxy"`; use token/password auth for those callers
 
 ```yaml
 gateway:
@@ -399,7 +399,7 @@ Trusted proxy headers do not make node device pairing automatically trusted.
 `gateway.nodes.pairing.autoApproveCidrs` is a separate, disabled-by-default
 operator policy. Even when enabled, loopback-source trusted-proxy header paths
 are excluded from node auto-approval because local callers can forge those
-headers, including when loopback trusted-proxy auth is explicitly enabled.
+headers.
 
 Good reverse proxy behavior (overwrite incoming forwarding headers):
 

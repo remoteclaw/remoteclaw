@@ -40,8 +40,8 @@ Notes:
 - When `gateway.auth.mode="token"`, use `gateway.auth.token` (or `REMOTECLAW_GATEWAY_TOKEN`).
 - When `gateway.auth.mode="password"`, use `gateway.auth.password` (or `REMOTECLAW_GATEWAY_PASSWORD`).
 - When `gateway.auth.mode="trusted-proxy"`, the HTTP request must come from a
-  configured trusted proxy source; same-host loopback proxies require explicit
-  `gateway.auth.trustedProxy.allowLoopback = true`.
+  configured trusted proxy source. Same-host (loopback-source) proxies are not
+  supported and cannot satisfy this mode; use the local direct fallback below.
 - Internal same-host callers that bypass the proxy can use
   `gateway.auth.password` / `REMOTECLAW_GATEWAY_PASSWORD` as a local direct
   fallback. Any `Forwarded`, `X-Forwarded-*`, or `X-Real-IP` header evidence

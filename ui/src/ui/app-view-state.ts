@@ -1,14 +1,5 @@
-import type { EventLogEntry } from "./app-events.ts";
-import type { CompactionStatus } from "./app-tool-stream.ts";
-import type { CronModelSuggestionsState, CronState } from "./controllers/cron.ts";
-import type { DevicePairingList } from "./controllers/devices.ts";
-import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
-import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
-import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
-import type { Tab } from "./navigation.ts";
-import type { UiSettings } from "./storage.ts";
-import type { ThemeTransitionContext } from "./theme-transition.ts";
-import type { ThemeMode } from "./theme.ts";
+import type { EventLogEntry } from "../api/event-log.ts";
+import type { GatewayBrowserClient, GatewayHelloOk } from "../api/gateway.ts";
 import type {
   AgentsListResult,
   AgentsFilesListResult,
@@ -17,16 +8,24 @@ import type {
   ConfigSnapshot,
   ConfigUiHints,
   HealthSnapshot,
-  LogEntry,
-  LogLevel,
   NostrProfile,
   PresenceEntry,
   SessionsListResult,
   ToolsCatalogResult,
   StatusSummary,
-} from "./types.ts";
+} from "../api/types.ts";
+import type { ExecApprovalRequest } from "../app/exec-approval.ts";
+import type { ThemeTransitionContext } from "../app/theme-transition.ts";
+import type { ThemeMode } from "../app/theme.ts";
+import type { CronModelSuggestionsState, CronState } from "../lib/cron/index.ts";
+import type { NostrProfileFormState } from "../pages/channels/view.nostr-profile-form.ts";
+import type { CompactionStatus } from "../pages/chat/tool-stream.ts";
+import type { LogEntry, LogLevel } from "../pages/logs/log-lines.ts";
+import type { DevicePairingList } from "./controllers/devices.ts";
+import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
+import type { Tab } from "./navigation.ts";
+import type { UiSettings } from "./storage.ts";
 import type { ChatAttachment, ChatQueueItem } from "./ui-types.ts";
-import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
 
 export type AppViewState = {
   settings: UiSettings;
@@ -35,6 +34,12 @@ export type AppViewState = {
   onboarding: boolean;
   basePath: string;
   connected: boolean;
+  hostsRevealed: boolean;
+  // Fork-only: upstream's CronState has no quick-create wizard.
+  cronQuickCreateOpen: boolean;
+  cronQuickCreateStep: import("../pages/cron/quick-create.ts").CronQuickCreateStep;
+  cronQuickCreateDraft: import("../pages/cron/quick-create.ts").CronQuickCreateDraft | null;
+  configViewState: import("../pages/config/view.ts").ConfigViewState;
   theme: ThemeMode;
   themeResolved: "light" | "dark";
   hello: GatewayHelloOk | null;
@@ -147,10 +152,10 @@ export type AppViewState = {
 } & Pick<
   CronState,
   | "cronLoading"
-  | "cronQuickCreateOpen"
-  | "cronQuickCreateStep"
-  | "cronQuickCreateDraft"
   | "cronJobsLoadingMore"
+  | "cronJobsReloadPending"
+  | "cronJobsReloadPendingTableFilters"
+  | "cronFormCollapsed"
   | "cronJobs"
   | "cronJobsTotal"
   | "cronJobsHasMore"
@@ -205,7 +210,7 @@ export type AppViewState = {
     logsLimit: number;
     logsMaxBytes: number;
     logsAtBottom: boolean;
-    updateAvailable: import("./types.js").UpdateAvailable | null;
+    updateAvailable: import("../api/types.js").UpdateAvailable | null;
     client: GatewayBrowserClient | null;
     refreshSessionsAfterChat: Set<string>;
     connect: () => void;

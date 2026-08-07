@@ -1,6 +1,43 @@
 import { LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import type { EventLogEntry } from "../api/event-log.ts";
+import type { GatewayBrowserClient, GatewayHelloOk } from "../api/gateway.ts";
+import type {
+  AgentsListResult,
+  AgentsFilesListResult,
+  AgentIdentityResult,
+  ConfigSnapshot,
+  ConfigUiHints,
+  CronJob,
+  CronRunLogEntry,
+  CronStatus,
+  HealthSnapshot,
+  PresenceEntry,
+  ChannelsStatusSnapshot,
+  SessionsListResult,
+  ToolsCatalogResult,
+  StatusSummary,
+  NostrProfile,
+} from "../api/types.ts";
+import type { ExecApprovalRequest } from "../app/exec-approval.ts";
+import type { ResolvedTheme, ThemeMode } from "../app/theme.ts";
 import { i18n, I18nController, isSupportedLocale } from "../i18n/index.ts";
+import { normalizeAssistantIdentity } from "../lib/assistant-identity.ts";
+import type { CronFieldErrors } from "../lib/cron/index.ts";
+import { generateUUID } from "../lib/uuid.ts";
+import type { NostrProfileFormState } from "../pages/channels/view.nostr-profile-form.ts";
+import {
+  handleChatScroll as handleChatScrollInternal,
+  resetChatScroll as resetChatScrollInternal,
+  scheduleChatScroll as scheduleChatScrollInternal,
+} from "../pages/chat/scroll.ts";
+import {
+  resetToolStream as resetToolStreamInternal,
+  type ToolStreamEntry,
+  type CompactionStatus,
+} from "../pages/chat/tool-stream.ts";
+import { createConfigViewState } from "../pages/config/view.ts";
+import type { LogEntry, LogLevel } from "../pages/logs/log-lines.ts";
 import {
   handleChannelConfigReload as handleChannelConfigReloadInternal,
   handleChannelConfigSave as handleChannelConfigSaveInternal,
@@ -20,7 +57,6 @@ import {
   removeQueuedMessage as removeQueuedMessageInternal,
 } from "./app-chat.ts";
 import { DEFAULT_CRON_FORM, DEFAULT_LOG_LEVEL_FILTERS } from "./app-defaults.ts";
-import type { EventLogEntry } from "./app-events.ts";
 import { connectGateway as connectGatewayInternal } from "./app-gateway.ts";
 import {
   handleConnected,
@@ -31,10 +67,7 @@ import {
 import { renderApp } from "./app-render.ts";
 import {
   exportLogs as exportLogsInternal,
-  handleChatScroll as handleChatScrollInternal,
   handleLogsScroll as handleLogsScrollInternal,
-  resetChatScroll as resetChatScrollInternal,
-  scheduleChatScroll as scheduleChatScrollInternal,
 } from "./app-scroll.ts";
 import {
   applySettings as applySettingsInternal,
@@ -44,44 +77,13 @@ import {
   setTheme as setThemeInternal,
   onPopState as onPopStateInternal,
 } from "./app-settings.ts";
-import {
-  resetToolStream as resetToolStreamInternal,
-  type ToolStreamEntry,
-  type CompactionStatus,
-} from "./app-tool-stream.ts";
 import type { AppViewState } from "./app-view-state.ts";
-import { normalizeAssistantIdentity } from "./assistant-identity.ts";
 import { loadAssistantIdentity as loadAssistantIdentityInternal } from "./controllers/assistant-identity.ts";
-import type { CronFieldErrors } from "./controllers/cron.ts";
 import type { DevicePairingList } from "./controllers/devices.ts";
-import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
 import type { ExecApprovalsFile, ExecApprovalsSnapshot } from "./controllers/exec-approvals.ts";
-import type { GatewayBrowserClient, GatewayHelloOk } from "./gateway.ts";
 import type { Tab } from "./navigation.ts";
 import { loadSettings, type UiSettings } from "./storage.ts";
-import type { ResolvedTheme, ThemeMode } from "./theme.ts";
-import type {
-  AgentsListResult,
-  AgentsFilesListResult,
-  AgentIdentityResult,
-  ConfigSnapshot,
-  ConfigUiHints,
-  CronJob,
-  CronRunLogEntry,
-  CronStatus,
-  HealthSnapshot,
-  LogEntry,
-  LogLevel,
-  PresenceEntry,
-  ChannelsStatusSnapshot,
-  SessionsListResult,
-  ToolsCatalogResult,
-  StatusSummary,
-  NostrProfile,
-} from "./types.ts";
 import { type ChatAttachment, type ChatQueueItem, type CronFormState } from "./ui-types.ts";
-import { generateUUID } from "./uuid.ts";
-import type { NostrProfileFormState } from "./views/channels.nostr-profile-form.ts";
 
 declare global {
   interface Window {
@@ -119,6 +121,8 @@ export class RemoteClawApp extends LitElement {
   @state() tab: Tab = "chat";
   @state() onboarding = resolveOnboardingMode();
   @state() connected = false;
+  @state() hostsRevealed = false;
+  @state() configViewState = createConfigViewState();
   @state() theme: ThemeMode = this.settings.theme ?? "system";
   @state() themeResolved: ResolvedTheme = "dark";
   @state() hello: GatewayHelloOk | null = null;
@@ -242,24 +246,28 @@ export class RemoteClawApp extends LitElement {
 
   @state() cronLoading = false;
   @state() cronQuickCreateOpen = false;
-  @state() cronQuickCreateStep: import("./views/cron-quick-create.ts").CronQuickCreateStep = "what";
+  @state() cronQuickCreateStep: import("../pages/cron/quick-create.ts").CronQuickCreateStep =
+    "what";
   @state() cronQuickCreateDraft:
-    | import("./views/cron-quick-create.ts").CronQuickCreateDraft
+    | import("../pages/cron/quick-create.ts").CronQuickCreateDraft
     | null = null;
   @state() cronJobsLoadingMore = false;
+  @state() cronJobsReloadPending = false;
+  @state() cronJobsReloadPendingTableFilters = false;
+  @state() cronFormCollapsed = false;
   @state() cronJobs: CronJob[] = [];
   @state() cronJobsTotal = 0;
   @state() cronJobsHasMore = false;
   @state() cronJobsNextOffset: number | null = null;
   @state() cronJobsLimit = 50;
   @state() cronJobsQuery = "";
-  @state() cronJobsEnabledFilter: import("./types.js").CronJobsEnabledFilter = "all";
-  @state() cronJobsScheduleKindFilter: import("./controllers/cron.js").CronJobsScheduleKindFilter =
+  @state() cronJobsEnabledFilter: import("../api/types.js").CronJobsEnabledFilter = "all";
+  @state() cronJobsScheduleKindFilter: import("../lib/cron/index.js").CronJobsScheduleKindFilter =
     "all";
-  @state() cronJobsLastStatusFilter: import("./controllers/cron.js").CronJobsLastStatusFilter =
+  @state() cronJobsLastStatusFilter: import("../lib/cron/index.js").CronJobsLastStatusFilter =
     "all";
-  @state() cronJobsSortBy: import("./types.js").CronJobsSortBy = "nextRunAtMs";
-  @state() cronJobsSortDir: import("./types.js").CronSortDir = "asc";
+  @state() cronJobsSortBy: import("../api/types.js").CronJobsSortBy = "nextRunAtMs";
+  @state() cronJobsSortDir: import("../api/types.js").CronSortDir = "asc";
   @state() cronStatus: CronStatus | null = null;
   @state() cronError: string | null = null;
   @state() cronForm: CronFormState = { ...DEFAULT_CRON_FORM };
@@ -272,16 +280,16 @@ export class RemoteClawApp extends LitElement {
   @state() cronRunsHasMore = false;
   @state() cronRunsNextOffset: number | null = null;
   @state() cronRunsLimit = 50;
-  @state() cronRunsScope: import("./types.js").CronRunScope = "all";
-  @state() cronRunsStatuses: import("./types.js").CronRunsStatusValue[] = [];
-  @state() cronRunsDeliveryStatuses: import("./types.js").CronDeliveryStatus[] = [];
-  @state() cronRunsStatusFilter: import("./types.js").CronRunsStatusFilter = "all";
+  @state() cronRunsScope: import("../api/types.js").CronRunScope = "all";
+  @state() cronRunsStatuses: import("../api/types.js").CronRunsStatusValue[] = [];
+  @state() cronRunsDeliveryStatuses: import("../api/types.js").CronDeliveryStatus[] = [];
+  @state() cronRunsStatusFilter: import("../api/types.js").CronRunsStatusFilter = "all";
   @state() cronRunsQuery = "";
-  @state() cronRunsSortDir: import("./types.js").CronSortDir = "desc";
+  @state() cronRunsSortDir: import("../api/types.js").CronSortDir = "desc";
   @state() cronModelSuggestions: string[] = [];
   @state() cronBusy = false;
 
-  @state() updateAvailable: import("./types.js").UpdateAvailable | null = null;
+  @state() updateAvailable: import("../api/types.js").UpdateAvailable | null = null;
 
   @state() debugLoading = false;
   @state() debugStatus: StatusSummary | null = null;

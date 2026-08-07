@@ -1,7 +1,7 @@
-import type { GatewayBrowserClient } from "../gateway.ts";
-import type { AgentsListResult, ToolsCatalogResult } from "../types.ts";
-import { saveConfig } from "./config.ts";
-import type { ConfigState } from "./config.ts";
+import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import type { AgentsListResult, ToolsCatalogResult } from "../../api/types.ts";
+import { saveConfig } from "../../lib/config/index.ts";
+import type { ConfigState } from "../../lib/config/index.ts";
 import {
   formatMissingOperatorReadScopeMessage,
   isMissingOperatorReadScopeError,

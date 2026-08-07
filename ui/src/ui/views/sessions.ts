@@ -1,9 +1,9 @@
 // Control UI view renders sessions screen content.
 import { html, nothing } from "lit";
-import { formatRelativeTimestamp } from "../format.ts";
+import type { GatewaySessionRow, SessionsListResult } from "../../api/types.ts";
+import { formatRelativeTimestamp } from "../../lib/format.ts";
+import { formatSessionTokens } from "../../lib/presenter.ts";
 import { pathForTab } from "../navigation.ts";
-import { formatSessionTokens } from "../presenter.ts";
-import type { GatewaySessionRow, SessionsListResult } from "../types.ts";
 
 export type SessionsProps = {
   loading: boolean;

@@ -39,6 +39,7 @@ async function emitSchtasksHandoff(env: NodeJS.ProcessEnv): Promise<EmittedHando
   await startManagedServiceUpdateHandoff({
     root: os.tmpdir(),
     timeoutMs: 1_800_000,
+    restartDrainTimeoutMs: undefined,
     restartDelayMs: 500,
     parentPid: process.pid,
     execPath: "/usr/local/bin/node",

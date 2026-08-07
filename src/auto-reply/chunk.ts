@@ -7,7 +7,10 @@ import type { RemoteClawConfig } from "../config/config.js";
 import { findFenceSpanAt, isSafeFenceBreak, parseFenceSpans } from "../markdown/fences.js";
 import { resolveAccountEntry } from "../routing/account-lookup.js";
 import { normalizeAccountId } from "../routing/session-key.js";
-import { chunkTextByBreakResolver } from "../shared/text-chunking.js";
+import {
+  avoidTrailingHighSurrogateBreak,
+  chunkTextByBreakResolver,
+} from "../shared/text-chunking.js";
 
 export type TextChunkProvider = ChannelId;
 
@@ -149,7 +152,10 @@ export function chunkByNewline(
       continue;
     }
 
-    const firstLimit = Math.max(1, maxLineLength - prefix.length);
+    // Back the head cut off to a code-point boundary so an over-long line never splits a surrogate
+    // pair; the recursive chunkText below is already surrogate-safe, only this first cut was raw.
+    const rawLimit = Math.max(1, maxLineLength - prefix.length);
+    const firstLimit = avoidTrailingHighSurrogateBreak(lineValue, 0, rawLimit);
     const first = lineValue.slice(0, firstLimit);
     chunks.push(prefix + first);
     const remaining = lineValue.slice(firstLimit);

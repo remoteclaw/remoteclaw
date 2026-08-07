@@ -1,5 +1,5 @@
 // Shared iOS signing defaults for local development + CI.
-#include "Version.xcconfig"
+#include "../build/Version.xcconfig"
 
 REMOTECLAW_IOS_DEFAULT_TEAM = FWJYW4S8P8
 REMOTECLAW_IOS_SELECTED_TEAM = $(REMOTECLAW_IOS_DEFAULT_TEAM)
@@ -18,6 +18,12 @@ REMOTECLAW_WATCH_APP_PROFILE =
 // Keep include after defaults: xcconfig is evaluated top-to-bottom.
 #include? "../.local-signing.xcconfig"
 #include? "../LocalSigning.xcconfig"
+
+// Debug products install alongside release products and keep their app-group data separate.
+REMOTECLAW_DEBUG_APP_BUNDLE_ID = $(REMOTECLAW_APP_BUNDLE_ID).debug
+REMOTECLAW_DEBUG_ACTIVITY_WIDGET_BUNDLE_ID = $(REMOTECLAW_DEBUG_APP_BUNDLE_ID).activitywidget
+REMOTECLAW_DEBUG_WATCH_APP_BUNDLE_ID = $(REMOTECLAW_DEBUG_APP_BUNDLE_ID).watchkitapp
+REMOTECLAW_DEBUG_APP_GROUP_ID = $(REMOTECLAW_APP_GROUP_ID).debug
 
 CODE_SIGN_STYLE = $(REMOTECLAW_CODE_SIGN_STYLE)
 CODE_SIGN_IDENTITY = $(REMOTECLAW_CODE_SIGN_IDENTITY)

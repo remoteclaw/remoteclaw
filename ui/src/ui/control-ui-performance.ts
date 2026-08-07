@@ -1,6 +1,6 @@
 // Control UI module implements control ui performance behavior.
-import type { EventLogEntry } from "./app-events.ts";
-import type { GatewayConnectTiming, GatewayRequestTiming } from "./gateway.ts";
+import type { EventLogEntry } from "../api/event-log.ts";
+import type { GatewayConnectTiming, GatewayRequestTiming } from "../api/gateway.ts";
 import type { Tab } from "./navigation.ts";
 
 type ControlUiPerformanceHost = {

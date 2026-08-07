@@ -36,7 +36,7 @@ export function resolveGatewayLogPaths(env: GatewayServiceEnv): GatewayLogPaths 
   };
 }
 
-export function resolveMacLaunchAgentLogPaths(env: GatewayServiceEnv): GatewayLogPaths {
+function resolveMacLaunchAgentLogPaths(env: GatewayServiceEnv): GatewayLogPaths {
   const home = resolveHomeDir(env).replaceAll("\\", "/");
   const logDir = path.posix.join(home, "Library", "Logs", "remoteclaw");
   const prefix = resolveMacLaunchAgentLogPrefix(env);

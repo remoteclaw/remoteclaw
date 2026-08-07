@@ -5,7 +5,7 @@ import { resolveUserPath } from "../utils.js";
 import { isPathInside, safeRealpathSync } from "./path-safety.js";
 
 /** Env var that points bundled-plugin lookup at an RemoteClaw source checkout. */
-export const REMOTECLAW_DEV_SOURCE_ROOT_ENV = "REMOTECLAW_DEV_SOURCE_ROOT";
+const REMOTECLAW_DEV_SOURCE_ROOT_ENV = "REMOTECLAW_DEV_SOURCE_ROOT";
 
 function readPackageName(packageJsonPath: string): string | null {
   try {

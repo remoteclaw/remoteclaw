@@ -21,7 +21,7 @@ Pick a setup workflow based on how often you want updates and whether you want t
 
 ## Prereqs (from source)
 
-- Node 24 recommended (Node 22 LTS, currently `22.19+`, still supported)
+- Node 24.15+ recommended (Node 22 LTS, currently `22.22.3+`, still supported)
 - `pnpm` required for source checkouts. RemoteClaw loads bundled plugins from the
   `extensions/*` pnpm workspace packages in dev mode, so root `npm install` does
   not prepare the full source tree.
@@ -34,19 +34,19 @@ If you want "100% tailored to me" _and_ easy updates, keep your customization in
 - **Config:** `~/.remoteclaw/remoteclaw.json` (JSON/JSON5-ish)
 - **Workspace:** `~/.remoteclaw/workspace` (skills, prompts, memories; make it a private git repo)
 
-Bootstrap once:
+Bootstrap the config/workspace folders once, without running the full onboarding wizard:
 
 ```bash
-remoteclaw setup
+remoteclaw setup --baseline
 ```
 
-From inside this repo, use the local CLI entry:
+No global install yet? Run it from this repo instead:
 
 ```bash
-remoteclaw setup
+pnpm remoteclaw setup --baseline
 ```
 
-If you don't have a global install yet, run it via `pnpm remoteclaw setup`.
+(Bare `remoteclaw setup`, without `--baseline`, is an alias for `remoteclaw onboard` and runs the full interactive wizard.)
 
 ## Run the Gateway from this repo
 
@@ -99,15 +99,15 @@ pnpm gateway:watch
 ```
 
 `gateway:watch` starts or restarts the Gateway watch process in a named tmux
-session and auto-attaches from interactive terminals. Non-interactive shells stay
-detached and print `tmux attach -t remoteclaw-gateway-watch-main`; use
+session (`remoteclaw-gateway-watch-main`) and auto-attaches from interactive
+terminals. Non-interactive shells stay detached and print
+`tmux attach -t remoteclaw-gateway-watch-main`; use
 `REMOTECLAW_GATEWAY_WATCH_ATTACH=0 pnpm gateway:watch` to keep an interactive run
 detached, or `pnpm gateway:watch:raw` for foreground watch mode. The watcher
 reloads on relevant source, config, and bundled-plugin metadata changes. If the
 watched Gateway exits during startup, `gateway:watch` runs
 `remoteclaw doctor --fix --non-interactive` once and retries; set
 `REMOTECLAW_GATEWAY_WATCH_AUTO_DOCTOR=0` to disable that dev-only repair pass.
-`pnpm remoteclaw setup` is the one-time local config/workspace initialization step for a fresh checkout.
 `pnpm gateway:watch` does not rebuild `dist/control-ui`, so rerun `pnpm ui:build` after `ui/` changes or use `pnpm ui:dev` while developing the Control UI.
 
 ### 2) Point the macOS app at your running Gateway

@@ -1,7 +1,7 @@
 // Control UI module implements chat event reload behavior.
-import { extractText } from "./chat/message-extract.ts";
-import type { ChatEventPayload } from "./controllers/chat.ts";
-import { normalizeLowercaseStringOrEmpty } from "./string-coerce.ts";
+import { extractText } from "../lib/chat/message-extract.ts";
+import { normalizeLowercaseStringOrEmpty } from "../lib/string-coerce.ts";
+import type { ChatEventPayload } from "../pages/chat/chat-history.ts";
 
 const SILENT_REPLY_PATTERN = /^\s*NO_REPLY\s*$/;
 

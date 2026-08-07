@@ -1,3 +1,4 @@
+import { scheduleChatScroll } from "../pages/chat/scroll.ts";
 // Control UI module implements app lifecycle behavior.
 import { connectGateway } from "./app-gateway.ts";
 import {
@@ -8,7 +9,7 @@ import {
   startDebugPolling,
   stopDebugPolling,
 } from "./app-polling.ts";
-import { observeTopbar, scheduleChatScroll, scheduleLogsScroll } from "./app-scroll.ts";
+import { observeTopbar, scheduleLogsScroll } from "./app-scroll.ts";
 import {
   applySettingsFromUrl,
   detachThemeListener,

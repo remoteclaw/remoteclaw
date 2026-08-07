@@ -1,3 +1,4 @@
+import { isRecord } from "@remoteclaw/normalization-core/record-coerce";
 // JSON schema default helpers fill object values from TypeBox schema defaults.
 import { Compile } from "typebox/compile";
 import type { JsonSchemaObject } from "./json-schema.types.js";
@@ -78,10 +79,6 @@ const schemaIntegerKeywords = new Set([
 ]);
 const schemaBooleanKeywords = new Set(["deprecated", "readOnly", "uniqueItems", "writeOnly"]);
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value && typeof value === "object" && !Array.isArray(value));
-}
-
 function schemaTypeIncludes(schema: Record<string, unknown>, type: string): boolean {
   return schema.type === type || (Array.isArray(schema.type) && schema.type.includes(type));
 }
@@ -122,7 +119,7 @@ function compilesUnicodePattern(pattern: string): boolean {
 }
 
 /** Repair JSON Schema regex patterns that fail TypeBox's unicode RegExp compile. */
-export function repairJsonSchemaPatternForUnicodeRegExp(pattern: string): string {
+function repairJsonSchemaPatternForUnicodeRegExp(pattern: string): string {
   if (compilesUnicodePattern(pattern)) {
     return pattern;
   }

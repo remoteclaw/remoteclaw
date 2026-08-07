@@ -9,6 +9,10 @@ import RemoteClawIPC
 import Speech
 import UserNotifications
 
+extension Notification.Name {
+    static let remoteclawPermissionsChanged = Notification.Name("remoteclaw.permissions.changed")
+}
+
 enum PermissionManager {
     static func isLocationAuthorized(status: CLAuthorizationStatus, requireAlways: Bool) -> Bool {
         if requireAlways { return status == .authorizedAlways }
@@ -26,6 +30,11 @@ enum PermissionManager {
         var results: [Capability: Bool] = [:]
         for cap in caps {
             results[cap] = await self.ensureCapability(cap, interactive: interactive)
+        }
+        if interactive {
+            await MainActor.run {
+                NotificationCenter.default.post(name: .remoteclawPermissionsChanged, object: nil)
+            }
         }
         return results
     }
@@ -458,6 +467,7 @@ final class PermissionMonitor {
         let latest = await PermissionManager.status()
         if latest != self.status {
             self.status = latest
+            NotificationCenter.default.post(name: .remoteclawPermissionsChanged, object: nil)
         }
         self.lastCheck = Date()
 

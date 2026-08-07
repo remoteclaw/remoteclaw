@@ -7,12 +7,14 @@ import type {
   ToolKind,
 } from "@agentclientprotocol/sdk";
 import { asRecord } from "@remoteclaw/acp-core/record-shared";
+import { hasHttpUrlPrefix } from "@remoteclaw/net-policy/url-protocol";
 import {
   hasNonEmptyString,
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
   readStringValue,
 } from "@remoteclaw/normalization-core/string-coerce";
+import { truncateUtf16Safe } from "@remoteclaw/normalization-core/utf16-slice";
 
 type GatewayAttachment = {
   type: string;
@@ -114,7 +116,7 @@ function normalizeToolLocationPath(value: string): string | undefined {
   ) {
     return undefined;
   }
-  if (/^https?:\/\//i.test(trimmed)) {
+  if (hasHttpUrlPrefix(trimmed)) {
     return undefined;
   }
   if (/^file:\/\//i.test(trimmed)) {
@@ -308,7 +310,7 @@ export function formatToolTitle(
   }
   const parts = Object.entries(args).map(([key, value]) => {
     const raw = typeof value === "string" ? value : JSON.stringify(value);
-    const safe = raw.length > 100 ? `${raw.slice(0, 100)}...` : raw;
+    const safe = raw.length > 100 ? `${truncateUtf16Safe(raw, 100)}...` : raw;
     return `${key}: ${safe}`;
   });
   // Sanitize at the source so session updates and permission requests never

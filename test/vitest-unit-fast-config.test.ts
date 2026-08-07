@@ -28,7 +28,12 @@ describe("unit-fast vitest lane", () => {
 
     expect(config.test?.isolate).toBe(false);
     expect(config.test?.runner).toBeUndefined();
-    expect(config.test?.setupFiles).toEqual([]);
+    // v2026.7.1-2 gave the fast shards env isolation only: they install the isolated
+    // test home via test/setup.env.ts but still must not pull in the shared setup's
+    // module mocks.
+    expect(config.test?.setupFiles).toEqual([
+      expect.stringMatching(/[\\/]test[\\/]setup\.env\.ts$/u),
+    ]);
     expect(config.test?.include).toContain("src/agents/agent-utils.test.ts");
     expect(config.test?.include).toContain("src/commands/status-overview-values.test.ts");
     expect(config.test?.include).toContain("src/plugins/config-state.test.ts");

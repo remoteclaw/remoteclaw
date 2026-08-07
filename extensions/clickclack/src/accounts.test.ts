@@ -95,6 +95,7 @@ describe("ClickClack account resolution", () => {
       // Fail-closed default (#3054) — see the divergence note in accounts.ts.
       allowFrom: [],
       accountId: "service",
+      agentActivity: false,
       baseUrl: "https://app.clickclack.chat",
       config: {
         allowFrom: [],
@@ -137,6 +138,7 @@ describe("ClickClack account resolution", () => {
     expect(resolveClickClackAccount({ cfg, accountId: "peter" })).toEqual({
       allowFrom: [],
       accountId: "peter",
+      agentActivity: false,
       agentId: "peter-bot",
       baseUrl: "https://app.clickclack.chat",
       config: {

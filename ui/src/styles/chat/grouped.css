@@ -583,3 +583,12 @@ img.chat-avatar {
     display: none;
   }
 }
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+/* Skins .btn/.btn--xs buttons: background and svg sizing stay with the .btn
+   base so these match every other icon button; only the muted color is bespoke. */
+.chat-copy-btn,
+.chat-expand-btn {
+  color: var(--muted);
+}

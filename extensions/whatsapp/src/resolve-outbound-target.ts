@@ -1,9 +1,7 @@
 import { missingTargetError } from "../../../src/infra/outbound/target-errors.js";
 import { isWhatsAppGroupJid, normalizeWhatsAppTarget } from "./normalize.js";
 
-export type WhatsAppOutboundTargetResolution =
-  | { ok: true; to: string }
-  | { ok: false; error: Error };
+type WhatsAppOutboundTargetResolution = { ok: true; to: string } | { ok: false; error: Error };
 
 export function resolveWhatsAppOutboundTarget(params: {
   to: string | null | undefined;

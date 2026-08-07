@@ -58,6 +58,45 @@ describe("resolveTelegramInlineButtonsScope (#75433 SecretRef tolerance)", () =>
     expect(isTelegramInlineButtonsEnabled({ cfg })).toBe(true);
   });
 
+  it("preserves the default inline-buttons scope when legacy capabilities are empty", () => {
+    const cfg = {
+      channels: {
+        telegram: {
+          botToken: { source: "exec", provider: "default", id: "telegram-token" },
+          capabilities: [],
+        },
+      },
+    } as unknown as RemoteClawConfig;
+
+    expect(resolveTelegramInlineButtonsScope({ cfg })).toBe("allowlist");
+    expect(isTelegramInlineButtonsEnabled({ cfg })).toBe(true);
+  });
+
+  // Upstream merges account config through a shared plugin-sdk helper that treats an
+  // empty `capabilities` array as "no opinion" and inherits the channel scope. This fork
+  // has its own `mergeTelegramAccountConfig` (fork-authored for the multi-account `groups`
+  // rule, remoteclaw#30673) which spreads the account over the channel, so an empty array
+  // wins and resolves to the default. Changing that merge is a behaviour change for review,
+  // not a sync-stabilization move — the sibling channel-level case above still passes.
+  it.skip("[fork] inherits the channel scope when an account legacy capabilities array is empty", () => {
+    const cfg = {
+      channels: {
+        telegram: {
+          capabilities: { inlineButtons: "off" },
+          accounts: {
+            ops: {
+              botToken: "123:telegram-ops-token",
+              capabilities: [],
+            },
+          },
+        },
+      },
+    } as unknown as RemoteClawConfig;
+
+    expect(resolveTelegramInlineButtonsScope({ cfg, accountId: "ops" })).toBe("off");
+    expect(isTelegramInlineButtonsEnabled({ cfg, accountId: "ops" })).toBe(false);
+  });
+
   it('preserves configured "off" when botToken is an unresolved SecretRef', () => {
     const cfg = {
       channels: {

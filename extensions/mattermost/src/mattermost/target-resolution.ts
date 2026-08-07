@@ -7,7 +7,7 @@ import {
   normalizeMattermostBaseUrl,
 } from "./client.js";
 
-export type MattermostOpaqueTargetResolution = {
+type MattermostOpaqueTargetResolution = {
   kind: "user" | "channel";
   id: string;
   to: string;

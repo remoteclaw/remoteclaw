@@ -1,7 +1,4 @@
-/** Normalizes cron webhook destination URLs. */
-function isAllowedWebhookProtocol(protocol: string) {
-  return protocol === "http:" || protocol === "https:";
-}
+import { isHttpUrl } from "@remoteclaw/net-policy/url-protocol";
 
 export function normalizeHttpWebhookUrl(value: unknown): string | null {
   if (typeof value !== "string") {
@@ -11,13 +8,8 @@ export function normalizeHttpWebhookUrl(value: unknown): string | null {
   if (!trimmed) {
     return null;
   }
-  try {
-    const parsed = new URL(trimmed);
-    if (!isAllowedWebhookProtocol(parsed.protocol)) {
-      return null;
-    }
-    return trimmed;
-  } catch {
+  if (!isHttpUrl(trimmed)) {
     return null;
   }
+  return trimmed;
 }

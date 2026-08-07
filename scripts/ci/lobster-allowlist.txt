@@ -42,3 +42,13 @@ src/config/config.identity-defaults.test.ts responsePrefix: "🦞"
 # OpenClaw mascot — 🦀 is already a distinct lower tier, so rebranding would
 # collide. Incidental themed-label fixture.
 scripts/sync-openclaw-label-colors.mjs rating: 🦞 diamond lobster
+
+# Poll vote-echo emoji-signature matching: these fixtures assert that a label's
+# emoji signature is compared, so the 🦞 IS the test data. The negative case
+# ["Lobster 🦞", "🦀 Lobster."] asserts a lobster label does NOT match a crab
+# echo — rebranding either side collapses the two emoji and inverts the
+# assertion from false to true. Fixture data, not a brand expression.
+src/agents/tools/poll-vote-echo.test.ts ["Lobster 🦞 ", "🦞 Lobster."]
+src/agents/tools/poll-vote-echo.test.ts ["Blue", "🦞 Blue."]
+src/agents/tools/poll-vote-echo.test.ts ["Lobster 🦞", "Lobster."]
+src/agents/tools/poll-vote-echo.test.ts ["Lobster 🦞", "🦀 Lobster."]

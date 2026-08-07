@@ -1,6 +1,6 @@
+import type { GatewayBrowserClient } from "../../api/gateway.ts";
 // Control UI controller manages assistant identity gateway state.
-import { normalizeAssistantIdentity } from "../assistant-identity.ts";
-import type { GatewayBrowserClient } from "../gateway.ts";
+import { normalizeAssistantIdentity } from "../../lib/assistant-identity.ts";
 
 export type AssistantIdentityState = {
   client: GatewayBrowserClient | null;

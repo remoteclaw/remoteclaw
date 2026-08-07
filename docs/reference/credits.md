@@ -5,9 +5,7 @@ read_when:
 title: "Credits"
 ---
 
-## The name
-
-RemoteClaw = CLAW + TARDIS, because every space lobster needs a time and space machine.
+RemoteClaw = CLAW + TARDIS: every space lobster needs a time and space machine.
 
 ## Credits
 
@@ -19,11 +17,11 @@ RemoteClaw = CLAW + TARDIS, because every space lobster needs a time and space m
 
 - **Maxim Vovshin** (@Hyaxia, [36747317+Hyaxia@users.noreply.github.com](mailto:36747317+Hyaxia@users.noreply.github.com)) - Blogwatcher skill
 - **Nacho Iacovino** (@nachoiacovino, [nacho.iacovino@gmail.com](mailto:nacho.iacovino@gmail.com)) - Location parsing (Telegram and WhatsApp)
-- **Vincent Koc** ([@vincentkoc](https://github.com/vincentkoc), [@vincent_koc](https://x.com/vincent_koc)) - Agents, Telemetry, Hooks, Security
+- **Vincent Koc** ([@vincentkoc](https://github.com/vincentkoc), [@vincent_koc](https://x.com/vincent_koc)) - Agents, telemetry, hooks, security
 
 ## License
 
-MIT - Free as a lobster in the ocean.
+MIT, copyright RemoteClaw Foundation. Third-party notices for incorporated or adapted code are in `THIRD_PARTY_NOTICES.md`.
 
 > "We are all just playing with our own prompts." (An AI, probably high on tokens)
 

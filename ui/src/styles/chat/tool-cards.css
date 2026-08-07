@@ -514,3 +514,39 @@
     max-height: 200px;
   }
 }
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+.chat-tool-card__block-content:has(> code.markdown-block-art) {
+  background: var(--bg);
+}
+
+.chat-tool-card__block-content code.markdown-block-art {
+  display: block;
+  min-width: 100%;
+  width: max-content;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  line-height: 0.86;
+  overflow-wrap: normal;
+  white-space: pre;
+  word-break: normal;
+}
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+.chat-tool-card__preview-frame {
+  display: block;
+  width: 100%;
+  min-height: 420px;
+  border: 1px solid color-mix(in srgb, var(--border) 68%, transparent);
+  border-radius: var(--radius-md);
+  background: #fff;
+}
+
+.chat-tool-card__preview-panel {
+  padding: 12px;
+}

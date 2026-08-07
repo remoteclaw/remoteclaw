@@ -5,6 +5,8 @@ import {
   captureEnv,
   captureFullEnv,
   createPathResolutionEnv,
+  deleteTestEnvValue,
+  setTestEnvValue,
   withEnv,
   withEnvAsync,
   withPathResolutionEnv,
@@ -12,9 +14,9 @@ import {
 
 function restoreEnvKey(key: string, previous: string | undefined): void {
   if (previous === undefined) {
-    delete process.env[key];
+    deleteTestEnvValue(key);
   } else {
-    process.env[key] = previous;
+    setTestEnvValue(key, previous);
   }
 }
 
@@ -25,8 +27,8 @@ describe("env test utils", () => {
     const snapshot = captureEnv([keyA, keyB]);
     const prevA = process.env[keyA];
     const prevB = process.env[keyB];
-    process.env[keyA] = "mutated";
-    delete process.env[keyB];
+    setTestEnvValue(keyA, "mutated");
+    deleteTestEnvValue(keyB);
 
     snapshot.restore();
 
@@ -38,8 +40,8 @@ describe("env test utils", () => {
     const key = "REMOTECLAW_ENV_TEST_ADDED";
     const prevHome = process.env.HOME;
     const snapshot = captureFullEnv();
-    process.env[key] = "1";
-    delete process.env.HOME;
+    setTestEnvValue(key, "1");
+    deleteTestEnvValue("HOME");
 
     snapshot.restore();
 
@@ -74,7 +76,7 @@ describe("env test utils", () => {
   it("withEnv can delete a key only inside callback", () => {
     const key = "REMOTECLAW_ENV_TEST_SYNC_DELETE";
     const prev = process.env[key];
-    process.env[key] = "outer";
+    setTestEnvValue(key, "outer");
 
     const seen = withEnv({ [key]: undefined }, () => process.env[key]);
 
@@ -110,7 +112,7 @@ describe("env test utils", () => {
   it("withEnvAsync can delete a key only inside callback", async () => {
     const key = "REMOTECLAW_ENV_TEST_ASYNC_DELETE";
     const prev = process.env[key];
-    process.env[key] = "outer";
+    setTestEnvValue(key, "outer");
 
     const seen = await withEnvAsync({ [key]: undefined }, async () => process.env[key]);
 
@@ -125,9 +127,9 @@ describe("env test utils", () => {
     const previousRemoteClawHome = process.env.REMOTECLAW_HOME;
     const previousStateDir = process.env.REMOTECLAW_STATE_DIR;
     const previousBundledDir = process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR;
-    process.env.REMOTECLAW_HOME = "/srv/remoteclaw-home";
-    process.env.REMOTECLAW_STATE_DIR = "/srv/remoteclaw-state";
-    process.env.REMOTECLAW_BUNDLED_PLUGINS_DIR = "/srv/remoteclaw-bundled";
+    setTestEnvValue("REMOTECLAW_HOME", "/srv/remoteclaw-home");
+    setTestEnvValue("REMOTECLAW_STATE_DIR", "/srv/remoteclaw-state");
+    setTestEnvValue("REMOTECLAW_BUNDLED_PLUGINS_DIR", "/srv/remoteclaw-bundled");
 
     try {
       const env = createPathResolutionEnv(homeDir, {
@@ -149,7 +151,7 @@ describe("env test utils", () => {
     const homeDir = path.join(path.sep, "tmp", "remoteclaw-home");
     const resolvedHomeDir = path.resolve(homeDir);
     const previousRemoteClawHome = process.env.REMOTECLAW_HOME;
-    process.env.REMOTECLAW_HOME = "/srv/remoteclaw-home";
+    setTestEnvValue("REMOTECLAW_HOME", "/srv/remoteclaw-home");
 
     try {
       const seen = withPathResolutionEnv(

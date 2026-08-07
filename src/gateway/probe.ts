@@ -52,7 +52,7 @@ export type GatewayProbeResult = {
   configSnapshot: unknown;
 };
 
-export const MIN_PROBE_TIMEOUT_MS = 250;
+const MIN_PROBE_TIMEOUT_MS = 250;
 export const MAX_TIMER_DELAY_MS = MAX_SAFE_TIMEOUT_DELAY_MS;
 // Bound how long the probe waits for the client WebSocket's underlying socket to
 // fully close before resolving, so a completed probe leaves no live client
@@ -110,14 +110,14 @@ function resolveProbeAuthSummary(params: {
   };
 }
 
-export function isPairingPendingProbeFailure(params: {
+function isPairingPendingProbeFailure(params: {
   error?: string | null;
   close?: GatewayProbeClose | null;
 }): boolean {
   return PAIRING_REQUIRED_PATTERN.test(params.close?.reason ?? params.error ?? "");
 }
 
-export function resolveGatewayProbeCapability(params: {
+function resolveGatewayProbeCapability(params: {
   auth?: Pick<GatewayProbeAuthSummary, "scopes"> | null;
   authMetadataPresent?: boolean;
   error?: string | null;

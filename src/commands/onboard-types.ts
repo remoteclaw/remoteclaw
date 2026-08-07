@@ -108,6 +108,8 @@ export type OnboardOptions = {
   mode?: OnboardMode;
   /** "manual" is an alias for "advanced". */
   flow?: "quickstart" | "advanced" | "manual" | "import";
+  /** Force the classic multi-step interactive wizard instead of the bootstrap flow. */
+  classic?: boolean;
   workspace?: string;
   nonInteractive?: boolean;
   /** Required for non-interactive onboarding; skips the interactive risk prompt when true. */

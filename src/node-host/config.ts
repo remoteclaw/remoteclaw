@@ -9,6 +9,8 @@ export type NodeHostGatewayConfig = {
   port?: number;
   tls?: boolean;
   tlsFingerprint?: string;
+  /** Gateway WebSocket context path (e.g. "/remoteclaw-gw"). */
+  contextPath?: string;
 };
 
 type NodeHostConfig = {

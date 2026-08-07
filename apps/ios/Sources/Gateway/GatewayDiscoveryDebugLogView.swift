@@ -9,20 +9,22 @@ struct GatewayDiscoveryDebugLogView: View {
         List {
             if !self.debugLogsEnabled {
                 Text("Enable “Discovery Debug Logs” to start collecting events.")
+                    .font(RemoteClawType.subhead)
                     .foregroundStyle(.secondary)
             }
 
             if self.gatewayController.discoveryDebugLog.isEmpty {
                 Text("No log entries yet.")
+                    .font(RemoteClawType.subhead)
                     .foregroundStyle(.secondary)
             } else {
                 ForEach(self.gatewayController.discoveryDebugLog) { entry in
                     VStack(alignment: .leading, spacing: 2) {
                         Text(Self.formatTime(entry.ts))
-                            .font(.caption)
+                            .font(RemoteClawType.caption)
                             .foregroundStyle(.secondary)
                         Text(entry.message)
-                            .font(.callout)
+                            .font(RemoteClawType.callout)
                             .textSelection(.enabled)
                     }
                     .padding(.vertical, 4)
@@ -32,8 +34,11 @@ struct GatewayDiscoveryDebugLogView: View {
         .navigationTitle("Discovery Logs")
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("Copy") {
+                Button {
                     UIPasteboard.general.string = self.formattedLog()
+                } label: {
+                    Text("Copy")
+                        .font(RemoteClawType.subheadSemiBold)
                 }
                 .disabled(self.gatewayController.discoveryDebugLog.isEmpty)
             }

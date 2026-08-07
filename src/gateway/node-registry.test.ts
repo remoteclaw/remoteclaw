@@ -22,6 +22,8 @@ function makeClient(
     declaredCaps?: string[];
     declaredCommands?: string[];
     declaredPermissions?: Record<string, boolean>;
+    sessionCapsCeiling?: string[];
+    sessionCommandsCeiling?: string[];
     socket?: GatewayWsClient["socket"];
   } = {},
 ): GatewayWsClient {
@@ -59,6 +61,8 @@ function makeClient(
       declaredCaps: opts.declaredCaps,
       declaredCommands: opts.declaredCommands,
       declaredPermissions: opts.declaredPermissions,
+      sessionCapsCeiling: opts.sessionCapsCeiling,
+      sessionCommandsCeiling: opts.sessionCommandsCeiling,
     } as unknown as GatewayWsClient["connect"],
   };
 }
@@ -596,5 +600,28 @@ describe("gateway/node-registry", () => {
     expect(
       (client.connect as { permissions?: Record<string, boolean> }).permissions,
     ).toBeUndefined();
+  });
+
+  it("preserves a legacy session feature ceiling across surface approvals", () => {
+    const registry = new NodeRegistry();
+    const client = makeClient("conn-1", "node-1", [], {
+      caps: [],
+      commands: [],
+      declaredCaps: ["canvas", "device"],
+      declaredCommands: ["canvas.snapshot", "device.info"],
+      sessionCapsCeiling: ["device"],
+      sessionCommandsCeiling: ["device.info"],
+    });
+
+    registry.register(client, {});
+    const updated = registry.updateSurface("node-1", {
+      caps: ["canvas", "device"],
+      commands: ["canvas.snapshot", "device.info"],
+    });
+
+    expect(updated?.declaredCaps).toEqual(["canvas", "device"]);
+    expect(updated?.declaredCommands).toEqual(["canvas.snapshot", "device.info"]);
+    expect(updated?.caps).toEqual(["device"]);
+    expect(updated?.commands).toEqual(["device.info"]);
   });
 });

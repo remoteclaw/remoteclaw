@@ -171,4 +171,3 @@ export const testing = {
     bannerEmitted = false;
   },
 };
-export { testing as __testing };

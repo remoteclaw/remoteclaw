@@ -1,3 +1,15 @@
+import type { AgentsListResult } from "../api/types.ts";
+import { startThemeTransition, type ThemeTransitionContext } from "../app/theme-transition.ts";
+import { resolveTheme, type ResolvedTheme, type ThemeMode } from "../app/theme.ts";
+import { loadConfig, loadConfigSchema } from "../lib/config/index.ts";
+import {
+  loadCronJobsPage,
+  loadCronModelSuggestions,
+  loadCronRuns,
+  loadCronStatus,
+} from "../lib/cron/index.ts";
+import { normalizeOptionalString } from "../lib/string-coerce.ts";
+import { scheduleChatScroll } from "../pages/chat/scroll.ts";
 import { refreshChat, type ChatHost } from "./app-chat.ts";
 import {
   startLogsPolling,
@@ -6,18 +18,11 @@ import {
   stopDebugPolling,
   type PollingHost,
 } from "./app-polling.ts";
-import { scheduleChatScroll, scheduleLogsScroll, type ScrollHost } from "./app-scroll.ts";
+import { scheduleLogsScroll, type ScrollHost } from "./app-scroll.ts";
 import type { RemoteClawApp } from "./app.ts";
 import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
 import { loadChannels } from "./controllers/channels.ts";
-import { loadConfig, loadConfigSchema } from "./controllers/config.ts";
-import {
-  loadCronJobs,
-  loadCronModelSuggestions,
-  loadCronRuns,
-  loadCronStatus,
-} from "./controllers/cron.ts";
 import { loadDebug } from "./controllers/debug.ts";
 import { loadDevices } from "./controllers/devices.ts";
 import { loadExecApprovals } from "./controllers/exec-approvals.ts";
@@ -34,10 +39,6 @@ import {
   type Tab,
 } from "./navigation.ts";
 import { saveSettings, type UiSettings } from "./storage.ts";
-import { normalizeOptionalString } from "./string-coerce.ts";
-import { startThemeTransition, type ThemeTransitionContext } from "./theme-transition.ts";
-import { resolveTheme, type ResolvedTheme, type ThemeMode } from "./theme.ts";
-import type { AgentsListResult } from "./types.ts";
 
 export type SettingsHost = PollingHost &
   ScrollHost &
@@ -437,7 +438,7 @@ export async function loadCron(host: SettingsHost) {
   await Promise.all([
     loadChannels(host as unknown as RemoteClawApp, false),
     loadCronStatus(cronHost),
-    loadCronJobs(cronHost),
+    loadCronJobsPage(cronHost, { append: false }),
     loadCronModelSuggestions(cronHost),
   ]);
   if (cronHost.cronRunsScope === "all") {

@@ -11,6 +11,11 @@ describe("shortenText", () => {
     expect(shortenText("longtext-status-output", 10)).toBe("longtext-…");
   });
 
+  it("returns an empty string for non-positive limits", () => {
+    expect(shortenText("remoteclaw", 0)).toBe("");
+    expect(shortenText("remoteclaw", -1)).toBe("");
+  });
+
   it("counts multi-byte characters correctly", () => {
     expect(shortenText("hello🙂world", 7)).toBe("hello🙂…");
   });

@@ -78,6 +78,8 @@ function formatFeishuApiFailure(
   return `${errorPrefix}: ${details || "unknown error"}`;
 }
 
+// Exported in the RemoteClaw fork: upstream dropped the export when its own
+// send.ts stopped calling it, but the fork retains its pre-sync send.ts.
 export function createFeishuApiError(
   error: unknown,
   errorPrefix: string,

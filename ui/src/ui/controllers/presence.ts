@@ -1,6 +1,6 @@
 // Control UI controller manages presence gateway state.
-import type { GatewayBrowserClient } from "../gateway.ts";
-import type { PresenceEntry } from "../types.ts";
+import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import type { PresenceEntry } from "../../api/types.ts";
 import {
   formatMissingOperatorReadScopeMessage,
   isMissingOperatorReadScopeError,

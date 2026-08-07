@@ -5,16 +5,18 @@ extension AgentProTab {
     func detailMetric(label: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(label)
-                .font(.caption2.weight(.medium))
+                .font(RemoteClawType.caption2Medium)
                 .foregroundStyle(.secondary)
             Text(value)
-                .font(.subheadline.weight(.semibold))
+                .font(RemoteClawType.subheadSemiBold)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(10)
-        .background(Color.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .background(
+            Color.primary.opacity(0.055),
+            in: RoundedRectangle(cornerRadius: RemoteClawRadius.sm, style: .continuous))
     }
 
     func emptyDetailRow(icon: String, title: String, detail: String) -> some View {
@@ -22,9 +24,9 @@ extension AgentProTab {
             ProIconBadge(systemName: icon, color: .secondary)
             VStack(alignment: .leading, spacing: 3) {
                 Text(title)
-                    .font(.subheadline.weight(.semibold))
+                    .font(RemoteClawType.subheadSemiBold)
                 Text(detail)
-                    .font(.caption)
+                    .font(RemoteClawType.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
             }

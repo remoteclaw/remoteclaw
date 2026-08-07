@@ -1,3 +1,4 @@
+import { normalizeOptionalString as trimToUndefined } from "../../packages/normalization-core/src/string-coerce.js";
 /**
  * Shared provider HTTP error normalization helpers.
  *
@@ -5,8 +6,7 @@
  * request ids, and binary payload guardrails into stable RemoteClaw error shapes.
  */
 export { asFiniteNumber } from "../../packages/normalization-core/src/number-coercion.js";
-import { readResponseWithLimit } from "@remoteclaw/media-core/read-response-with-limit";
-import { normalizeOptionalString as trimToUndefined } from "../../packages/normalization-core/src/string-coerce.js";
+import { readResponseWithLimit } from "../infra/http-body.js";
 import { redactSensitiveText } from "../logging/redact.js";
 
 export const MODULE_ATTESTATIONS = {

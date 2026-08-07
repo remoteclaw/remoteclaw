@@ -16,6 +16,7 @@ export const MODULE_ATTESTATIONS = {
 type LiveSessionModelSelection = {
   provider: string;
   model: string;
+  agentRuntimeOverride?: string;
   authProfileId?: string;
   authProfileIdSource?: "auto" | "user";
 };
@@ -24,6 +25,7 @@ type LiveSessionModelSelection = {
 export class LiveSessionModelSwitchError extends Error {
   provider: string;
   model: string;
+  agentRuntimeOverride?: string;
   authProfileId?: string;
   authProfileIdSource?: "auto" | "user";
 
@@ -32,6 +34,7 @@ export class LiveSessionModelSwitchError extends Error {
     this.name = "LiveSessionModelSwitchError";
     this.provider = selection.provider;
     this.model = selection.model;
+    this.agentRuntimeOverride = selection.agentRuntimeOverride;
     this.authProfileId = selection.authProfileId;
     this.authProfileIdSource = selection.authProfileIdSource;
   }

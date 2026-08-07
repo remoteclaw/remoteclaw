@@ -1,19 +1,19 @@
 import { html, nothing } from "lit";
 import { ref } from "lit/directives/ref.js";
 import { repeat } from "lit/directives/repeat.js";
+import type { SessionsListResult } from "../../api/types.ts";
+import { icons } from "../../components/icons.ts";
+import type { ChatItem, MessageGroup } from "../../lib/chat/chat-types.ts";
+import { normalizeMessage, normalizeRoleForGrouping } from "../../lib/chat/message-normalizer.ts";
+import { detectTextDirection } from "../../lib/text-direction.ts";
 import {
   renderMessageGroup,
   renderReadingIndicatorGroup,
   renderStreamingGroup,
-} from "../chat/grouped-render.ts";
-import { normalizeMessage, normalizeRoleForGrouping } from "../chat/message-normalizer.ts";
-import { icons } from "../icons.ts";
-import { detectTextDirection } from "../text-direction.ts";
-import type { SessionsListResult } from "../types.ts";
-import type { ChatItem, MessageGroup } from "../types/chat-types.ts";
+} from "../../pages/chat/components/chat-message.ts";
 import type { ChatAttachment, ChatQueueItem } from "../ui-types.ts";
 import { renderMarkdownSidebar } from "./markdown-sidebar.ts";
-import "../components/resizable-divider.ts";
+import "../../components/resizable-divider.ts";
 
 export type CompactionIndicatorStatus = {
   phase: "active" | "retrying" | "complete";

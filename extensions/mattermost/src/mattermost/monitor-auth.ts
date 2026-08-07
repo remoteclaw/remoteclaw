@@ -114,6 +114,8 @@ function mapMattermostChannelKind(channelType?: string | null): "direct" | "grou
   return "channel";
 }
 
+// Exported in the RemoteClaw fork: upstream keeps this type module-private, but
+// the fork's own slash-http hardening tests consume it.
 export type MattermostCommandAuthDecision =
   | {
       ok: true;

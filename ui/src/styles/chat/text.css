@@ -194,3 +194,35 @@
     padding: 6px 10px;
   }
 }
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+.chat-text :where(pre code.markdown-block-art) {
+  display: block;
+  min-width: 100%;
+  width: max-content;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  line-height: 0.86;
+  overflow-wrap: normal;
+  white-space: pre;
+  word-break: normal;
+}
+
+.chat-text :where(a.markdown-file-link) {
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.chat-text :where(a.markdown-file-link:hover) {
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.chat-text :where(a.markdown-file-link > code) {
+  color: var(--accent);
+}

@@ -1,14 +1,15 @@
 import { parseAgentSessionKey } from "../../../src/sessions/session-key-utils.js";
-import { scheduleChatScroll, type ScrollHost } from "./app-scroll.ts";
+import type { GatewayHelloOk } from "../api/gateway.ts";
+import { generateUUID } from "../lib/uuid.ts";
+import { abortChatRun, loadChatHistory, sendChatMessage } from "../pages/chat/chat-history.ts";
+import { scheduleChatScroll } from "../pages/chat/scroll.ts";
+import { resetToolStream, type ToolStreamHost } from "../pages/chat/tool-stream.ts";
+import { type ScrollHost } from "./app-scroll.ts";
 import { setLastActiveSessionKey, type SettingsHost } from "./app-settings.ts";
-import { resetToolStream, type ToolStreamHost } from "./app-tool-stream.ts";
 import type { RemoteClawApp } from "./app.ts";
-import { abortChatRun, loadChatHistory, sendChatMessage } from "./controllers/chat.ts";
 import { loadSessions } from "./controllers/sessions.ts";
-import type { GatewayHelloOk } from "./gateway.ts";
 import { normalizeBasePath } from "./navigation.ts";
 import type { ChatAttachment, ChatQueueItem } from "./ui-types.ts";
-import { generateUUID } from "./uuid.ts";
 
 export type ChatHost = {
   connected: boolean;

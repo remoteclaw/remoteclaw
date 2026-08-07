@@ -411,6 +411,15 @@ export function parseSessionDeliveryRoute(
   }
 
   if (parts.length >= 4 && (parts[2] === "direct" || parts[2] === "dm")) {
+    // `parts[1]` is the accountId in the 4-segment account-scoped DM grammar but
+    // the peerKind in the 3-segment one, so when it is itself a valid peer kind
+    // both readings are structurally valid and nothing in the key tells them
+    // apart. Fail closed rather than guess: picking the DM branch would deliver
+    // to a channel peer as if it were a DM, with the peer-kind token silently
+    // lifted into accountId (remoteclaw/remoteclaw#3139).
+    if (SESSION_DELIVERY_PEER_KINDS.has(parts[1] as ParsedSessionDeliveryRoute["peerKind"])) {
+      return null;
+    }
     const accountId = normalizeOptionalString(parts[1]);
     const firstPeerIdSegment = normalizeOptionalString(parts[3]);
     const peerId = normalizeOptionalString(parts.slice(3).join(":"));

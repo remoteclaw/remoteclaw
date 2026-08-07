@@ -3450,11 +3450,6 @@ td.data-table-key-col {
   font-size: 12px;
 }
 
-.agent-model-select {
-  display: grid;
-  gap: 10px;
-}
-
 .agent-model-fields {
   display: grid;
   gap: 10px;

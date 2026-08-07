@@ -156,6 +156,44 @@ describe("config io write", () => {
     });
   });
 
+  // Regression for #3163. The sibling test above passes on a `{ gateway: { port } }` fixture, which
+  // reaches no channel schema at all — so it never sees the defaults that actually get injected:
+  // `mode`, `webhookPath`, `groupPolicy`, `dmPolicy` and `userTokenReadOnly` from schema
+  // `.default()`, plus `streaming` / `nativeStreaming`, which carry no `.default()` and are written
+  // in place by the schema's `superRefine` normalizers.
+  it("does not inject channel or account schema defaults into the written config", async () => {
+    await withSuiteHome(async (home) => {
+      // Minimal AUTHORED config. Every key here is explicitly set, so anything the round-trip
+      // adds beyond the caller's own mutation was injected by the write path.
+      const initialConfig: Record<string, unknown> = {
+        gateway: { port: 18790 },
+        channels: {
+          slack: {
+            botToken: "slack-bot-token-placeholder",
+            accounts: { primary: { botToken: "slack-account-token-placeholder" } },
+          },
+          telegram: {
+            botToken: "telegram-bot-token-placeholder",
+            accounts: { primary: { botToken: "telegram-account-token-placeholder" } },
+          },
+        },
+      };
+      const { configPath, io, snapshot } = await writeConfigAndCreateIo({ home, initialConfig });
+
+      // One unrelated mutation, applied to the runtime config the way real callers do.
+      const persisted = await writeTokenAuthAndReadConfig({ io, snapshot, configPath });
+
+      // Exact match: the write may add the caller's mutation and the version stamp, nothing else.
+      // Every authored key must also survive verbatim, so `channels` is spread in rather than
+      // restated — anything the schema injected there shows up as a diff.
+      expect(persisted).toEqual({
+        ...initialConfig,
+        gateway: { port: 18790, auth: { mode: "token" } },
+        meta: { lastTouchedAt: expect.any(String), lastTouchedVersion: expect.any(String) },
+      });
+    });
+  });
+
   it.runIf(process.platform !== "win32")(
     "tightens world-writable state dir when writing the default config",
     async () => {

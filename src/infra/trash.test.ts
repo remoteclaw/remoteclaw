@@ -17,10 +17,19 @@ const SKIPPED_DIRS = new Set(["node_modules", "dist", ".git", "coverage"]);
 // exact basename into every extension root and removes it again, concurrently
 // with this lane (#3143). It is never a committed source file — `git ls-files`
 // matches none — so ignoring it hides nothing a twin could be smuggled in.
-// Skipping it by basename ONLY: widening this set would blind the scan.
-const TRANSIENT_BASENAMES = new Set(["__rootdir_boundary_canary__.ts"]);
+const BOUNDARY_CANARY_BASENAME = "__rootdir_boundary_canary__.ts";
 
 const SOURCE_FILE_PATTERN = /\.(?:ts|tsx|mts|cts|js|mjs|cjs)$/u;
+
+/** True only for the transient canary, and only at the path the boundary script
+ * actually writes it to: `extensions/<id>/__rootdir_boundary_canary__.ts`
+ * (`resolveCanaryArtifactPaths`). The location half is load-bearing — skipping
+ * the basename ANYWHERE would let a twin hide at
+ * `src/…/__rootdir_boundary_canary__.ts`, a path nothing creates or cleans up,
+ * which is precisely the blind spot this scan must not have. */
+function isBoundaryCanaryArtifact(dir: string, basename: string): boolean {
+  return basename === BOUNDARY_CANARY_BASENAME && path.basename(path.dirname(dir)) === "extensions";
+}
 
 function isEnoent(error: unknown): boolean {
   return (error as NodeJS.ErrnoException | null)?.code === "ENOENT";
@@ -51,7 +60,7 @@ function listSourceFiles(roots: string[] = defaultRoots()): string[] {
         }
         continue;
       }
-      if (TRANSIENT_BASENAMES.has(entry.name)) {
+      if (isBoundaryCanaryArtifact(dir, entry.name)) {
         continue;
       }
       if (SOURCE_FILE_PATTERN.test(entry.name)) {
@@ -148,14 +157,38 @@ describe("the source scan the twin pins depend on", () => {
   });
 
   it("ignores the extension boundary canary while it is on disk", () => {
-    const dir = makeTempDir();
+    const root = makeTempDir();
     try {
-      fs.writeFileSync(path.join(dir, "real.ts"), "export {};\n", "utf8");
-      fs.writeFileSync(path.join(dir, "__rootdir_boundary_canary__.ts"), "export {};\n", "utf8");
+      // The exact shape the boundary script writes: extensions/<id>/<canary>.
+      const extensionRoot = path.join(root, "extensions", "some-extension");
+      fs.mkdirSync(extensionRoot, { recursive: true });
+      fs.writeFileSync(path.join(extensionRoot, "real.ts"), "export {};\n", "utf8");
+      fs.writeFileSync(path.join(extensionRoot, BOUNDARY_CANARY_BASENAME), "export {};\n", "utf8");
 
-      expect(listSourceFiles([dir]).map((file) => path.basename(file))).toEqual(["real.ts"]);
+      expect(listSourceFiles([root]).map((file) => path.basename(file))).toEqual(["real.ts"]);
     } finally {
-      fs.rmSync(dir, { recursive: true, force: true });
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("still scans that basename outside an extension root", () => {
+    // The skip is scoped to `extensions/<id>/` because that is the only place
+    // the boundary script writes it. A file with the same name anywhere else is
+    // created and cleaned up by nothing, so skipping it by bare basename would
+    // hand a twin a permanent hiding place under `src/`.
+    const root = makeTempDir();
+    try {
+      const nested = path.join(root, "src", "infra");
+      fs.mkdirSync(nested, { recursive: true });
+      const impostor = path.join(nested, BOUNDARY_CANARY_BASENAME);
+      fs.writeFileSync(impostor, MOVE_PATH_TO_TRASH_DECLARATION, "utf8");
+
+      expect(listSourceFiles([root])).toEqual([impostor]);
+      expect(
+        filesMatching(/export\s+async\s+function\s+movePathToTrash\b/u, listSourceFiles([root])),
+      ).toEqual([impostor]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
     }
   });
 
@@ -181,9 +214,39 @@ describe("the source scan the twin pins depend on", () => {
   it("still throws when a read fails for any reason other than ENOENT", () => {
     const dir = makeTempDir();
     try {
-      // A directory read as a file yields EISDIR on macOS/Linux — a stand-in for
-      // any non-ENOENT fault. It must NOT be swallowed.
-      expect(() => filesMatching(/anything/u, [dir])).toThrow();
+      // A directory read as a file yields EISDIR — a stand-in for any non-ENOENT
+      // fault. Assert the CODE, not merely that something threw: a bare
+      // `.toThrow()` would also pass on an ENOENT the tolerance failed to catch.
+      let code: string | undefined;
+      try {
+        filesMatching(/anything/u, [dir]);
+      } catch (error) {
+        code = (error as NodeJS.ErrnoException).code;
+      }
+      expect(code).toBeDefined();
+      expect(code).not.toBe("ENOENT");
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("still throws when the directory walk fails for any reason other than ENOENT", () => {
+    // The read path above has a twin at `readdirSync`; both tolerate ENOENT, so
+    // both need proof they still surface everything else. A plain file used as a
+    // scan root yields ENOTDIR.
+    const dir = makeTempDir();
+    const notADirectory = path.join(dir, "regular-file.ts");
+    try {
+      fs.writeFileSync(notADirectory, "export {};\n", "utf8");
+
+      let code: string | undefined;
+      try {
+        listSourceFiles([notADirectory]);
+      } catch (error) {
+        code = (error as NodeJS.ErrnoException).code;
+      }
+      expect(code).toBeDefined();
+      expect(code).not.toBe("ENOENT");
     } finally {
       fs.rmSync(dir, { recursive: true, force: true });
     }

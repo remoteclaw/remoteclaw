@@ -52,5 +52,12 @@ export default createScopedVitestConfig([
   "src/process/kill-tree.test.ts",
   // Windows ACL and port-inspection resolver call sites.
   "src/security/windows-acl.test.ts",
+  // NOT fully executed on Windows, and that is correct: a PRE-EXISTING
+  // `const describeUnix = process.platform === "win32" ? describe.skip : describe`
+  // guard skips its Unix-only `inspectPortUsage` block (6 `it()`s), which is why
+  // this lane reports 230 passed / 6 skipped rather than 236 passed. The half that
+  // earns the file its place here — `describe("inspectPortUsage on Windows")`, the
+  // absolute-%SystemRoot% argv[0] pins — does run. Stated because "10 files passed"
+  // otherwise reads as "everything in them ran".
   "src/infra/ports.test.ts",
 ]);

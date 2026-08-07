@@ -372,10 +372,11 @@ node scripts/check-throwing-stub-callers.mjs
 # remediation issue, to prove the allowlist line can be removed):
 node scripts/check-throwing-stub-callers.mjs --strict
 
-# Inventory only — lists every detected stub and never fails on a violation.
-# It DOES still fail if the scan walked zero production files: an inventory
-# compiled by an instrument that read nothing is not a shorter inventory, it is
-# a false one.
+# Inventory only — lists every stub that has live callers (a caller-less stub is
+# detected and counted, but is not a violation, so it is not listed) and never
+# fails on one. It DOES still fail if the scan walked zero production files: an
+# inventory compiled by an instrument that read nothing is not a shorter
+# inventory, it is a false one.
 node scripts/check-throwing-stub-callers.mjs --inventory
 
 # Exercise the discovery canary by hand — point the walk at a root holding no

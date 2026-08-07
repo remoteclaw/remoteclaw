@@ -381,10 +381,18 @@ function summarizeDiscovery(sourceFileIndex, sourceRoots) {
     if (production) {
       productionFiles += 1;
     }
-    // First match wins, so nested roots ("src", "src/plugin-sdk") never double-count.
-    const owner = roots.find(
-      (entry) => normalized === entry.root || normalized.startsWith(`${entry.root}/`),
-    );
+    // Attribute to the MOST SPECIFIC matching root, so overlapping roots
+    // ("src" plus "src/agents") split their files instead of the first-listed one
+    // swallowing all of them — per-root counts then read the same whatever order
+    // the roots were given in. Each file lands in exactly one bucket either way,
+    // so the per-root numbers always sum to the totals below.
+    let owner = null;
+    for (const entry of roots) {
+      const matches = normalized === entry.root || normalized.startsWith(`${entry.root}/`);
+      if (matches && (owner === null || entry.root.length > owner.root.length)) {
+        owner = entry;
+      }
+    }
     if (owner) {
       owner.filesRead += 1;
       if (production) {
@@ -483,15 +491,25 @@ function parseRootsFlag(argv) {
   if (argv.includes("--roots")) {
     return { error: "`--roots` needs a value: --roots=<comma-separated repo-relative paths>" };
   }
-  const flag = argv.find((arg) => arg.startsWith("--roots="));
-  if (!flag) {
+  const flags = argv.filter((arg) => arg.startsWith("--roots="));
+  if (flags.length > 1) {
+    // Taking the first and dropping the rest would silently scan a different
+    // population than the caller asked for — the same class of quiet wrongness
+    // this canary exists to end.
+    return { error: "`--roots=` was given more than once; pass one comma-separated list." };
+  }
+  if (flags.length === 0) {
     return { roots: null };
   }
-  const roots = flag
-    .slice("--roots=".length)
-    .split(",")
-    .map((root) => root.trim())
-    .filter((root) => root.length > 0);
+  const roots = [
+    ...new Set(
+      flags[0]
+        .slice("--roots=".length)
+        .split(",")
+        .map((root) => canonicalizeRoot(root.trim()))
+        .filter((root) => root.length > 0),
+    ),
+  ];
   if (roots.length === 0) {
     return { error: "`--roots=` was given no paths." };
   }
@@ -582,6 +600,17 @@ export async function main(argv = process.argv.slice(2), io) {
     `\nDiscovery: walked ${pluralFiles(result.discovery.productionFiles)} (${formatDiscoveryRoots(result.discovery)}); ${result.discovery.filesRead} read including tests.`,
   );
 
+  // Ahead of BOTH the allowlist sections and the `--inventory` early return, on
+  // purpose. An inventory compiled by an instrument that read nothing is not a
+  // shorter inventory, it is a false one — and "stale" below is derived from the
+  // same empty population the canary is about to declare non-evidence, so
+  // printing it would tell the reader to delete tracked debt-ledger entries on
+  // the strength of a scan that never ran.
+  if (discoveryBroken) {
+    reportBrokenDiscovery(streams, result.discovery);
+    return 1;
+  }
+
   if (result.matched.length > 0) {
     writeLine(streams.stdout, `\nAllowlisted (tracked for remediation): ${result.matched.length}`);
     for (const v of result.matched) {
@@ -599,13 +628,6 @@ export async function main(argv = process.argv.slice(2), io) {
       writeLine(streams.stdout, `  ${key}`);
     }
     writeLine(streams.stdout, "  → remove these lines from .throwing-stub-callers-allowlist");
-  }
-
-  // Ahead of the `--inventory` early return on purpose: an inventory compiled by
-  // an instrument that read nothing is not a shorter inventory, it is a false one.
-  if (discoveryBroken) {
-    reportBrokenDiscovery(streams, result.discovery);
-    return 1;
   }
 
   if (inventoryOnly) {
@@ -767,6 +789,14 @@ const DISCOVERY_SELF_TESTS = [
     expectedStderrIncludes: "the walk reached 0 production files",
   },
   {
+    // `--json` returns before the text path, so it needs its own canary branch and
+    // its own guard: without this case the JSON branch could be deleted in silence.
+    name: "canary FAILS in --json mode too (a machine consumer must not read a broken scan as empty)",
+    argv: [`--roots=${CANARY_MISSING_ROOT}`, "--json"],
+    expectedExitCode: 1,
+    expectedStderrIncludes: "the walk reached 0 production files",
+  },
+  {
     name: "canary stays quiet on a non-empty walk, and the file count is reported",
     argv: [`--roots=${CANARY_POPULATED_ROOT}`],
     expectedExitCode: 0,
@@ -777,6 +807,12 @@ const DISCOVERY_SELF_TESTS = [
     argv: ["--roots"],
     expectedExitCode: 1,
     expectedStderrIncludes: "`--roots` needs a value",
+  },
+  {
+    name: "a repeated --roots= is rejected rather than silently scanning only the first",
+    argv: [`--roots=${CANARY_POPULATED_ROOT}`, "--roots=src"],
+    expectedExitCode: 1,
+    expectedStderrIncludes: "given more than once",
   },
 ];
 

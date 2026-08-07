@@ -188,7 +188,12 @@ against regressions specific to the fork-sync lifecycle:
   mocks.
 - **throwing-stub-callers-gate** (`.throwing-stub-callers-allowlist`):
   detects throwing stubs with live non-test callers — see § Fork Stub
-  Conventions.
+  Conventions. The stub population is legitimately empty today, so the gate's
+  healthy output is `0 stubs scanned` — which is also what a broken file walk
+  would print. Every run therefore reports how many production files it walked
+  and fails when that is zero, in every mode (#3138). Verified: with the walk
+  deliberately broken, the pre-canary script printed output byte-identical to a
+  healthy run and exited 0.
 - **obsolescence-audit-gate**: retrospective audit sentinels for gut waves.
 - **raw-channel-fetch-gate** (`pnpm lint:no-raw-channel-fetch`): channel and
   plugin runtime code under `src/channels`, `src/routing`, `src/line`, and
@@ -367,8 +372,18 @@ node scripts/check-throwing-stub-callers.mjs
 # remediation issue, to prove the allowlist line can be removed):
 node scripts/check-throwing-stub-callers.mjs --strict
 
-# Inventory only — never fails, lists every detected stub:
+# Inventory only — lists every stub that has live callers (a caller-less stub is
+# detected and counted, but is not a violation, so it is not listed) and never
+# fails on one. It DOES still fail if the scan walked zero production files: an
+# inventory compiled by an instrument that read nothing is not a shorter
+# inventory, it is a false one.
 node scripts/check-throwing-stub-callers.mjs --inventory
+
+# Exercise the discovery canary by hand — point the walk at a root holding no
+# production TypeScript (here, a missing one, which is what a renamed or removed
+# source root looks like) and confirm the gate fails instead of printing
+# `passed`. `--roots` exists for exactly this; CI runs the gate unflagged.
+node scripts/check-throwing-stub-callers.mjs --roots=src/renamed-away
 ```
 
 ## Fork Context

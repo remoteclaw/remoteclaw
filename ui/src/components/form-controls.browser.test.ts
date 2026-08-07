@@ -22,7 +22,6 @@ function readUiCss(): string {
     "ui/src/styles/base.css",
     "ui/src/styles/components.css",
     "ui/src/styles/config.css",
-    "ui/src/styles/usage.css",
     "ui/src/styles/chat/layout.css",
   ];
   return files.map((file) => readStyleSheet(file)).join("\n");
@@ -45,13 +44,6 @@ function controlsHtml() {
       <textarea class="cfg-textarea cfg-textarea--sm">small config textarea</textarea>
       <label class="cfg-number"><input class="cfg-number__input" value="1" /></label>
       <select class="cfg-select"><option>config select</option></select>
-      <input class="usage-date-input" value="2026-05-31" />
-      <select class="usage-select"><option>usage select</option></select>
-      <input class="usage-query-input" value="usage query" />
-      <div class="usage-filters-inline">
-        <select><option>inline usage select</option></select>
-        <input type="text" value="inline usage input" />
-      </div>
       <div class="agent-chat__composer-combobox"><textarea>chat composer</textarea></div>
     </main>
   `;
@@ -101,11 +93,6 @@ describeBrowserLayout("touch-primary form controls", () => {
           ".cfg-textarea--sm",
           ".cfg-number__input",
           ".cfg-select",
-          ".usage-date-input",
-          ".usage-select",
-          ".usage-query-input",
-          '.usage-filters-inline input[type="text"]',
-          ".usage-filters-inline select",
           ".agent-chat__composer-combobox > textarea",
         ];
         return {

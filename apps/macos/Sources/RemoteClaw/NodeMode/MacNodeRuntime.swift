@@ -7,6 +7,9 @@ actor MacNodeRuntime {
     private let cameraCapture = CameraCaptureService()
     private let makeMainActorServices: () async -> any MacNodeRuntimeMainActorServices
     private let browserProxyRequest: @Sendable (String?) async throws -> String
+    // Injectable so tests can pin the gate instead of racing on process-global
+    // REMOTECLAW_CONFIG_PATH; config parsing is covered by RemoteClawConfigFileTests.
+    private let browserControlEnabled: @Sendable () -> Bool
     private let canvasSurfaceUrl: @Sendable () async -> String?
     private let refreshCanvasSurfaceUrl: @Sendable () async -> String?
     private var cachedMainActorServices: (any MacNodeRuntimeMainActorServices)?
@@ -20,6 +23,9 @@ actor MacNodeRuntime {
         browserProxyRequest: @escaping @Sendable (String?) async throws -> String = { paramsJSON in
             try await MacNodeBrowserProxy.shared.request(paramsJSON: paramsJSON)
         },
+        browserControlEnabled: @escaping @Sendable () -> Bool = {
+            RemoteClawConfigFile.browserControlEnabled()
+        },
         canvasSurfaceUrl: @escaping @Sendable () async -> String? = {
             await GatewayConnection.shared.canvasPluginSurfaceUrl()
         },
@@ -27,6 +33,7 @@ actor MacNodeRuntime {
     {
         self.makeMainActorServices = makeMainActorServices
         self.browserProxyRequest = browserProxyRequest
+        self.browserControlEnabled = browserControlEnabled
         self.canvasSurfaceUrl = canvasSurfaceUrl
         self.refreshCanvasSurfaceUrl = refreshCanvasSurfaceUrl
     }
@@ -183,7 +190,7 @@ actor MacNodeRuntime {
     }
 
     private func handleBrowserProxyInvoke(_ req: BridgeInvokeRequest) async throws -> BridgeInvokeResponse {
-        guard RemoteClawConfigFile.browserControlEnabled() else {
+        guard self.browserControlEnabled() else {
             return BridgeInvokeResponse(
                 id: req.id,
                 ok: false,

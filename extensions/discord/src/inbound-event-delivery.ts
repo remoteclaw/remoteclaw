@@ -4,7 +4,7 @@ import {
 } from "remoteclaw/plugin-sdk/string-coerce-runtime";
 import type { ReplyPayload } from "../../../src/auto-reply/types.js";
 
-export type DiscordInboundEventDeliveryEnd = () => void;
+type DiscordInboundEventDeliveryEnd = () => void;
 
 type ActiveEvent = {
   outboundTo: string;

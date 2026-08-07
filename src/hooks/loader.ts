@@ -14,6 +14,7 @@ import { createSubsystemLogger } from "../logging/subsystem.js";
 import { sanitizeForLog } from "../terminal/ansi.js";
 import { shouldIncludeHook } from "./config.js";
 import { buildImportUrl } from "./import-url.js";
+import { isKnownInternalHookEventKey } from "./internal-hook-types.js";
 import type { InternalHookHandler } from "./internal-hooks.js";
 import { registerInternalHook } from "./internal-hooks.js";
 import { resolveFunctionModuleExport } from "./module-loader.js";
@@ -142,6 +143,20 @@ export async function loadInternalHooks(
           continue;
         }
 
+        // Core never emits keys outside the known set, so these are almost
+        // always typos that leave the hook silently dead (a plugin could emit
+        // custom keys via plugin-sdk/hook-runtime, hence advisory: warn but
+        // still register).
+        const unknownEvents = events.filter((event) => !isKnownInternalHookEventKey(event));
+        if (unknownEvents.length > 0) {
+          log.warn(
+            `Hook '${safeLogValue(entry.hook.name)}' subscribes to event${unknownEvents.length === 1 ? "" : "s"} ` +
+              `${unknownEvents.map((event) => safeLogValue(event)).join(", ")} not emitted by RemoteClaw core — ` +
+              `likely a typo; unless a plugin emits it, the hook never fires. ` +
+              `Known events: https://docs.remoteclaw.org/automation/hooks`,
+          );
+        }
+
         for (const event of events) {
           registerInternalHook(event, handler);
         }
@@ -232,6 +247,15 @@ export async function loadInternalHooks(
         continue;
       }
 
+      // Same advisory typo check as directory-discovered hooks above.
+      if (!isKnownInternalHookEventKey(handlerConfig.event)) {
+        log.warn(
+          `Legacy hook handler ${safeLogValue(rawModule)} subscribes to event ` +
+            `${safeLogValue(handlerConfig.event)} not emitted by RemoteClaw core — ` +
+            `likely a typo; unless a plugin emits it, the hook never fires. ` +
+            `Known events: https://docs.remoteclaw.org/automation/hooks`,
+        );
+      }
       registerInternalHook(handlerConfig.event, handler);
       log.debug(
         `Registered hook (legacy): ${safeLogValue(handlerConfig.event)} -> ${safeLogValue(modulePath)}${exportName !== "default" ? `#${safeLogValue(exportName)}` : ""}`,

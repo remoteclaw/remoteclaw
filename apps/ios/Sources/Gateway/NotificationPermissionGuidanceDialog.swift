@@ -50,14 +50,14 @@ private struct NotificationPermissionGuidanceCard: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 6) {
                 Text("Notifications are off")
-                    .font(.headline)
+                    .font(RemoteClawType.headline)
                 Text(
                     """
                     Exec approvals can only be reviewed while RemoteClaw is open and connected.
 
                     Enable Notifications to receive approval notifications while RemoteClaw is not open.
                     """)
-                    .font(.subheadline)
+                    .font(RemoteClawType.subhead)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -67,6 +67,7 @@ private struct NotificationPermissionGuidanceCard: View {
                     self.onOpenNotifications()
                 } label: {
                     Text("Open Notifications Settings")
+                        .font(RemoteClawType.subheadSemiBold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -75,6 +76,7 @@ private struct NotificationPermissionGuidanceCard: View {
                     self.onDismiss()
                 } label: {
                     Text("Not Now")
+                        .font(RemoteClawType.subheadSemiBold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -83,6 +85,7 @@ private struct NotificationPermissionGuidanceCard: View {
                     self.onSuppressFuture()
                 } label: {
                     Text("Don't show again")
+                        .font(RemoteClawType.subheadSemiBold)
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.bordered)
@@ -97,6 +100,6 @@ private struct NotificationPermissionGuidanceCard: View {
 
 extension View {
     func notificationPermissionGuidanceDialog(openNotifications: @escaping (String) -> Void) -> some View {
-        self.modifier(NotificationPermissionGuidanceDialogModifier(openNotifications: openNotifications))
+        modifier(NotificationPermissionGuidanceDialogModifier(openNotifications: openNotifications))
     }
 }

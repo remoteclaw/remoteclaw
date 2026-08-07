@@ -2,7 +2,7 @@
 // Auto-selected local team overrides live in .local-signing.xcconfig (git-ignored).
 // Manual local overrides can go in LocalSigning.xcconfig (git-ignored).
 
-#include "Config/Version.xcconfig"
+#include "build/Version.xcconfig"
 
 REMOTECLAW_CODE_SIGN_STYLE = Manual
 REMOTECLAW_CODE_SIGN_IDENTITY = Apple Development
@@ -25,3 +25,10 @@ REMOTECLAW_WATCH_APP_PROFILE =
 // so later assignments in local files override the defaults above.
 #include? ".local-signing.xcconfig"
 #include? "LocalSigning.xcconfig"
+
+// Debug products install alongside release products and keep their app-group data separate.
+REMOTECLAW_DEBUG_APP_BUNDLE_ID = $(REMOTECLAW_APP_BUNDLE_ID).debug
+REMOTECLAW_DEBUG_SHARE_BUNDLE_ID = $(REMOTECLAW_DEBUG_APP_BUNDLE_ID).share
+REMOTECLAW_DEBUG_ACTIVITY_WIDGET_BUNDLE_ID = $(REMOTECLAW_DEBUG_APP_BUNDLE_ID).activitywidget
+REMOTECLAW_DEBUG_WATCH_APP_BUNDLE_ID = $(REMOTECLAW_DEBUG_APP_BUNDLE_ID).watchkitapp
+REMOTECLAW_DEBUG_APP_GROUP_ID = $(REMOTECLAW_APP_GROUP_ID).debug

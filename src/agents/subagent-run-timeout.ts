@@ -19,6 +19,7 @@ export const MODULE_ATTESTATIONS = {
   resolveSubagentRunTimerDelayMs: "live",
   resolveSubagentRunDurationMs: "live",
   resolveSubagentRunDeadlineMs: "live",
+  resolveSubagentRunEffectiveEndedAt: "live",
 } as const;
 
 /** Convert subagent timeout seconds to a timer-safe delay. */
@@ -62,4 +63,14 @@ export function resolveSubagentRunDeadlineMs(
   return Number.isSafeInteger(deadlineMs) && asDateTimestampMs(deadlineMs) !== undefined
     ? deadlineMs
     : undefined;
+}
+
+/** Clamp a reported terminal time to the run's explicit timeout deadline. */
+export function resolveSubagentRunEffectiveEndedAt(
+  entry: Pick<SubagentRunRecord, "createdAt" | "startedAt" | "runTimeoutSeconds">,
+  endedAt: number,
+  observedStartedAt?: number,
+): number {
+  const deadlineMs = resolveSubagentRunDeadlineMs(entry, observedStartedAt);
+  return deadlineMs !== undefined && endedAt > deadlineMs ? deadlineMs : endedAt;
 }

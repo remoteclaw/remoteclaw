@@ -28,9 +28,7 @@ remoteclaw tasks flow cancel <lookup>
 
 ### Status filter values
 
-`--status` on `list` accepts one of:
-
-`queued`, `running`, `waiting`, `blocked`, `succeeded`, `failed`, `cancelled`, `lost`
+`--status` on `list` accepts one of: `queued`, `running`, `waiting`, `blocked`, `succeeded`, `failed`, `cancelled`, `lost`.
 
 ## Examples
 
@@ -43,7 +41,7 @@ remoteclaw tasks flow show flow_abc123 --json
 remoteclaw tasks flow cancel flow_abc123
 ```
 
-For full TaskFlow concepts and authoring see [TaskFlow](/automation/taskflow). For the parent `tasks` command see [tasks CLI reference](/cli/tasks).
+For TaskFlow concepts and authoring, see [TaskFlow](/automation/taskflow). For the parent `tasks` command, see [tasks CLI reference](/cli/tasks).
 
 ## Related
 

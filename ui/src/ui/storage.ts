@@ -4,10 +4,10 @@ const TOKEN_SESSION_KEY_PREFIX = "remoteclaw.control.token.v1:";
 
 type PersistedUiSettings = Omit<UiSettings, "token"> & { token?: never };
 
+import type { ThemeMode } from "../app/theme.ts";
 import { isSupportedLocale } from "../i18n/index.ts";
+import { normalizeOptionalString } from "../lib/string-coerce.ts";
 import { inferBasePathFromPathname, normalizeBasePath } from "./navigation.ts";
-import { normalizeOptionalString } from "./string-coerce.ts";
-import type { ThemeMode } from "./theme.ts";
 
 export const BORDER_RADIUS_STOPS = [0, 25, 50, 75, 100] as const;
 export type BorderRadiusStop = (typeof BORDER_RADIUS_STOPS)[number];

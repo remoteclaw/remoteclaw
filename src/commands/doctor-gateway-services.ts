@@ -38,7 +38,7 @@ function detectGatewayRuntime(programArguments: string[] | undefined): GatewayDa
   if (first) {
     const base = normalizeLowercaseStringOrEmpty(path.basename(first));
     if (base === "bun" || base === "bun.exe") {
-      return "bun";
+      return DEFAULT_GATEWAY_DAEMON_RUNTIME; // Legacy Bun services cannot open node:sqlite state.
     }
     if (base === "node" || base === "node.exe") {
       return "node";

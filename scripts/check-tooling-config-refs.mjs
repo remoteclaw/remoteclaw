@@ -88,7 +88,7 @@ export const KNOWN_MISSING_CONFIG_REFS = [
     // scope for every wrapper caller, which is a behaviour change with
     // unmeasured blast radius and is out of scope for the gate-wiring fix.
     file: "scripts/lib/local-heavy-check-runtime.mjs",
-    line: 92,
+    line: 103,
     value: "tsconfig.oxlint.json",
     issue: "#3076",
   },
@@ -102,14 +102,14 @@ export const KNOWN_MISSING_CONFIG_REFS = [
     // into `packages/plugin-sdk/dist/`, so this is a broken subsystem to
     // reconstruct or excise, not a path typo.
     file: "scripts/prepare-extension-package-boundary-artifacts.mjs",
-    line: 144,
+    line: 175,
     value: "packages/plugin-sdk/tsconfig.json",
     issue: "#3096",
   },
   {
     // #3096. Same missing project, consumed as the tsgo `-p` argument.
     file: "scripts/prepare-extension-package-boundary-artifacts.mjs",
-    line: 734,
+    line: 793,
     value: "packages/plugin-sdk/tsconfig.json",
     issue: "#3096",
   },

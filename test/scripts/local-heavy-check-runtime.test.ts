@@ -23,12 +23,24 @@ function makeTempDir() {
 }
 
 function makeEnv(overrides: Record<string, string | undefined> = {}) {
-  return {
+  const env = {
     ...process.env,
     REMOTECLAW_LOCAL_CHECK: "1",
     ...overrides,
   };
+  // `applyLocalOxlintPolicy` appends `--format stylish` under GITHUB_ACTIONS. Spreading
+  // process.env leaks that var in on CI and nowhere else, so drop it unless a test opts
+  // in explicitly — otherwise these assertions pass locally and fail in Actions.
+  if (!Object.hasOwn(overrides, "GITHUB_ACTIONS")) {
+    delete env.GITHUB_ACTIONS;
+  }
+  return env;
 }
+
+const ROOMY_HOST = {
+  totalMemoryBytes: 64 * 1024 ** 3,
+  logicalCpuCount: 16,
+};
 
 describe("local-heavy-check-runtime", () => {
   it("tightens local tsgo runs to a single checker with a Go memory limit", () => {
@@ -89,6 +101,35 @@ describe("local-heavy-check-runtime", () => {
       "--threads=1",
     ]);
   });
+
+  it("uses stylish oxlint output in GitHub Actions before the command separator", () => {
+    const { args } = applyLocalOxlintPolicy(
+      ["--", "src/example.ts"],
+      makeEnv({
+        GITHUB_ACTIONS: "true",
+        REMOTECLAW_LOCAL_CHECK_MODE: "full",
+      }),
+      ROOMY_HOST,
+    );
+
+    expect(args.slice(-4)).toEqual(["--format", "stylish", "--", "src/example.ts"]);
+  });
+
+  it.each(["--format", "--format=json", "-f", "-f=json", "-fjson"])(
+    "preserves an explicit oxlint format argument: %s",
+    (formatArg) => {
+      const { args } = applyLocalOxlintPolicy(
+        [formatArg],
+        makeEnv({
+          GITHUB_ACTIONS: "true",
+          REMOTECLAW_LOCAL_CHECK_MODE: "full",
+        }),
+        ROOMY_HOST,
+      );
+
+      expect(args).not.toContain("stylish");
+    },
+  );
 
   it("reclaims stale local heavy-check locks from dead pids", () => {
     const cwd = makeTempDir();

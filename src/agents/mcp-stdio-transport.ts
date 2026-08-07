@@ -40,6 +40,7 @@ export class RemoteClawStdioClientTransport implements Transport {
   private readonly readBuffer = new ReadBuffer();
   private readonly stderrStream: PassThrough | null = null;
   private process?: ChildProcess;
+  private closingProcess?: ChildProcess;
 
   constructor(private readonly serverParams: RemoteClawStdioServerParameters) {
     if (serverParams.stderr === "pipe" || serverParams.stderr === "overlapped") {
@@ -90,6 +91,7 @@ export class RemoteClawStdioClientTransport implements Transport {
       });
       child.stdout?.on("error", (error: Error) => this.onerror?.(error));
       if (this.stderrStream && child.stderr) {
+        child.stderr.on("error", (error: Error) => this.onerror?.(error));
         child.stderr.pipe(this.stderrStream);
       }
     });
@@ -100,7 +102,7 @@ export class RemoteClawStdioClientTransport implements Transport {
   }
 
   get pid() {
-    return this.process?.pid ?? null;
+    return this.process?.pid ?? this.closingProcess?.pid ?? null;
   }
 
   private processReadBuffer() {
@@ -118,8 +120,12 @@ export class RemoteClawStdioClientTransport implements Transport {
   }
 
   async close(): Promise<void> {
-    const processToClose = this.process;
+    const processToClose = this.process ?? this.closingProcess;
     this.process = undefined;
+    this.closingProcess = processToClose;
+    if (processToClose) {
+      this.closingProcess = processToClose;
+    }
     if (processToClose) {
       const closePromise = new Promise<void>((resolve) => {
         processToClose.once("close", () => resolve());
@@ -139,6 +145,25 @@ export class RemoteClawStdioClientTransport implements Transport {
           await Promise.race([closePromise, delay(SIGKILL_REAP_TIMEOUT_MS)]);
         }
       }
+    }
+    if (this.closingProcess === processToClose) {
+      this.closingProcess = undefined;
+    }
+    this.readBuffer.clear();
+  }
+
+  async forceClose(): Promise<void> {
+    const processToClose = this.process ?? this.closingProcess;
+    this.process = undefined;
+    if (processToClose?.pid && processToClose.exitCode === null) {
+      const closePromise = new Promise<void>((resolve) => {
+        processToClose.once("close", () => resolve());
+      });
+      signalProcessTree(processToClose.pid, "SIGKILL");
+      await Promise.race([closePromise, delay(SIGKILL_REAP_TIMEOUT_MS)]);
+    }
+    if (this.closingProcess === processToClose) {
+      this.closingProcess = undefined;
     }
     this.readBuffer.clear();
   }

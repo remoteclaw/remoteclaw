@@ -2,10 +2,6 @@
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const childProcessMocks = vi.hoisted(() => ({
-  execFileSync: vi.fn(),
-}));
-
 const fsMocks = vi.hoisted(() => ({
   access: vi.fn(),
   realpath: vi.fn(),
@@ -28,14 +24,6 @@ vi.mock("node:fs/promises", async () => {
   };
 });
 
-vi.mock("node:child_process", async () => {
-  const actual = await vi.importActual<typeof import("node:child_process")>("node:child_process");
-  return {
-    ...actual,
-    execFileSync: childProcessMocks.execFileSync,
-  };
-});
-
 import { resolveGatewayProgramArguments } from "./program-args.js";
 
 const originalArgv = [...process.argv];
@@ -43,6 +31,7 @@ const originalArgv = [...process.argv];
 afterEach(() => {
   process.argv = [...originalArgv];
   vi.resetAllMocks();
+  vi.unstubAllEnvs();
 });
 
 describe("resolveGatewayProgramArguments", () => {
@@ -155,22 +144,24 @@ describe("resolveGatewayProgramArguments", () => {
     ]);
   });
 
-  it("uses src/entry.ts for bun dev mode", async () => {
+  it("uses Node with tsx for source-checkout dev mode", async () => {
     const repoIndexPath = path.resolve("/repo/src/index.ts");
     const repoEntryPath = path.resolve("/repo/src/entry.ts");
     process.argv = ["/usr/local/bin/node", repoIndexPath];
     fsMocks.realpath.mockResolvedValue(repoIndexPath);
     fsMocks.access.mockResolvedValue(undefined);
-    childProcessMocks.execFileSync.mockReturnValue("/usr/local/bin/bun\n");
 
     const result = await resolveGatewayProgramArguments({
       dev: true,
       port: 18789,
-      runtime: "bun",
+      runtime: "node",
+      nodePath: "/usr/local/bin/node",
     });
 
     expect(result.programArguments).toEqual([
-      "/usr/local/bin/bun",
+      "/usr/local/bin/node",
+      "--import",
+      "tsx",
       repoEntryPath,
       "gateway",
       "--port",

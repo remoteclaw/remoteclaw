@@ -148,7 +148,7 @@ export let STATE_DIR = resolveStateDir();
  * Can be overridden via REMOTECLAW_CONFIG_PATH.
  * Default: ~/.remoteclaw/remoteclaw.json (or $REMOTECLAW_STATE_DIR/remoteclaw.json)
  */
-export function resolveCanonicalConfigPath(
+function resolveCanonicalConfigPath(
   env: NodeJS.ProcessEnv = process.env,
   stateDir: string = resolveStateDir(env, envHomedir(env)),
 ): string {

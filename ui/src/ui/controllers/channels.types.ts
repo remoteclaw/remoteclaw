@@ -1,6 +1,6 @@
 // Control UI type declarations define channels contracts.
-import type { GatewayBrowserClient } from "../gateway.ts";
-import type { ChannelsStatusSnapshot } from "../types.ts";
+import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import type { ChannelsStatusSnapshot } from "../../api/types.ts";
 
 export type ChannelsState = {
   client: GatewayBrowserClient | null;

@@ -4492,3 +4492,433 @@ details[open] > .ov-expandable-toggle::after {
 .chat-side-result__body > :last-child {
   margin-bottom: 0;
 }
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+.cron-empty-state {
+  margin-top: 12px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  background: color-mix(in srgb, var(--bg-elevated) 58%, transparent);
+}
+
+.cron-empty-state__copy {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+  max-width: 520px;
+}
+
+.cron-empty-state__title {
+  color: var(--text-strong);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.cron-filter-panel {
+  margin-top: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--bg-elevated) 72%, transparent);
+}
+
+.cron-filter-panel[open] .cron-filter-panel__summary::after {
+  transform: rotate(180deg);
+}
+
+.cron-filter-panel__body,
+.cron-filter-panel .cron-run-filters {
+  padding: 0 12px 12px;
+}
+
+.cron-filter-panel__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  list-style: none;
+}
+
+.cron-filter-panel__summary::-webkit-details-marker {
+  display: none;
+}
+
+.cron-filter-panel__summary::after {
+  content: "v";
+  color: var(--muted);
+  font-size: 14px;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.cron-form-collapse-toggle {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  justify-content: center;
+}
+
+.cron-form-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cron-workspace-form--collapsed .cron-form-header {
+  min-height: 160px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cron-workspace-form--collapsed .cron-form-header {
+  min-height: 0;
+  flex-direction: row;
+  align-items: center;
+}
+
+.cron-form-header__copy {
+  min-width: 0;
+}
+
+.cron-workspace-form--collapsed .cron-form-header__copy {
+  display: flex;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  white-space: nowrap;
+}
+
+.cron-workspace-form--collapsed .cron-form-header__copy {
+  writing-mode: horizontal-tb;
+  transform: none;
+}
+
+.cron-form-modal {
+  width: min(760px, calc(100vw - 48px));
+  max-height: min(860px, calc(100vh - 64px));
+  box-shadow: var(--shadow-xl);
+}
+
+.cron-form-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: color-mix(in srgb, #000 58%, transparent);
+  backdrop-filter: blur(8px);
+}
+
+.cron-job-detail-chips {
+  margin-top: 2px;
+}
+
+.cron-job-detail-section {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.cron-job-details {
+  min-width: 0;
+}
+
+.cron-job-details[open] > .cron-job-details__summary svg {
+  transform: rotate(90deg);
+}
+
+/* Expanded body repeats the full payload, so hide the one-line preview. */
+.cron-job-details[open] .cron-job-details__preview {
+  visibility: hidden;
+}
+
+.cron-job-details__preview {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cron-job-details__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+  min-width: 0;
+}
+
+.cron-job-details__summary::-webkit-details-marker {
+  display: none;
+}
+
+.cron-job-details__summary svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  align-self: center;
+  stroke: var(--muted);
+  fill: none;
+  stroke-width: 2px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+
+.cron-job--disabled .cron-job-main {
+  opacity: 0.6;
+}
+
+.cron-job-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.cron-job-menu {
+  position: relative;
+}
+
+/* Invisible full-viewport hit area so clicking anywhere outside closes the menu. */
+.cron-job-menu[open] > .cron-job-menu__trigger::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  cursor: default;
+}
+
+.cron-job-menu__panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 30;
+  min-width: 150px;
+  display: grid;
+  padding: 4px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
+}
+
+.cron-job-menu__trigger {
+  list-style: none;
+}
+
+.cron-job-menu__trigger::-webkit-details-marker {
+  display: none;
+}
+
+.cron-job-meta-line {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 6px;
+  color: var(--muted);
+  font-size: 12px;
+  min-width: 0;
+}
+
+.cron-job-meta-line > span {
+  overflow-wrap: anywhere;
+}
+
+.cron-job-meta-line > span + span::before {
+  content: "·";
+  margin-right: 6px;
+}
+
+.cron-job-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cron-job-row {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cron-job-title-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.cron-run-entry__body {
+  padding: 12px;
+  line-height: 1.45;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cron-run-entry__body {
+  padding: 10px;
+}
+
+.cron-run-entry__body pre,
+.cron-run-entry__body table {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Cron markdown overrides out-specify the base .chat-text rules in chat/text.css. */
+.cron-run-entry__body.chat-text table,
+.cron-job-detail-value.chat-text table {
+  display: table;
+  width: 100%;
+}
+
+.cron-run-entry__body.chat-text pre,
+.cron-run-entry__body.chat-text blockquote,
+.cron-job-detail-value.chat-text pre,
+.cron-job-detail-value.chat-text blockquote {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.cron-run-entry__body.chat-text pre + p,
+.cron-run-entry__body.chat-text blockquote + p,
+.cron-run-entry__body.chat-text table + p,
+.cron-run-entry__body.chat-text p + pre,
+.cron-run-entry__body.chat-text p + blockquote,
+.cron-run-entry__body.chat-text p + table,
+.cron-job-detail-value.chat-text pre + p,
+.cron-job-detail-value.chat-text blockquote + p,
+.cron-job-detail-value.chat-text table + p,
+.cron-job-detail-value.chat-text p + pre,
+.cron-job-detail-value.chat-text p + blockquote,
+.cron-job-detail-value.chat-text p + table {
+  margin-top: 0.75em;
+}
+
+.cron-run-entry__body.chat-text pre,
+.cron-run-entry__body.chat-text blockquote,
+.cron-run-entry__body.chat-text table,
+.cron-job-detail-value.chat-text pre,
+.cron-job-detail-value.chat-text blockquote,
+.cron-job-detail-value.chat-text table {
+  margin-bottom: 0.75em;
+}
+
+.cron-run-entry__body.chat-text > :last-child,
+.cron-job-detail-value.chat-text > :last-child {
+  margin-bottom: 0;
+}
+
+.cron-job .cron-job-detail-value table,
+.cron-run-entry__body table {
+  display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.cron-run-entry__header {
+  display: flex;
+  flex-direction: column;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px;
+  width: 100%;
+  box-sizing: border-box;
+  background: var(--secondary);
+  border-radius: var(--radius-md) var(--radius-md) 0 0;
+  border-bottom: 1px solid var(--border);
+}
+
+:root[data-theme-mode="light"] .cron-run-entry__header {
+  background: var(--bg-muted);
+}
+
+.cron-run-entry__header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px;
+}
+
+.code-block-wrapper pre:has(> code.markdown-block-art) {
+  background: var(--bg);
+}
+
+.code-block-wrapper :where(pre code.markdown-block-art) {
+  display: block;
+  min-width: 100%;
+  width: max-content;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  line-height: 0.86;
+  overflow-wrap: normal;
+  white-space: pre;
+  word-break: normal;
+}
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+.btn--xs {
+  padding: 4px 6px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.data-table-empty-state {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.login-gate__command {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 2px;
+  padding: 5px 8px 5px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--fg);
+  cursor: copy;
+}
+
+.login-gate__command:hover {
+  border-color: var(--accent);
+}
+
+.login-gate__command:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.login-gate__command code {
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}

@@ -113,8 +113,32 @@
       "@remoteclaw/slack/api.js": [
         "../dist/plugin-sdk/extensions/slack/api.d.ts"
       ],
+      "@remoteclaw/telegram/api.js": [
+        "../dist/plugin-sdk/extensions/telegram/api.d.ts"
+      ],
       "@remoteclaw/whatsapp/api.js": [
         "../dist/plugin-sdk/extensions/whatsapp/api.d.ts"
+      ],
+      "@remoteclaw/ai": [
+        "../dist/plugin-sdk/packages/ai/src/index.d.ts"
+      ],
+      "@remoteclaw/ai/diagnostics": [
+        "../dist/plugin-sdk/packages/ai/src/utils/diagnostics.d.ts"
+      ],
+      "@remoteclaw/ai/event-stream": [
+        "../dist/plugin-sdk/packages/ai/src/utils/event-stream.d.ts"
+      ],
+      "@remoteclaw/ai/providers": [
+        "../dist/plugin-sdk/packages/ai/src/providers.d.ts"
+      ],
+      "@remoteclaw/ai/types": [
+        "../dist/plugin-sdk/packages/ai/src/types.d.ts"
+      ],
+      "@remoteclaw/ai/validation": [
+        "../dist/plugin-sdk/packages/ai/src/validation.d.ts"
+      ],
+      "@remoteclaw/ai/internal/*": [
+        "../dist/plugin-sdk/packages/ai/src/internal/*.d.ts"
       ],
       "@remoteclaw/llm-core": [
         "../dist/plugin-sdk/packages/llm-core/src/index.d.ts"
@@ -238,9 +262,6 @@
       ],
       "@remoteclaw/media-core/read-byte-stream-with-limit": [
         "../dist/plugin-sdk/packages/media-core/src/read-byte-stream-with-limit.d.ts"
-      ],
-      "@remoteclaw/media-core/read-response-with-limit": [
-        "../dist/plugin-sdk/packages/media-core/src/read-response-with-limit.d.ts"
       ],
       "@remoteclaw/media-core/*": [
         "../dist/plugin-sdk/packages/media-core/src/*.d.ts"

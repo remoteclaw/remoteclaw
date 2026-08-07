@@ -18,6 +18,8 @@ export type WhatsAppActionConfig = {
   reactions?: boolean;
   sendMessage?: boolean;
   polls?: boolean;
+  /** Enable the experimental requester-bound voice-call tool. Default: false. */
+  calls?: boolean;
 };
 
 export type WhatsAppReactionLevel = ReactionLevel;
@@ -130,7 +132,7 @@ export type WhatsAppConfig = WhatsAppConfigCore &
     accounts?: Record<string, WhatsAppAccountConfig>;
     /** Optional default account id when multiple accounts are configured. */
     defaultAccount?: string;
-    /** Per-action tool gating (default: true for all). */
+    /** Per-action tool gating. Calls default to false; existing actions default to true. */
     actions?: WhatsAppActionConfig;
   };
 

@@ -1,12 +1,12 @@
 {
   "name": "@remoteclaw/signal",
-  "version": "2026.6.11",
+  "version": "2026.7.1",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@remoteclaw/signal",
-      "version": "2026.6.11",
+      "version": "2026.7.1",
       "dependencies": {
         "ws": "8.21.0"
       }

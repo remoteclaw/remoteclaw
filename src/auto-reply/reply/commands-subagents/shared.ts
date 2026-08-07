@@ -73,7 +73,11 @@ export const ACTIONS = new Set([
 ]);
 
 export const RECENT_WINDOW_MINUTES = 30;
-const SUBAGENT_TASK_PREVIEW_MAX = 110;
+// v2026.7.1-2 changed `truncateLine` so maxLength is the TOTAL width including the
+// "..." marker (it used to be the content budget, so the result could overflow to
+// maxLength + 3). This fork wants 110 characters of task text, so the budget is
+// restated as 113 to keep the rendered preview identical to pre-sync output.
+const SUBAGENT_TASK_PREVIEW_MAX = 113;
 export const STEER_ABORT_SETTLE_TIMEOUT_MS = 5_000;
 
 function compactLine(value: string) {

@@ -145,8 +145,10 @@ describe("relaunchGatewayScheduledTask", () => {
     expect(script).toContain(
       'remoteclaw restart attempt source=windows-task-handoff target="RemoteClaw Gateway (work)"',
     );
+    // v2026.7.1-2 replaced the `findstr /I /C:"Running"` string match with a PowerShell
+    // exit-code check, so the redirect no longer pipes through findstr.
     expect(script).toContain(
-      `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "(Get-ScheduledTask -TaskName 'RemoteClaw Gateway (work)' -ErrorAction SilentlyContinue).State" 2>nul | findstr /I /C:"Running" >nul 2>&1`,
+      `powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command "$task = Get-ScheduledTask -TaskName 'RemoteClaw Gateway (work)' -ErrorAction SilentlyContinue; if ($null -ne $task -and $task.State -eq 'Running') { exit 0 }; exit 1" >nul 2>&1`,
     );
     expect(script).toContain(`${PINNED_SCHTASKS} /Run /TN "RemoteClaw Gateway (work)" >>`);
     expect(script.indexOf("powershell.exe -NoProfile")).toBeLessThan(
@@ -214,8 +216,10 @@ describe("relaunchGatewayScheduledTask", () => {
 
     const scriptPath = [...createdScriptPaths][0];
     const script = fs.readFileSync(scriptPath, "utf8");
+    // The apostrophe must still be doubled for PowerShell's single-quoted literal after
+    // v2026.7.1-2 reshaped the query into an exit-code check.
     expect(script).toContain(
-      "-Command \"(Get-ScheduledTask -TaskName 'RemoteClaw Gateway (Bob''s work)' -ErrorAction SilentlyContinue).State\"",
+      "-Command \"$task = Get-ScheduledTask -TaskName 'RemoteClaw Gateway (Bob''s work)' -ErrorAction SilentlyContinue;",
     );
   });
 

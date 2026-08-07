@@ -12,6 +12,7 @@ import {
 } from "remoteclaw/plugin-sdk/text-runtime";
 import { buildMediaPayload } from "../../../../src/channels/plugins/media-payload.js";
 import { logVerbose } from "../../../../src/globals.js";
+import { pruneMapToMaxSize } from "../../../../src/infra/map-size.js";
 import type { SsrFPolicy } from "../../../../src/infra/net/ssrf.js";
 import { fetchRemoteMedia, type FetchLike } from "../../../../src/media/fetch.js";
 import { saveMediaBuffer } from "../../../../src/media/store.js";
@@ -115,10 +116,22 @@ type DiscordForwardedMessageSource = {
 
 const DISCORD_CHANNEL_INFO_CACHE_TTL_MS = 5 * 60 * 1000;
 const DISCORD_CHANNEL_INFO_NEGATIVE_CACHE_TTL_MS = 30 * 1000;
+// Upstream v2026.7.1-2 bounds this cache in its split-out `message-channel-info.ts`;
+// this fork still keeps the monolithic `message-utils.ts`, so the cap is applied here.
+const DISCORD_CHANNEL_INFO_CACHE_MAX_ENTRIES = 1000;
 const DISCORD_CHANNEL_INFO_CACHE = new Map<
   string,
   { value: DiscordChannelInfo | null; expiresAt: number }
 >();
+
+function cacheDiscordChannelInfo(
+  channelId: string,
+  value: DiscordChannelInfo | null,
+  ttlMs: number,
+): void {
+  DISCORD_CHANNEL_INFO_CACHE.set(channelId, { value, expiresAt: Date.now() + ttlMs });
+  pruneMapToMaxSize(DISCORD_CHANNEL_INFO_CACHE, DISCORD_CHANNEL_INFO_CACHE_MAX_ENTRIES);
+}
 const DISCORD_STICKER_ASSET_BASE_URL = "https://media.discordapp.net/stickers";
 
 export function __resetDiscordChannelInfoCacheForTest() {
@@ -156,10 +169,7 @@ export async function resolveDiscordChannelInfo(
   try {
     const channel = await client.fetchChannel(channelId);
     if (!channel) {
-      DISCORD_CHANNEL_INFO_CACHE.set(channelId, {
-        value: null,
-        expiresAt: Date.now() + DISCORD_CHANNEL_INFO_NEGATIVE_CACHE_TTL_MS,
-      });
+      cacheDiscordChannelInfo(channelId, null, DISCORD_CHANNEL_INFO_NEGATIVE_CACHE_TTL_MS);
       return null;
     }
     const name = "name" in channel ? (channel.name ?? undefined) : undefined;
@@ -173,17 +183,11 @@ export async function resolveDiscordChannelInfo(
       parentId,
       ownerId,
     };
-    DISCORD_CHANNEL_INFO_CACHE.set(channelId, {
-      value: payload,
-      expiresAt: Date.now() + DISCORD_CHANNEL_INFO_CACHE_TTL_MS,
-    });
+    cacheDiscordChannelInfo(channelId, payload, DISCORD_CHANNEL_INFO_CACHE_TTL_MS);
     return payload;
   } catch (err) {
     logVerbose(`discord: failed to fetch channel ${channelId}: ${String(err)}`);
-    DISCORD_CHANNEL_INFO_CACHE.set(channelId, {
-      value: null,
-      expiresAt: Date.now() + DISCORD_CHANNEL_INFO_NEGATIVE_CACHE_TTL_MS,
-    });
+    cacheDiscordChannelInfo(channelId, null, DISCORD_CHANNEL_INFO_NEGATIVE_CACHE_TTL_MS);
     return null;
   }
 }

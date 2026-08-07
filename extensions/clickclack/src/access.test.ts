@@ -65,6 +65,7 @@ function createAccount(
     defaultTo: "channel:general",
     allowFrom: ["usr_owner"],
     reconnectMs: 1_500,
+    agentActivity: false,
     config: { allowFrom: ["usr_owner"] },
     ...overrides,
   };

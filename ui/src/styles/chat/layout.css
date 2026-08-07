@@ -2033,3 +2033,160 @@
 
 /* Mobile dropdown toggle — hidden on desktop */
 /* Mobile gear toggle + dropdown are hidden by default in layout.css */
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+.agent-chat__talk-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+
+.agent-chat__talk-input-control {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  gap: 6px;
+  align-items: end;
+}
+
+.agent-chat__talk-input-message {
+  padding: 0 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.agent-chat__talk-input-message--error {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 8px 9px;
+  border: 1px solid color-mix(in srgb, var(--danger) 22%, var(--border));
+  border-radius: var(--radius-sm);
+  background: var(--danger-subtle);
+  color: var(--text);
+}
+
+.agent-chat__talk-input-message--loading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.agent-chat__talk-input-message-icon {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  margin-top: 1px;
+  color: var(--danger);
+}
+
+.agent-chat__talk-input-message-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.agent-chat__talk-input-refresh {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--input) 88%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--card) 92%, var(--bg-elevated) 8%);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.agent-chat__talk-input-refresh:hover:not(:disabled),
+.agent-chat__talk-input-refresh:focus-visible {
+  border-color: color-mix(in srgb, var(--text) 18%, var(--input));
+  background: var(--bg-hover);
+  color: var(--text);
+  outline: none;
+}
+
+.agent-chat__talk-input-refresh:focus-visible {
+  box-shadow: var(--focus-ring);
+}
+
+.agent-chat__talk-input-refresh:disabled {
+  cursor: wait;
+  opacity: 0.75;
+}
+
+.agent-chat__talk-input-refresh svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.agent-chat__talk-input-refresh:disabled svg {
+  animation: chat-run-status-spin 0.9s linear infinite;
+}
+
+.agent-chat__talk-input-refresh:disabled svg,
+.agent-chat__talk-input-spinner {
+  animation: none;
+}
+
+.agent-chat__talk-input-setting {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 6px;
+}
+
+.agent-chat__talk-input-setting {
+  order: -1;
+}
+
+.agent-chat__talk-input-spinner {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  color: var(--muted);
+  animation: chat-run-status-spin 0.9s linear infinite;
+}
+
+.agent-chat__talk-input-spinner svg {
+  width: 100%;
+  height: 100%;
+}
+
+.agent-chat__talk-settings-link {
+  height: 34px;
+  flex: 0 0 auto;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.agent-chat__talk-settings-link:hover,
+.agent-chat__talk-settings-link:focus-visible {
+  background: var(--bg-hover);
+  color: var(--text);
+  outline: none;
+}
+
+.agent-chat__talk-settings-link:disabled {
+  background: transparent;
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: 0.75;
+}

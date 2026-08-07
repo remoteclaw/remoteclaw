@@ -1,14 +1,8 @@
 import { html, nothing } from "lit";
 import { parseAgentSessionKey } from "../../../src/routing/session-key.js";
+import { renderExecApprovalPrompt } from "../components/exec-approval.ts";
+import { icons } from "../components/icons.ts";
 import { t } from "../i18n/index.ts";
-import { refreshChatAvatar } from "./app-chat.ts";
-import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.helpers.ts";
-import type { AppViewState } from "./app-view-state.ts";
-import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "./controllers/agent-files.ts";
-import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
-import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
-import { loadChannels } from "./controllers/channels.ts";
-import { loadChatHistory } from "./controllers/chat.ts";
 import {
   applyConfig,
   loadConfig,
@@ -16,12 +10,12 @@ import {
   saveConfig,
   updateConfigFormValue,
   removeConfigFormValue,
-} from "./controllers/config.ts";
+} from "../lib/config/index.ts";
+import { resolveConfiguredCronModelSuggestions } from "../lib/cron/index.ts";
 import {
+  loadCronJobsPage,
   loadCronRuns,
-  loadMoreCronJobs,
   loadMoreCronRuns,
-  reloadCronJobs,
   toggleCronJob,
   runCronJob,
   removeCronJob,
@@ -35,7 +29,24 @@ import {
   getVisibleCronJobs,
   updateCronJobsFilter,
   updateCronRunsFilter,
-} from "./controllers/cron.ts";
+} from "../lib/cron/index.ts";
+import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../lib/external-link.ts";
+import { loadAgentFileContent, loadAgentFiles, saveAgentFile } from "../pages/agents/files.ts";
+import { renderAgents } from "../pages/agents/view.ts";
+import { renderChannels } from "../pages/channels/view.ts";
+import { loadChatHistory } from "../pages/chat/chat-history.ts";
+import { renderConfig } from "../pages/config/view.ts";
+import { renderCron } from "../pages/cron/view.ts";
+import { renderDebug } from "../pages/debug/view.ts";
+import { renderInstances } from "../pages/instances/view.ts";
+import { renderLogs } from "../pages/logs/view.ts";
+import { renderNodes } from "../pages/nodes/view.ts";
+import { refreshChatAvatar } from "./app-chat.ts";
+import { renderChatControls, renderTab, renderThemeToggle } from "./app-render.helpers.ts";
+import type { AppViewState } from "./app-view-state.ts";
+import { loadAgentIdentities, loadAgentIdentity } from "./controllers/agent-identity.ts";
+import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
+import { loadChannels } from "./controllers/channels.ts";
 import { loadDebug, callDebugMethod } from "./controllers/debug.ts";
 import {
   approveDevicePairing,
@@ -54,21 +65,9 @@ import { loadLogs } from "./controllers/logs.ts";
 import { loadNodes } from "./controllers/nodes.ts";
 import { loadPresence } from "./controllers/presence.ts";
 import { deleteSessionAndRefresh, loadSessions, patchSession } from "./controllers/sessions.ts";
-import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "./external-link.ts";
-import { icons } from "./icons.ts";
 import { normalizeBasePath, TAB_GROUPS, subtitleForTab, titleForTab } from "./navigation.ts";
-import { resolveConfiguredCronModelSuggestions } from "./views/agents-utils.ts";
-import { renderAgents } from "./views/agents.ts";
-import { renderChannels } from "./views/channels.ts";
 import { renderChat } from "./views/chat.ts";
-import { renderConfig } from "./views/config.ts";
-import { renderCron } from "./views/cron.ts";
-import { renderDebug } from "./views/debug.ts";
-import { renderExecApprovalPrompt } from "./views/exec-approval.ts";
 import { renderGatewayUrlConfirmation } from "./views/gateway-url-confirmation.ts";
-import { renderInstances } from "./views/instances.ts";
-import { renderLogs } from "./views/logs.ts";
-import { renderNodes } from "./views/nodes.ts";
 import { renderOverview } from "./views/overview.ts";
 import { renderSessions } from "./views/sessions.ts";
 const AVATAR_DATA_RE = /^data:/i;
@@ -405,7 +404,9 @@ export function renderApp(state: AppViewState) {
                 entries: state.presenceEntries,
                 lastError: state.presenceError,
                 statusMessage: state.presenceStatus,
+                hostsRevealed: state.hostsRevealed,
                 onRefresh: () => loadPresence(state),
+                onToggleHosts: () => (state.hostsRevealed = !state.hostsRevealed),
               })
             : nothing
         }
@@ -474,6 +475,7 @@ export function renderApp(state: AppViewState) {
                 runsSortDir: state.cronRunsSortDir,
                 agentSuggestions: cronAgentSuggestions,
                 modelSuggestions: cronModelSuggestions,
+                accountSuggestions: [],
                 thinkingSuggestions: CRON_THINKING_SUGGESTIONS,
                 timezoneSuggestions: CRON_TIMEZONE_SUGGESTIONS,
                 deliveryToSuggestions,
@@ -493,7 +495,7 @@ export function renderApp(state: AppViewState) {
                   updateCronRunsFilter(state, { cronRunsScope: "job" });
                   await loadCronRuns(state, jobId);
                 },
-                onLoadMoreJobs: () => loadMoreCronJobs(state),
+                onLoadMoreJobs: () => loadCronJobsPage(state, { append: true }),
                 onJobsFiltersChange: async (patch) => {
                   updateCronJobsFilter(state, patch);
                   const shouldReload =
@@ -502,7 +504,7 @@ export function renderApp(state: AppViewState) {
                     Boolean(patch.cronJobsSortBy) ||
                     Boolean(patch.cronJobsSortDir);
                   if (shouldReload) {
-                    await reloadCronJobs(state);
+                    await loadCronJobsPage(state, { append: false });
                   }
                 },
                 onJobsFiltersReset: async () => {
@@ -514,7 +516,7 @@ export function renderApp(state: AppViewState) {
                     cronJobsSortBy: "nextRunAtMs",
                     cronJobsSortDir: "asc",
                   });
-                  await reloadCronJobs(state);
+                  await loadCronJobsPage(state, { append: false });
                 },
                 onLoadMoreRuns: () => loadMoreCronRuns(state),
                 onRunsFiltersChange: async (patch) => {
@@ -945,6 +947,8 @@ export function renderApp(state: AppViewState) {
         ${
           state.tab === "config"
             ? renderConfig({
+                viewState: state.configViewState,
+                onViewStateChange: () => (state.configViewState = { ...state.configViewState }),
                 raw: state.configRaw,
                 originalRaw: state.configRawOriginal,
                 valid: state.configValid,

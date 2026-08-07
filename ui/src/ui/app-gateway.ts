@@ -3,8 +3,35 @@ import {
   type GatewayUpdateAvailableEventPayload,
 } from "../../../src/gateway/events.js";
 import { ConnectErrorDetailCodes } from "../../../src/gateway/protocol/connect-error-details.js";
+import type { EventLogEntry } from "../api/event-log.ts";
+import {
+  resolveGatewayErrorDetailCode,
+  type GatewayEventFrame,
+  type GatewayHelloOk,
+} from "../api/gateway.ts";
+import { GatewayBrowserClient } from "../api/gateway.ts";
+import type {
+  AgentsListResult,
+  PresenceEntry,
+  HealthSnapshot,
+  UpdateAvailable,
+} from "../api/types.ts";
+import type { ExecApprovalRequest } from "../app/exec-approval.ts";
+import {
+  addExecApproval,
+  parseExecApprovalRequested,
+  parseExecApprovalResolved,
+  removeExecApproval,
+} from "../app/exec-approval.ts";
+import { loadChatHistory } from "../pages/chat/chat-history.ts";
+import { handleChatEvent, type ChatEventPayload } from "../pages/chat/chat-history.ts";
+import {
+  handleAgentEvent,
+  resetToolStream,
+  type AgentEventPayload,
+  type ToolStreamHost,
+} from "../pages/chat/tool-stream.ts";
 import { CHAT_SESSIONS_ACTIVE_MINUTES, flushChatQueueForEvent } from "./app-chat.ts";
-import type { EventLogEntry } from "./app-events.ts";
 import {
   applySettings,
   loadCron,
@@ -12,35 +39,13 @@ import {
   setLastActiveSessionKey,
   type SettingsHost,
 } from "./app-settings.ts";
-import {
-  handleAgentEvent,
-  resetToolStream,
-  type AgentEventPayload,
-  type ToolStreamHost,
-} from "./app-tool-stream.ts";
 import type { RemoteClawApp } from "./app.ts";
 import { shouldReloadHistoryForFinalEvent } from "./chat-event-reload.ts";
 import { loadAgents, loadToolsCatalog } from "./controllers/agents.ts";
 import { loadAssistantIdentity } from "./controllers/assistant-identity.ts";
-import { loadChatHistory } from "./controllers/chat.ts";
-import { handleChatEvent, type ChatEventPayload } from "./controllers/chat.ts";
 import { loadDevices } from "./controllers/devices.ts";
-import type { ExecApprovalRequest } from "./controllers/exec-approval.ts";
-import {
-  addExecApproval,
-  parseExecApprovalRequested,
-  parseExecApprovalResolved,
-  removeExecApproval,
-} from "./controllers/exec-approval.ts";
 import { loadNodes } from "./controllers/nodes.ts";
 import { loadSessions } from "./controllers/sessions.ts";
-import {
-  resolveGatewayErrorDetailCode,
-  type GatewayEventFrame,
-  type GatewayHelloOk,
-} from "./gateway.ts";
-import { GatewayBrowserClient } from "./gateway.ts";
-import type { AgentsListResult, PresenceEntry, HealthSnapshot, UpdateAvailable } from "./types.ts";
 
 function isGenericBrowserFetchFailure(message: string): boolean {
   return /^(?:typeerror:\s*)?(?:fetch failed|failed to fetch)$/i.test(message.trim());
@@ -78,7 +83,7 @@ export type GatewayHost = SettingsHost &
     agentsError: string | null;
     toolsCatalogLoading: boolean;
     toolsCatalogError: string | null;
-    toolsCatalogResult: import("./types.ts").ToolsCatalogResult | null;
+    toolsCatalogResult: import("../api/types.ts").ToolsCatalogResult | null;
     debugHealth: HealthSnapshot | null;
     assistantName: string;
     assistantAvatar: string | null;

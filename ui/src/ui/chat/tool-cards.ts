@@ -1,9 +1,9 @@
 import { html, nothing } from "lit";
-import { icons } from "../icons.ts";
-import { formatToolDetail, resolveToolDisplay } from "../tool-display.ts";
-import type { ToolCard } from "../types/chat-types.ts";
+import { icons } from "../../components/icons.ts";
+import type { ToolCard } from "../../lib/chat/chat-types.ts";
+import { extractTextCached } from "../../lib/chat/message-extract.ts";
+import { formatToolDetail, resolveToolDisplay } from "../../lib/chat/tool-display.ts";
 import { TOOL_INLINE_THRESHOLD } from "./constants.ts";
-import { extractTextCached } from "./message-extract.ts";
 import { isToolResultMessage } from "./role-normalizer.ts";
 import { formatToolOutputForSidebar, getTruncatedPreview } from "./tool-helpers.ts";
 

@@ -18,6 +18,7 @@ type HandshakeConnectAuth = {
   deviceToken?: string;
   password?: string;
   approvalRuntimeToken?: string;
+  agentRuntimeIdentityToken?: string;
 };
 
 type DeviceTokenCandidateSource = "explicit-device-token" | "shared-token-fallback";

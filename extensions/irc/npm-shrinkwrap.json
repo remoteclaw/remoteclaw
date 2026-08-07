@@ -1,12 +1,12 @@
 {
   "name": "@remoteclaw/irc",
-  "version": "2026.6.11",
+  "version": "2026.7.1",
   "lockfileVersion": 3,
   "requires": true,
   "packages": {
     "": {
       "name": "@remoteclaw/irc",
-      "version": "2026.6.11",
+      "version": "2026.7.1",
       "dependencies": {
         "zod": "4.4.3"
       }

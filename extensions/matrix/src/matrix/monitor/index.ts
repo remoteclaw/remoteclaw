@@ -26,7 +26,7 @@ import { registerMatrixMonitorEvents } from "./events.js";
 import { createMatrixRoomMessageHandler } from "./handler.js";
 import { createMatrixRoomInfoResolver } from "./room-info.js";
 
-export type MonitorMatrixOpts = {
+type MonitorMatrixOpts = {
   runtime?: RuntimeEnv;
   abortSignal?: AbortSignal;
   mediaMaxMb?: number;

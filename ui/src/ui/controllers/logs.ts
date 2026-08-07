@@ -1,8 +1,8 @@
 // Control UI controller manages logs gateway state.
 import { stripAnsi } from "../../../../packages/terminal-core/src/ansi.js";
-import type { GatewayBrowserClient } from "../gateway.ts";
-import { normalizeLowercaseStringOrEmpty } from "../string-coerce.ts";
-import type { LogEntry, LogLevel } from "../types.ts";
+import type { GatewayBrowserClient } from "../../api/gateway.ts";
+import { normalizeLowercaseStringOrEmpty } from "../../lib/string-coerce.ts";
+import type { LogEntry, LogLevel } from "../../pages/logs/log-lines.ts";
 import {
   formatMissingOperatorReadScopeMessage,
   isMissingOperatorReadScopeError,

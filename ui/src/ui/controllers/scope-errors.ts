@@ -1,5 +1,5 @@
 import { ConnectErrorDetailCodes } from "../../../../src/gateway/protocol/connect-error-details.js";
-import { GatewayRequestError, resolveGatewayErrorDetailCode } from "../gateway.ts";
+import { GatewayRequestError, resolveGatewayErrorDetailCode } from "../../api/gateway.ts";
 
 export function isMissingOperatorReadScopeError(err: unknown): boolean {
   if (!(err instanceof GatewayRequestError)) {

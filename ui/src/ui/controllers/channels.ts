@@ -1,5 +1,5 @@
 // Control UI controller manages channels gateway state.
-import type { ChannelsStatusSnapshot } from "../types.ts";
+import type { ChannelsStatusSnapshot } from "../../api/types.ts";
 import type { ChannelsState } from "./channels.types.ts";
 import {
   formatMissingOperatorReadScopeMessage,

@@ -1,7 +1,7 @@
 import { html } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
-import { icons } from "../icons.ts";
-import { toSanitizedMarkdownHtml } from "../markdown.ts";
+import { icons } from "../../components/icons.ts";
+import { toSanitizedMarkdownHtml } from "../../components/markdown.ts";
 
 export type MarkdownSidebarProps = {
   content: string | null;

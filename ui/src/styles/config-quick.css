@@ -813,3 +813,53 @@
     font-size: 1.15rem;
   }
 }
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+.settings-workspace--fill-height .logs-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Rules upstream added to this file in v2026.7.1-2; lifted verbatim
+   because the fork keeps its own copy of this stylesheet. */
+/* ── Appearance card ── */
+
+.qs-appearance {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(240px, 100%), 1fr));
+  gap: 0 24px;
+  padding: 2px 16px 8px;
+}
+
+.qs-appearance .qs-row {
+  border-top: none;
+  padding-inline: 0;
+}
+
+/* Stacked row: label above a full-width, equal-segment control. Used where a
+   side-by-side row would wrap unpredictably (Appearance, tool profile). */
+.qs-row--stacked {
+  align-items: stretch;
+  flex-direction: column;
+  gap: 8px;
+  padding-block: 10px;
+}
+
+.qs-row--stacked .qs-row__label {
+  flex: 0 0 auto;
+  width: 100%;
+}
+
+.qs-row--stacked .qs-segmented {
+  align-self: stretch;
+  justify-content: flex-start;
+}
+
+.qs-row--stacked .qs-segmented__btn {
+  flex: 1 1 0;
+  padding-inline: 6px;
+  text-align: center;
+}

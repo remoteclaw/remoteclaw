@@ -1,12 +1,12 @@
 import { html } from "lit";
 import { ConnectErrorDetailCodes } from "../../../../src/gateway/protocol/connect-error-details.js";
+import type { GatewayHelloOk } from "../../api/gateway.ts";
 import { t, i18n, SUPPORTED_LOCALES, type Locale } from "../../i18n/index.ts";
-import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../external-link.ts";
-import { formatRelativeTimestamp, formatDurationHuman } from "../format.ts";
-import type { GatewayHelloOk } from "../gateway.ts";
-import { formatNextRun } from "../presenter.ts";
+import { buildExternalLinkRel, EXTERNAL_LINK_TARGET } from "../../lib/external-link.ts";
+import { formatRelativeTimestamp, formatDurationHuman } from "../../lib/format.ts";
+import { shouldShowPairingHint } from "../../lib/overview-hints.ts";
+import { formatNextRun } from "../../lib/presenter.ts";
 import type { UiSettings } from "../storage.ts";
-import { shouldShowPairingHint } from "./overview-hints.ts";
 
 export type OverviewProps = {
   connected: boolean;

@@ -3,7 +3,7 @@ import {
   CONTROL_UI_BOOTSTRAP_CONFIG_PATH,
   type ControlUiBootstrapConfig,
 } from "../../../../src/gateway/control-ui-contract.js";
-import { normalizeAssistantIdentity } from "../assistant-identity.ts";
+import { normalizeAssistantIdentity } from "../../lib/assistant-identity.ts";
 import { normalizeBasePath } from "../navigation.ts";
 
 export type ControlUiBootstrapState = {

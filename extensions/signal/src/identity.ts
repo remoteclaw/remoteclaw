@@ -35,11 +35,10 @@ export function resolveSignalSender(params: {
 }): SignalSender | null {
   const sourceNumber = params.sourceNumber?.trim();
   if (sourceNumber) {
-    return {
-      kind: "phone",
-      raw: sourceNumber,
-      e164: normalizeE164(sourceNumber),
-    };
+    const e164 = normalizeE164(sourceNumber);
+    if (e164) {
+      return { kind: "phone", raw: sourceNumber, e164 };
+    }
   }
   const sourceUuid = params.sourceUuid?.trim();
   if (sourceUuid) {
@@ -94,7 +93,8 @@ function parseSignalAllowEntry(entry: string): SignalAllowEntry | null {
     return { kind: "uuid", raw: stripped };
   }
 
-  return { kind: "phone", e164: normalizeE164(stripped) };
+  const e164 = normalizeE164(stripped);
+  return e164 ? { kind: "phone", e164 } : null;
 }
 
 export function normalizeSignalAllowRecipient(entry: string): string | undefined {

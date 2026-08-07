@@ -1,5 +1,5 @@
 // Control UI module implements app defaults behavior.
-import type { LogLevel } from "./types.ts";
+import type { LogLevel } from "../pages/logs/log-lines.ts";
 import type { CronFormState } from "./ui-types.ts";
 
 export const DEFAULT_LOG_LEVEL_FILTERS: Record<LogLevel, boolean> = {

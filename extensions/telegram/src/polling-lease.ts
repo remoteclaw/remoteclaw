@@ -14,7 +14,7 @@ type TelegramPollingLeaseEntry = {
 
 type TelegramPollingLeaseRegistry = Map<string, TelegramPollingLeaseEntry>;
 
-export type TelegramPollingLease = {
+type TelegramPollingLease = {
   tokenFingerprint: string;
   waitedForPrevious: boolean;
   replacedStoppingPrevious: boolean;

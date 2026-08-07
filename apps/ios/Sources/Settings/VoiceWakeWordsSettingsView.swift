@@ -14,6 +14,7 @@ struct VoiceWakeWordsSettingsView: View {
                     TextField("Wake word", text: self.binding(for: index))
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
+                        .font(RemoteClawType.subhead)
                         .focused(self.$focusedTriggerIndex, equals: index)
                         .onSubmit {
                             self.commitTriggerWords()
@@ -25,23 +26,32 @@ struct VoiceWakeWordsSettingsView: View {
                     self.addWord()
                 } label: {
                     Label("Add word", systemImage: "plus")
+                        .font(RemoteClawType.subheadSemiBold)
                 }
                 .disabled(self.triggerWords
                     .contains(where: { $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }))
 
-                Button("Reset defaults") {
+                Button {
                     self.triggerWords = VoiceWakePreferences.defaultTriggerWords
+                } label: {
+                    Text("Reset defaults")
+                        .font(RemoteClawType.subheadSemiBold)
                 }
             } header: {
                 Text("Wake Words")
+                    .font(RemoteClawType.captionSemiBold)
             } footer: {
                 Text(
                     "RemoteClaw reacts when any trigger appears in a transcription. "
                         + "Keep them short to avoid false positives.")
+                    .font(RemoteClawType.caption)
             }
         }
         .navigationTitle("Wake Words")
-        .toolbar { EditButton() }
+        .toolbar {
+            EditButton()
+                .font(RemoteClawType.subheadSemiBold)
+        }
         .onAppear {
             if self.triggerWords.isEmpty {
                 self.triggerWords = VoiceWakePreferences.defaultTriggerWords

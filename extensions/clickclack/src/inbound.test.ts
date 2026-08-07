@@ -64,6 +64,7 @@ function createAgentAccount(
     defaultTo: "channel:general",
     allowFrom: ["*"],
     reconnectMs: 1_500,
+    agentActivity: false,
     config: {
       allowFrom: ["*"],
     },

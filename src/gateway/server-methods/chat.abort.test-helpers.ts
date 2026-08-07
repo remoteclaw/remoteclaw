@@ -9,6 +9,7 @@ export function createActiveRun(
     agentId?: string;
     controlUiVisible?: boolean;
     owner?: { connId?: string; deviceId?: string };
+    turnKind?: "main" | "btw";
   } = {},
 ) {
   const now = Date.now();
@@ -22,11 +23,13 @@ export function createActiveRun(
     controlUiVisible: params.controlUiVisible,
     ownerConnId: params.owner?.connId,
     ownerDeviceId: params.owner?.deviceId,
+    turnKind: params.turnKind,
   };
 }
 
 type ChatAbortTestContext = Record<string, unknown> & {
   chatAbortControllers: Map<string, ReturnType<typeof createActiveRun>>;
+  chatQueuedTurns: Map<string, import("../chat-queued-turns.js").QueuedChatTurnEntry>;
   chatRunBuffers: Map<string, string>;
   chatDeltaSentAt: Map<string, number>;
   chatDeltaLastBroadcastLen: Map<string, number>;
@@ -52,6 +55,7 @@ export function createChatAbortContext(
 ): ChatAbortTestContext {
   const context = {
     chatAbortControllers: new Map(),
+    chatQueuedTurns: new Map(),
     chatRunBuffers: new Map(),
     chatDeltaSentAt: new Map(),
     chatDeltaLastBroadcastLen: new Map(),
@@ -89,7 +93,12 @@ export function createChatAbortContext(
 export async function invokeChatAbortHandler(params: {
   handler: GatewayRequestHandler;
   context: ChatAbortTestContext;
-  request: { sessionKey: string; agentId?: string; runId?: string };
+  request: {
+    sessionKey: string;
+    agentId?: string;
+    runId?: string;
+    preserveSideRuns?: boolean;
+  };
   client?: {
     connId?: string;
     connect?: {

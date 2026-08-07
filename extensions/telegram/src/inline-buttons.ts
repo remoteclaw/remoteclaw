@@ -33,6 +33,9 @@ function resolveInlineButtonsScopeFromCapabilities(
     return DEFAULT_INLINE_BUTTONS_SCOPE;
   }
   if (Array.isArray(capabilities)) {
+    if (capabilities.length === 0) {
+      return DEFAULT_INLINE_BUTTONS_SCOPE;
+    }
     const enabled = capabilities.some(
       (entry) => normalizeLowercaseStringOrEmpty(String(entry)) === "inlinebuttons",
     );

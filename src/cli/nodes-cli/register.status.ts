@@ -11,6 +11,7 @@ import { formatErrorMessage } from "../../infra/errors.js";
 import { formatTimeAgo } from "../../infra/format-time/format-relative.ts";
 import { defaultRuntime } from "../../runtime.js";
 import { shortenHomeInString } from "../../utils.js";
+import { resolveCliName } from "../cli-name.js";
 import { formatCliCommand } from "../command-format.js";
 import { parseDurationMs } from "../parse-duration.js";
 import { quoteCliArg } from "../quote-cli-arg.js";
@@ -138,7 +139,7 @@ function formatPendingApprovalCommand(raw: unknown, opts: NodesRpcOpts): string 
   if (!requestId) {
     return null;
   }
-  const args = ["openclaw", "nodes", "approve", requestId];
+  const args = [resolveCliName(), "nodes", "approve", requestId];
   const timeout = normalizeOptionalString(opts.timeout);
   if (timeout && timeout !== String(DEFAULT_NODES_RPC_TIMEOUT_MS)) {
     args.push("--timeout", timeout);

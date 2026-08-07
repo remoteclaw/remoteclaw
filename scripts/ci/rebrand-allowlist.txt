@@ -155,12 +155,6 @@ openclaw\
 Cherry-picked-from:
 
 # ---------------------------------------------------------------------------
-# Quoted compat package/binary names
-# ---------------------------------------------------------------------------
-"openclaw"
-'openclaw'
-
-# ---------------------------------------------------------------------------
 # Source files with compat references (CLI command strings, variable names,
 # config fields, import wizard, probe strings, plugin fixtures). These are
 # existing upstream artifacts; new files are NOT exempt and will be caught.
@@ -205,3 +199,53 @@ FILE:src/wizard/onboarding.ts
 FILE:extensions/line/src/channel.ts
 FILE:extensions/mattermost/src/mattermost/monitor.ts
 FILE:extensions/zalouser/src/status-issues.ts
+
+# ---------------------------------------------------------------------------
+# Quoted bare `openclaw` tokens — exempt per path, NEVER by pattern (#3148)
+# ---------------------------------------------------------------------------
+# A quoted bare token is THE shape of a genuine brand leak in TypeScript, so the
+# blanket `"openclaw"` / `'openclaw'` patterns this file used to carry blinded
+# scan 1 to the class it exists to catch: src/cli/nodes-cli/register.status.ts
+# shipped `["openclaw", "nodes", "approve", …]` green, telling operators to run a
+# binary this project does not ship. Dropping them surfaced 27 lines — that one
+# real defect (fixed in #3148) plus the 26 legitimate ones exempted per path
+# below, so a NEW quoted bare `openclaw` anywhere else fails the gate.
+
+# Reads the LEGACY upstream config directory ($XDG_CONFIG_HOME/openclaw/...)
+# alongside the current ~/.remoteclaw-auth-profile-secrets path. The literal
+# names a directory written by upstream OpenClaw, so rebranding it would break
+# the legacy-read path it exists to serve.
+FILE:src/agents/auth-profiles/legacy-oauth-sidecar.ts
+
+# Fork-integrity regression test: asserts the upstream token is ABSENT from the
+# built system prompt (`expect(result).not.toContain("openclaw")`). The token is
+# the assertion SUBJECT — rebranding it would invert what the test proves.
+FILE:src/middleware/system-prompt.test.ts
+
+# Generated npm lockfiles carrying a stale upstream peer-dependency block
+# (`"openclaw": ">=2026.5.28"`, optional), last written by `sync: upstream to
+# v2026.5.28` (#3022). Their own source of truth disagrees — no
+# extensions/*/package.json declares peerDependencies at all — so the correct
+# artifact has NO such block, and hand-editing the token to `remoteclaw` would
+# fabricate a peer dep the manifest never declared. Regenerating them is a
+# dependency-surface change needing explicit approval: deferred to #3151.
+# Nothing reads them today, and the reasons are fragile enough to name:
+# `deps:shrinkwrap:check` is not a package script (its only referrer,
+# scripts/check.mjs, is unreachable from `pnpm check`), and the one live test
+# consumer, test/package-manager-config.test.ts, filters to
+# `publishToNpm === true`, which none of these 12 extensions set. Wire that
+# guard up and these exemptions go stale with nothing to flag it.
+# Listed per file, not as a directory prefix: a 13th extension gaining the block
+# SHOULD fail the gate and get re-reviewed.
+FILE:extensions/discord/npm-shrinkwrap.json
+FILE:extensions/feishu/npm-shrinkwrap.json
+FILE:extensions/googlechat/npm-shrinkwrap.json
+FILE:extensions/line/npm-shrinkwrap.json
+FILE:extensions/matrix/npm-shrinkwrap.json
+FILE:extensions/msteams/npm-shrinkwrap.json
+FILE:extensions/nextcloud-talk/npm-shrinkwrap.json
+FILE:extensions/nostr/npm-shrinkwrap.json
+FILE:extensions/slack/npm-shrinkwrap.json
+FILE:extensions/tlon/npm-shrinkwrap.json
+FILE:extensions/whatsapp/npm-shrinkwrap.json
+FILE:extensions/zalouser/npm-shrinkwrap.json

@@ -183,3 +183,49 @@ describe("check-rebrand-leakage scan 4 (dead openclaw.plugin.json filenames)", (
     expect(output).toContain("No rebrand leakage detected.");
   });
 });
+
+describe("check-rebrand-leakage scan 1 (quoted bare openclaw token)", () => {
+  // Until #3148 the allowlist carried blanket `"openclaw"` / `'openclaw'` content
+  // patterns. scan() drops any hit whose LINE contains an allowlist pattern, so
+  // those two entries exempted every line holding a quoted bare token — precisely
+  // the shape of a real brand leak in TypeScript. The gate could not fail its own
+  // corpse: src/cli/nodes-cli/register.status.ts shipped `["openclaw", "nodes",
+  // "approve", requestId]` green, telling operators to run a binary this package
+  // does not ship. These tests run against the REAL allowlist (copied by
+  // makeRepo), so restoring either blanket entry reddens the case that quotes it
+  // the same way. Package.swift is omitted (null) to isolate scan 1.
+
+  it("fails on the exact defect #3148 fixed — a quoted binary name in a rendered command", () => {
+    const { status, output } = runGate(
+      makeRepo(null, {
+        "src/cli/probe.ts": 'const args = ["openclaw", "nodes", "approve", requestId];\n',
+      }),
+    );
+    expect(status).toBe(1);
+    expect(output).toContain("Rebrand leakage detected");
+    expect(output).toContain("src/cli/probe.ts");
+  });
+
+  it("fails on the single-quoted form too", () => {
+    const { status, output } = runGate(
+      makeRepo(null, { "src/cli/probe.ts": "const bin = 'openclaw';\n" }),
+    );
+    expect(status).toBe(1);
+    expect(output).toContain("Rebrand leakage detected");
+    expect(output).toContain("src/cli/probe.ts");
+  });
+
+  it("still honors per-path exemptions, so legitimate quoted tokens stay green", () => {
+    // The narrow FILE: rows that replaced the blanket patterns must keep working —
+    // otherwise the fix trades a blind gate for an unusable one. Uses a real
+    // exempted path (the legacy upstream config-dir read).
+    const { status, output } = runGate(
+      makeRepo(null, {
+        "src/agents/auth-profiles/legacy-oauth-sidecar.ts":
+          'const legacy = path.join(root, "openclaw", KEY_FILE);\n',
+      }),
+    );
+    expect(status).toBe(0);
+    expect(output).toContain("No rebrand leakage detected.");
+  });
+});

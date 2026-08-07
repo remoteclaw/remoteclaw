@@ -236,8 +236,16 @@ function validateGatewayTailscaleAuth(config: RemoteClawConfig): ConfigValidatio
 }
 
 /**
- * Validates config without applying runtime defaults.
- * Use this when you need the raw validated config (e.g., for writing back to file).
+ * Validates config without applying the runtime helper defaults in ./defaults.ts.
+ *
+ * "Raw" stops there. The returned config is still `RemoteClawSchema.safeParse` output, so every
+ * schema-level `.default()` has been materialized and every `superRefine` normalizer (e.g.
+ * `normalizeSlackStreamingConfig`) has written into the parsed object.
+ *
+ * Do NOT persist the returned config to the user's config file: it rewrites their file with
+ * settings they never authored, frozen at whatever the default was that day, so a later change to
+ * a default never reaches them (issue #3163). Validate as a gate and write the pre-validation
+ * object — see `writeConfigFile` in ./io.ts.
  */
 export function validateConfigObjectRaw(
   raw: unknown,
@@ -325,6 +333,7 @@ export function validateConfigObjectWithPlugins(
   return validateConfigObjectWithPluginsBase(raw, { applyDefaults: true, env: params?.env });
 }
 
+/** Plugin-aware {@link validateConfigObjectRaw} — the same "do not persist the result" caveat applies. */
 export function validateConfigObjectRawWithPlugins(
   raw: unknown,
   params?: { env?: NodeJS.ProcessEnv },

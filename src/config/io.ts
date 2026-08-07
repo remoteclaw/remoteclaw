@@ -132,8 +132,8 @@ export type ConfigWriteOptions = {
    */
   expectedConfigPath?: string;
   /**
-   * Paths that must be explicitly removed from the persisted file payload,
-   * even if schema/default normalization reintroduces them.
+   * Paths to remove from the persisted file payload. Applied before validation, so the
+   * object that gets validated is the object that gets written.
    */
   unsetPaths?: string[][];
 };
@@ -319,6 +319,24 @@ function unsetPathForWrite(
     return { changed: true, next: coerceConfig(result.value) };
   }
   return { changed: false, next: root };
+}
+
+/** Applies every `unsetPaths` entry to `root`, skipping malformed and empty ones. */
+function applyUnsetPathsForWrite(
+  root: RemoteClawConfig,
+  unsetPaths: string[][] | undefined,
+): RemoteClawConfig {
+  let next = root;
+  for (const unsetPath of unsetPaths ?? []) {
+    if (!Array.isArray(unsetPath) || unsetPath.length === 0) {
+      continue;
+    }
+    const result = unsetPathForWrite(next, unsetPath);
+    if (result.changed) {
+      next = result.next;
+    }
+  }
+  return next;
 }
 
 export function resolveConfigSnapshotHash(snapshot: {
@@ -1093,13 +1111,13 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
 
   async function writeConfigFile(cfg: RemoteClawConfig, options: ConfigWriteOptions = {}) {
     clearConfigCache();
-    let persistCandidate: unknown = cfg;
+    let persistCandidate: RemoteClawConfig = cfg;
     const { snapshot } = await readConfigFileSnapshotInternal();
     let envRefMap: Map<string, string> | null = null;
     let changedPaths: Set<string> | null = null;
     if (snapshot.valid && snapshot.exists) {
       const patch = createMergePatch(snapshot.config, cfg);
-      persistCandidate = applyMergePatch(snapshot.resolved, patch);
+      persistCandidate = applyMergePatch(snapshot.resolved, patch) as RemoteClawConfig;
       try {
         const resolvedIncludes = resolveConfigIncludes(snapshot.parsed, configPath, {
           readFile: (candidate) => deps.fs.readFileSync(candidate, "utf-8"),
@@ -1124,6 +1142,10 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       }
     }
 
+    // Unset before validating, not after: this used to run at the very end, so validation
+    // inspected one object while a different one reached disk (issue #3163).
+    persistCandidate = applyUnsetPathsForWrite(persistCandidate, options.unsetPaths);
+
     const validated = validateConfigObjectRawWithPlugins(persistCandidate);
     if (!validated.ok) {
       const issue = validated.issues[0];
@@ -1138,6 +1160,11 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       deps.logger.warn(`Config warnings:\n${details}`);
     }
 
+    // Write persistCandidate, the object validation just inspected — never validated.config,
+    // whose Zod parse has materialized every schema default (issue #3163; see the contract on
+    // validateConfigObjectRaw in ./validation.ts).
+    let cfgToWrite = persistCandidate;
+
     // Restore ${VAR} env var references that were resolved during config loading.
     // Read the current file (pre-substitution) and restore any references whose
     // resolved values match the incoming config — so we don't overwrite
@@ -1145,9 +1172,6 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
     //
     // We use only the root file's parsed content (no $include resolution) to avoid
     // pulling values from included files into the root config on write-back.
-    // Apply env restoration to validated.config (which has runtime defaults stripped
-    // per issue #6070) rather than the raw caller input.
-    let cfgToWrite = validated.config;
     try {
       if (deps.fs.existsSync(configPath)) {
         const currentRaw = await deps.fs.promises.readFile(configPath, "utf-8");
@@ -1176,24 +1200,13 @@ export function createConfigIO(overrides: ConfigIoDeps = {}) {
       homedir: deps.homedir,
       fsModule: deps.fs,
     });
-    const outputConfigBase =
+    const outputConfig =
       envRefMap && changedPaths
         ? (restoreEnvRefsFromMap(cfgToWrite, "", envRefMap, changedPaths) as RemoteClawConfig)
         : cfgToWrite;
-    let outputConfig = outputConfigBase;
-    if (options.unsetPaths?.length) {
-      for (const unsetPath of options.unsetPaths) {
-        if (!Array.isArray(unsetPath) || unsetPath.length === 0) {
-          continue;
-        }
-        const unsetResult = unsetPathForWrite(outputConfig, unsetPath);
-        if (unsetResult.changed) {
-          outputConfig = unsetResult.next;
-        }
-      }
-    }
-    // Do NOT apply runtime defaults when writing — user config should only contain
-    // explicitly set values. Runtime defaults are applied when loading (issue #6070).
+    // Defaults are applied on load, never on write (issue #6070) — but that only keeps NEW ones
+    // out of the file. A default already on disk is indistinguishable from an authored value, so
+    // it is carried forward verbatim as user intent (issue #3167 tracks whether to repair those).
     const stampedOutputConfig = stampConfigVersion(outputConfig);
     const json = JSON.stringify(stampedOutputConfig, null, 2).trimEnd().concat("\n");
     const nextHash = hashConfigRaw(json);

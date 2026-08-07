@@ -41,8 +41,9 @@ const pluginSdkAliasSubpaths = [
  * them here is lane assignment, not suppression.
  *
  * Hand-listed on purpose: the `*.browser.test.ts` convention (excluded by pattern
- * below) does NOT cover these — each was verified to fail in this lane solely on a
- * missing DOM global. */
+ * below) does NOT cover these — each was verified to fail in this lane on a browser-
+ * only dependency: either a missing DOM global, or an import of `vitest/browser`,
+ * which refuses to load outside Browser Mode. */
 const UI_BROWSER_LANE_SUITES = [
   "ui/src/app/native-bridge.test.ts",
   "ui/src/components/markdown.test.ts",
@@ -55,6 +56,13 @@ const UI_BROWSER_LANE_SUITES = [
   "ui/src/pages/cron/view.test.ts",
   "ui/src/pages/dreams/dreaming.test.ts",
   "ui/src/pages/sessions/view.test.ts",
+  // The `test-ui-smoke` CI job's two named suites, pulled into this lane's glob by
+  // the `ui/src/ui/**` widening. They are NOT losing coverage by sitting here: that
+  // job is required and runs exactly these two in real Chromium. `app.smoke` fails
+  // here with `document is not defined` (8/8); `app.computed-style` imports
+  // `vitest/browser`, which errors out before collecting a single test.
+  "ui/src/ui/app.computed-style.test.ts",
+  "ui/src/ui/app.smoke.test.ts",
 ];
 
 /** DEBT LEDGER — Control UI suites that DO run under this lane's env but currently
@@ -77,6 +85,22 @@ const UI_FAILING_SUITES_DEBT = [
   "ui/src/app/vite-config.node.test.ts",
   "ui/src/pages/chat/realtime-talk-shared.browser-import.test.ts",
   "ui/src/pages/config/presets.test.ts",
+  // Stylesheet-content assertions, pulled in by the `ui/src/styles/**` widening.
+  // Unlike every entry above they PREDATE the v2026.7.1-2 sync — they are orphans of
+  // the same rot this glob fix exists to end: no lane ever ran them, so the CSS they
+  // assert on drifted freely and the reds accumulated unseen. Each reads its CSS with
+  // `node:fs` and touches no DOM global, so the browser lane cannot host them
+  // (`Module "node:fs" has been externalized for browser compatibility`) — verified
+  // per file. Every failure is a genuine content mismatch against a stylesheet this
+  // PR does not modify: `.qs-identity-grid` / `.qs-card--model` / `.qs-profiles` and
+  // a stray `transition: all` (config-quick.css); `.sessions-filter-bar` and a
+  // touch-primary media query (components.css); `.md-preview-dialog__header-main` /
+  // `.md-preview-icon-btn` (components.css); `flex-wrap: wrap` and
+  // `.chat-tool-card--expanded` (chat/tool-cards.css).
+  "ui/src/styles/chat/tool-cards.test.ts",
+  "ui/src/styles/components.test.ts",
+  "ui/src/styles/config-quick.test.ts",
+  "ui/src/styles/markdown-preview.test.ts",
   // Fails identically in this lane and in the browser lane — the assertion is red
   // regardless of environment.
   "ui/src/api/gateway.node.test.ts",
@@ -128,7 +152,9 @@ export default defineConfig({
       // belong to the `test-ui-smoke` lane (`ui/vitest.config.ts`). Two further
       // exclusion ledgers are defined above the config — read them before assuming
       // a UI suite is covered.
-      "ui/src/{api,app,components,lib,pages}/**/*.test.ts",
+      // Covers every `ui/src` dir that holds tests EXCEPT `e2e/`, which is owned by
+      // the e2e lane and already excluded by the `**/*.e2e.test.ts` pattern below.
+      "ui/src/{api,app,components,i18n,lib,pages,styles,ui}/**/*.test.ts",
     ],
     setupFiles: ["test/setup.ts"],
     exclude: [

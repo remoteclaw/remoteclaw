@@ -21,5 +21,29 @@ onlyBuiltDependencies:
   - "@whiskeysockets/baileys"
   - authenticate-pam
   - esbuild
+  - koffi
   - protobufjs
   - sharp
+
+# Transitive-dependency version pins. Several are security pins; do not relax
+# one without checking why it is here. Migrated from the `pnpm` field in
+# package.json, which pnpm 10 no longer reads (#3144).
+overrides:
+  # Bumped 4.12.7 -> 4.12.8 deliberately, not as a side effect of the migration:
+  # the release shrinkwrap generator derives hono's pin from the lock (4.12.8, via
+  # @buape/carbon's peer context) and conflicts with 4.12.7 once these overrides
+  # live in the home it reads. 4.12.8 is a pure bug-fix release and is already in
+  # the tree. Revert this one line to undo.
+  hono: "4.12.8"
+  "@hono/node-server": "1.19.10"
+  fast-xml-parser: "5.3.8"
+  request: "npm:@cypress/request@3.0.10"
+  request-promise: "npm:@cypress/request-promise@5.0.0"
+  file-type: "21.3.1"
+  form-data: "2.5.4"
+  minimatch: "10.2.1"
+  qs: "6.14.2"
+  "@grammyjs/types": "3.26.0"
+  typebox: "1.1.28"
+  tar: "7.5.11"
+  tough-cookie: "4.1.3"

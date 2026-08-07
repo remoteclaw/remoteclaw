@@ -108,7 +108,6 @@ const UI_FAILING_SUITES_DEBT = [
   "ui/src/lib/config/index.test.ts",
   "ui/src/pages/activity/view.test.ts",
   "ui/src/pages/chat/chat-composer.test.ts",
-  "ui/src/pages/chat/realtime-talk-input.test.ts",
   "ui/src/pages/logs/view.test.ts",
   "ui/src/pages/overview/view.render.test.ts",
 ];

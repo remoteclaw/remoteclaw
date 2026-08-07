@@ -74,17 +74,6 @@ const UI_FAILING_SUITES_DEBT = [
   // Fails in this lane; cannot run in the browser lane at all (reads sources via
   // `node:fs`/`node:vm`, which vite externalizes). This lane is its only home.
   "ui/src/app/mount-fallback.test.ts",
-  // Upstream's rewrite of the fork's #3024 build-id guard — the Control UI
-  // service-worker build-id contract that otherwise only the publish lanes'
-  // `pnpm ui:build` exercises. Until this entry is removed, that contract has NO
-  // test guarding it (24% similar to the file it replaced, which did guard it).
-  // The fork-side contract it inherited is intact — every assertion
-  // the fork's own version made still passes. It is red only on the two assertions
-  // upstream ADDED, for a client-side update-notification path in `ui/src/main.ts`
-  // (`serviceWorker.addEventListener("message"`, `event.data.version !==
-  // currentControlUiBuildId`) that this fork has never had, at this commit or
-  // before it. Orphaned upstream test, not a regression in the #3024 contract.
-  "ui/src/app/service-worker-cache.test.ts",
   "ui/src/app/vite-config.node.test.ts",
   "ui/src/pages/chat/realtime-talk-shared.browser-import.test.ts",
   "ui/src/pages/config/presets.test.ts",

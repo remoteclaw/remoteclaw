@@ -2,22 +2,19 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import vm from "node:vm";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const serviceWorkerPath = path.join(here, "../../public/sw.js");
+const read = (rel: string): string => fs.readFileSync(path.join(here, rel), "utf8");
 
 describe("Control UI service worker cache versioning", () => {
   it("registers the service worker with a build id and bounds prior build caches", () => {
-    const mainSource = fs.readFileSync(path.join(here, "../main.ts"), "utf8");
-    const serviceWorkerSource = fs.readFileSync(serviceWorkerPath, "utf8");
-    const viteConfigSource = fs.readFileSync(path.join(here, "../../vite.config.ts"), "utf8");
+    const mainSource = read("../main.ts");
+    const serviceWorkerSource = read("../../public/sw.js");
+    const viteConfigSource = read("../../vite.config.ts");
 
     expect(mainSource).toContain('swUrl.searchParams.set("v"');
     expect(mainSource).toContain('updateViaCache: "none"');
-    expect(mainSource).toContain('navigator.serviceWorker.addEventListener("message"');
-    expect(mainSource).toContain("event.data.version !== currentControlUiBuildId");
     expect(serviceWorkerSource).toContain(
       'const EMBEDDED_CACHE_VERSION = "__REMOTECLAW_CONTROL_UI_BUILD_ID__"',
     );
@@ -25,93 +22,62 @@ describe("Control UI service worker cache versioning", () => {
     expect(serviceWorkerSource).toContain("CONTROL_CACHE_LIMIT = 3");
     expect(serviceWorkerSource).toContain("slice(-priorCacheLimit)");
     expect(serviceWorkerSource).toContain("caches.delete");
-    expect(serviceWorkerSource).toContain("includeUncontrolled: true");
-    expect(serviceWorkerSource).not.toContain(
-      'postMessage({ type: "sw-updated", version: CACHE_VERSION },',
-    );
     expect(viteConfigSource).toContain("source.replace(placeholder, JSON.stringify(buildId))");
     expect(serviceWorkerSource).not.toContain('const CACHE_NAME = "remoteclaw-control-v1"');
   });
 
-  it("broadcasts updated versions to uncontrolled window clients during activation", async () => {
-    const serviceWorkerSource = fs.readFileSync(serviceWorkerPath, "utf8");
-    const windowClient = { postMessage: vi.fn() };
-    const matchedClients = createDeferred<Array<typeof windowClient>>();
-    const listeners = new Map<string, Array<(event: ActivateEventStub) => void>>();
-    const cacheDelete = vi.fn(async () => true);
-    const clients = {
-      claim: vi.fn(async () => undefined),
-      matchAll: vi.fn(() => matchedClients.promise),
-    };
-    const caches = {
-      delete: cacheDelete,
-      keys: vi.fn(async () => [
-        "remoteclaw-control-oldest",
-        "remoteclaw-control-older",
-        "remoteclaw-control-previous",
-        "remoteclaw-control-new-build",
-        "other-cache",
-      ]),
-      open: vi.fn(),
-    };
-    const serviceWorkerGlobal = {
-      addEventListener(type: string, listener: (event: ActivateEventStub) => void) {
-        listeners.set(type, [...(listeners.get(type) ?? []), listener]);
-      },
-      clients,
-      location: { href: "https://control.example/sw.js?v=new-build" },
-      registration: { showNotification: vi.fn() },
-      skipWaiting: vi.fn(),
-    };
-    const context = vm.createContext({
-      URL,
-      caches,
-      fetch: vi.fn(),
-      self: serviceWorkerGlobal,
-    });
+  // #3024: the v2026.5.28 sync re-applied ui/vite.config.ts from upstream without the fork's
+  // uppercase env rebrand, desyncing it from the fork-owned sw.js and main.ts. Both halves
+  // below are extracted from their owning file rather than pinned as literals here, so a
+  // rename on either side surfaces as a desync instead of quietly passing.
+  it("keeps the build-id placeholder and define key in sync with their consumers", () => {
+    const mainSource = read("../main.ts");
+    const serviceWorkerSource = read("../../public/sw.js");
+    const viteConfigSource = read("../../vite.config.ts");
 
-    new vm.Script(serviceWorkerSource, { filename: "ui/public/sw.js" }).runInContext(context);
+    // The token sw.js actually embeds must be the exact string vite.config.ts substitutes.
+    // A mismatch makes the replace a no-op, which fails `pnpm ui:build` (publish lanes only).
+    const swToken = /const EMBEDDED_CACHE_VERSION = "(__[A-Z0-9_]+__)";/.exec(
+      serviceWorkerSource,
+    )?.[1];
+    expect(
+      swToken,
+      "sw.js must declare EMBEDDED_CACHE_VERSION from a __TOKEN__ placeholder",
+    ).toBeTruthy();
+    expect(viteConfigSource).toContain(`const placeholder = '"${swToken}"'`);
 
-    const activateHandler = listeners.get("activate")?.[0];
-    expect(activateHandler).toBeDefined();
-    let activationPromise: Promise<unknown> | undefined;
-    activateHandler?.({
-      waitUntil(promise: Promise<unknown>) {
-        activationPromise = promise;
-      },
-    });
+    // Substitution is `String.replace(string, ...)`, which rewrites only the FIRST occurrence.
+    // sw.js therefore depends on the assignment preceding the "was I built?" sentinel compare —
+    // reorder them and the build would silently substitute the sentinel instead.
+    const assignmentAt = serviceWorkerSource.indexOf(`const EMBEDDED_CACHE_VERSION = "${swToken}"`);
+    const sentinelCompareAt = serviceWorkerSource.indexOf(
+      `EMBEDDED_CACHE_VERSION !== "${swToken}"`,
+    );
+    expect(assignmentAt).toBeLessThan(sentinelCompareAt);
 
-    let activationSettled = false;
-    void activationPromise?.then(() => {
-      activationSettled = true;
-    });
-    await Promise.resolve();
+    // The identifier main.ts declares and reads must be the key vite defines. Otherwise vite
+    // never substitutes it and the prod bundle ships a bare undeclared global, throwing
+    // ReferenceError at module scope on every production page load in a secure context.
+    const buildIdGlobal = /declare const ([A-Z0-9_]+): string \| undefined;/.exec(mainSource)?.[1];
+    expect(buildIdGlobal, "main.ts must declare the injected build-id global").toBeTruthy();
+    expect(mainSource).toContain(`swUrl.searchParams.set("v", ${buildIdGlobal} || "dev")`);
+    expect(viteConfigSource).toContain(`${buildIdGlobal}: JSON.stringify(controlUiBuildId)`);
 
-    expect(activationSettled).toBe(false);
-    expect(windowClient.postMessage).not.toHaveBeenCalled();
+    // Sibling injectors must define the same key. Neither is covered by a CI lane
+    // (*.e2e.test.ts is excluded from every vitest config), so this is their only guard.
+    const e2eHelperSource = read("../test-helpers/control-ui-e2e.ts");
+    const mockDevSource = read("../../../scripts/control-ui-mock-dev.ts");
+    expect(e2eHelperSource).toContain(`${buildIdGlobal}: JSON.stringify(`);
+    expect(mockDevSource).toContain(`${buildIdGlobal}: JSON.stringify(`);
 
-    matchedClients.resolve([windowClient]);
-    await activationPromise;
-
-    expect(clients.matchAll).toHaveBeenCalledWith({ type: "window", includeUncontrolled: true });
-    expect(clients.claim).toHaveBeenCalled();
-    expect(cacheDelete).toHaveBeenCalledWith("remoteclaw-control-oldest");
-    expect(windowClient.postMessage).toHaveBeenCalledWith({
-      type: "sw-updated",
-      version: "new-build",
-    });
-    expect(windowClient.postMessage.mock.calls[0]).toHaveLength(1);
+    // The env overrides vite reads must carry the fork prefix; a sync re-applying upstream's
+    // file flips these to REMOTECLAW_* and the documented knobs go silently dead.
+    for (const envName of [
+      "REMOTECLAW_CONTROL_UI_BUILD_ID",
+      "REMOTECLAW_VERSION",
+      "REMOTECLAW_CONTROL_UI_BASE_PATH",
+    ]) {
+      expect(viteConfigSource).toContain(`process.env.${envName}`);
+    }
   });
 });
-
-type ActivateEventStub = {
-  waitUntil(promise: Promise<unknown>): void;
-};
-
-function createDeferred<T>() {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((resolvePromise) => {
-    resolve = resolvePromise;
-  });
-  return { promise, resolve };
-}

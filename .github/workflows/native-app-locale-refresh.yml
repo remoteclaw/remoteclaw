@@ -25,8 +25,40 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && github.actor != 'github-actions[bot]' }}
 
 jobs:
-  refresh:
+  # The `secrets` context is not available to a job-level `if:`, so the provider
+  # check cannot gate `refresh` directly — it has to read the secrets in a step
+  # and publish the verdict as a job output. Only the boolean is exported; no
+  # secret value ever reaches an output.
+  #
+  # This job's `if:` is deliberately identical to `refresh`'s existing guard.
+  # Keep the two in sync: it is what stops the probe from running on forks or on
+  # the bot's own push, exactly as `refresh` already declines to.
+  preflight:
+    name: Check translation provider secret
     if: github.repository == 'remoteclaw/remoteclaw' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main') && (github.event_name != 'push' || github.actor != 'github-actions[bot]')
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      has-provider-secret: ${{ steps.probe.outputs.has-provider-secret }}
+    steps:
+      - name: Probe for a translation provider secret
+        id: probe
+        env:
+          REMOTECLAW_DOCS_I18N_OPENAI_API_KEY: ${{ secrets.REMOTECLAW_DOCS_I18N_OPENAI_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -n "${REMOTECLAW_DOCS_I18N_OPENAI_API_KEY:-}" ] || [ -n "${OPENAI_API_KEY:-}" ] || [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+            echo "has-provider-secret=true" >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+          echo "has-provider-secret=false" >> "${GITHUB_OUTPUT}"
+          echo "::notice::No translation provider secret is configured (REMOTECLAW_DOCS_I18N_OPENAI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY). Skipping the native locale refresh."
+
+  refresh:
+    needs: preflight
+    if: github.repository == 'remoteclaw/remoteclaw' && (github.event_name != 'workflow_dispatch' || github.ref == 'refs/heads/main') && (github.event_name != 'push' || github.actor != 'github-actions[bot]') && needs.preflight.outputs.has-provider-secret == 'true'
     strategy:
       fail-fast: false
       max-parallel: 2
@@ -68,18 +100,6 @@ jobs:
         uses: ./.github/actions/setup-node-env
         with:
           install-bun: "false"
-
-      - name: Ensure translation provider secrets exist
-        env:
-          REMOTECLAW_DOCS_I18N_OPENAI_API_KEY: ${{ secrets.REMOTECLAW_DOCS_I18N_OPENAI_API_KEY }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: |
-          set -euo pipefail
-          if [ -z "${REMOTECLAW_DOCS_I18N_OPENAI_API_KEY:-}" ] && [ -z "${OPENAI_API_KEY:-}" ] && [ -z "${ANTHROPIC_API_KEY:-}" ]; then
-            echo "Missing REMOTECLAW_DOCS_I18N_OPENAI_API_KEY, OPENAI_API_KEY, or ANTHROPIC_API_KEY secret."
-            exit 1
-          fi
 
       - name: Refresh native locale artifact
         env:

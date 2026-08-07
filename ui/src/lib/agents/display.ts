@@ -1,5 +1,4 @@
 import { formatByteSize } from "@remoteclaw/normalization-core";
-import { html } from "lit";
 import {
   listCoreToolSections,
   PROFILE_OPTIONS as TOOL_PROFILE_OPTIONS,
@@ -30,7 +29,6 @@ type AgentConfigEntry = {
   name?: string;
   workspace?: string;
   agentDir?: string;
-  model?: unknown;
   tools?: {
     profile?: string;
     allow?: string[];
@@ -41,7 +39,7 @@ type AgentConfigEntry = {
 
 type ConfigSnapshot = {
   agents?: {
-    defaults?: { workspace?: string; model?: unknown; models?: Record<string, { alias?: string }> };
+    defaults?: { workspace?: string };
     list?: AgentConfigEntry[];
   };
   tools?: {
@@ -134,7 +132,6 @@ export function resolveAgentConfig(config: Record<string, unknown> | null, agent
 
 export type AgentContext = {
   workspace: string;
-  model: string;
   identityName: string;
   identityEmoji: string;
 };
@@ -150,9 +147,6 @@ export function buildAgentContext(
     agentFilesList && agentFilesList.agentId === agent.id ? agentFilesList.workspace : null;
   const workspace =
     workspaceFromFiles || config.entry?.workspace || config.defaults?.workspace || "default";
-  const modelLabel = config.entry?.model
-    ? resolveModelLabel(config.entry?.model)
-    : resolveModelLabel(config.defaults?.model);
   const identityName =
     normalizeOptionalString(agent.identity?.name) ||
     normalizeOptionalString(agent.name) ||
@@ -162,139 +156,9 @@ export function buildAgentContext(
   const identityEmoji = resolveAgentEmoji(agent, agentIdentity) || "-";
   return {
     workspace,
-    model: modelLabel,
     identityName,
     identityEmoji,
   };
-}
-
-export function resolveModelLabel(model?: unknown): string {
-  if (!model) {
-    return "-";
-  }
-  if (typeof model === "string") {
-    return normalizeOptionalString(model) || "-";
-  }
-  if (typeof model === "object" && model) {
-    const record = model as { primary?: string; fallbacks?: string[] };
-    const primary = normalizeOptionalString(record.primary);
-    if (primary) {
-      const fallbackCount = Array.isArray(record.fallbacks) ? record.fallbacks.length : 0;
-      return fallbackCount > 0 ? `${primary} (+${fallbackCount} fallback)` : primary;
-    }
-  }
-  return "-";
-}
-
-export function normalizeModelValue(label: string): string {
-  const match = label.match(/^(.+) \(\+\d+ fallback\)$/);
-  return match ? match[1] : label;
-}
-
-export function resolveModelPrimary(model?: unknown): string | null {
-  if (!model) {
-    return null;
-  }
-  if (typeof model === "string") {
-    const trimmed = normalizeOptionalString(model);
-    return trimmed || null;
-  }
-  if (typeof model === "object" && model) {
-    const record = model as Record<string, unknown>;
-    const candidate =
-      typeof record.primary === "string"
-        ? record.primary
-        : typeof record.model === "string"
-          ? record.model
-          : typeof record.id === "string"
-            ? record.id
-            : typeof record.value === "string"
-              ? record.value
-              : null;
-    const primary = normalizeOptionalString(candidate);
-    return primary || null;
-  }
-  return null;
-}
-
-export function resolveModelFallbacks(model?: unknown): string[] | null {
-  if (!model || typeof model === "string") {
-    return null;
-  }
-  if (typeof model === "object" && model) {
-    const record = model as Record<string, unknown>;
-    const fallbacks = Array.isArray(record.fallbacks)
-      ? record.fallbacks
-      : Array.isArray(record.fallback)
-        ? record.fallback
-        : null;
-    return fallbacks
-      ? fallbacks.filter((entry): entry is string => typeof entry === "string")
-      : null;
-  }
-  return null;
-}
-
-export function resolveEffectiveModelFallbacks(
-  entryModel?: unknown,
-  defaultModel?: unknown,
-): string[] | null {
-  return resolveModelFallbacks(entryModel) ?? resolveModelFallbacks(defaultModel);
-}
-
-export function parseFallbackList(value: string): string[] {
-  return value
-    .split(",")
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-}
-
-type ConfiguredModelOption = {
-  value: string;
-  label: string;
-};
-
-function resolveConfiguredModels(
-  configForm: Record<string, unknown> | null,
-): ConfiguredModelOption[] {
-  const cfg = configForm as ConfigSnapshot | null;
-  const models = cfg?.agents?.defaults?.models;
-  if (!models || typeof models !== "object") {
-    return [];
-  }
-  const options: ConfiguredModelOption[] = [];
-  for (const [modelId, modelRaw] of Object.entries(models)) {
-    const trimmed = modelId.trim();
-    if (!trimmed) {
-      continue;
-    }
-    const alias =
-      modelRaw && typeof modelRaw === "object" && "alias" in modelRaw
-        ? typeof (modelRaw as { alias?: unknown }).alias === "string"
-          ? (modelRaw as { alias?: string }).alias?.trim()
-          : undefined
-        : undefined;
-    const label = alias && alias !== trimmed ? `${alias} (${trimmed})` : trimmed;
-    options.push({ value: trimmed, label });
-  }
-  return options;
-}
-
-export function buildModelOptions(
-  configForm: Record<string, unknown> | null,
-  current?: string | null,
-) {
-  const options = resolveConfiguredModels(configForm);
-  const hasCurrent = current ? options.some((option) => option.value === current) : false;
-  if (current && !hasCurrent) {
-    options.unshift({ value: current, label: `Current (${current})` });
-  }
-  if (options.length === 0) {
-    return html`
-      <option value="" disabled>No configured models</option>
-    `;
-  }
-  return options.map((option) => html`<option value=${option.value}>${option.label}</option>`);
 }
 
 type CompiledPattern =

@@ -10,15 +10,9 @@ import type {
 } from "../../api/types.ts";
 import {
   buildAgentContext,
-  buildModelOptions,
   normalizeAgentLabel,
-  normalizeModelValue,
-  parseFallbackList,
   resolveAgentConfig,
   resolveAgentEmoji,
-  resolveEffectiveModelFallbacks,
-  resolveModelLabel,
-  resolveModelPrimary,
 } from "../../lib/agents/display.ts";
 import { renderAgentFiles, renderAgentChannels, renderAgentCron } from "./panels-status-files.ts";
 
@@ -67,17 +61,8 @@ type AgentsProps = {
   onToolsOverridesChange: (agentId: string, alsoAllow: string[], deny: string[]) => void;
   onConfigReload: () => void;
   onConfigSave: () => void;
-  onModelChange: (agentId: string, modelId: string | null) => void;
-  onModelFallbacksChange: (agentId: string, fallbacks: string[]) => void;
   onChannelsRefresh: () => void;
   onCronRefresh: () => void;
-};
-
-export type AgentContext = {
-  workspace: string;
-  model: string;
-  identityName: string;
-  identityEmoji: string;
 };
 
 export function renderAgents(props: AgentsProps) {
@@ -152,8 +137,6 @@ export function renderAgents(props: AgentsProps) {
                         configDirty: props.configDirty,
                         onConfigReload: props.onConfigReload,
                         onConfigSave: props.onConfigSave,
-                        onModelChange: props.onModelChange,
-                        onModelFallbacksChange: props.onModelFallbacksChange,
                       })
                     : nothing
                 }
@@ -278,8 +261,6 @@ function renderAgentOverview(params: {
   configDirty: boolean;
   onConfigReload: () => void;
   onConfigSave: () => void;
-  onModelChange: (agentId: string, modelId: string | null) => void;
-  onModelFallbacksChange: (agentId: string, fallbacks: string[]) => void;
 }) {
   const {
     agent,
@@ -293,29 +274,12 @@ function renderAgentOverview(params: {
     configDirty,
     onConfigReload,
     onConfigSave,
-    onModelChange,
-    onModelFallbacksChange,
   } = params;
   const config = resolveAgentConfig(configForm, agent.id);
   const workspaceFromFiles =
     agentFilesList && agentFilesList.agentId === agent.id ? agentFilesList.workspace : null;
   const workspace =
     workspaceFromFiles || config.entry?.workspace || config.defaults?.workspace || "default";
-  const model = config.entry?.model
-    ? resolveModelLabel(config.entry?.model)
-    : resolveModelLabel(config.defaults?.model);
-  const defaultModel = resolveModelLabel(config.defaults?.model);
-  const modelPrimary =
-    resolveModelPrimary(config.entry?.model) || (model !== "-" ? normalizeModelValue(model) : null);
-  const defaultPrimary =
-    resolveModelPrimary(config.defaults?.model) ||
-    (defaultModel !== "-" ? normalizeModelValue(defaultModel) : null);
-  const effectivePrimary = modelPrimary ?? defaultPrimary ?? null;
-  const modelFallbacks = resolveEffectiveModelFallbacks(
-    config.entry?.model,
-    config.defaults?.model,
-  );
-  const fallbackText = modelFallbacks ? modelFallbacks.join(", ") : "";
   const identityName =
     agentIdentity?.name?.trim() ||
     agent.identity?.name?.trim() ||
@@ -339,10 +303,6 @@ function renderAgentOverview(params: {
           <div class="mono">${workspace}</div>
         </div>
         <div class="agent-kv">
-          <div class="label">Primary Model</div>
-          <div class="mono">${model}</div>
-        </div>
-        <div class="agent-kv">
           <div class="label">Identity Name</div>
           <div>${identityName}</div>
           ${identityStatus ? html`<div class="agent-kv-sub muted">${identityStatus}</div>` : nothing}
@@ -353,50 +313,17 @@ function renderAgentOverview(params: {
         </div>
       </div>
 
-      <div class="agent-model-select" style="margin-top: 20px;">
-        <div class="label">Model Selection</div>
-        <div class="row" style="gap: 12px; flex-wrap: wrap;">
-          <label class="field" style="min-width: 260px; flex: 1;">
-            <span>Primary model</span>
-            <select
-              .value=${effectivePrimary ?? ""}
-              ?disabled=${!configForm || configLoading || configSaving}
-              @change=${(e: Event) => onModelChange(agent.id, (e.target as HTMLSelectElement).value || null)}
-            >
-              ${html`
-                <option value="">
-                  ${defaultPrimary ? `Inherit default (${defaultPrimary})` : "Inherit default"}
-                </option>
-              `}
-              ${buildModelOptions(configForm, effectivePrimary ?? undefined)}
-            </select>
-          </label>
-          <label class="field" style="min-width: 260px; flex: 1;">
-            <span>Fallbacks (comma-separated)</span>
-            <input
-              .value=${fallbackText}
-              ?disabled=${!configForm || configLoading || configSaving}
-              placeholder="provider/model, provider/model"
-              @input=${(e: Event) =>
-                onModelFallbacksChange(
-                  agent.id,
-                  parseFallbackList((e.target as HTMLInputElement).value),
-                )}
-            />
-          </label>
-        </div>
-        <div class="row" style="justify-content: flex-end; gap: 8px;">
-          <button class="btn btn--sm" ?disabled=${configLoading} @click=${onConfigReload}>
-            Reload Config
-          </button>
-          <button
-            class="btn btn--sm primary"
-            ?disabled=${configSaving || !configDirty}
-            @click=${onConfigSave}
-          >
-            ${configSaving ? "Saving…" : "Save"}
-          </button>
-        </div>
+      <div class="row" style="justify-content: flex-end; gap: 8px; margin-top: 20px;">
+        <button class="btn btn--sm" ?disabled=${configLoading} @click=${onConfigReload}>
+          Reload Config
+        </button>
+        <button
+          class="btn btn--sm primary"
+          ?disabled=${configSaving || !configDirty}
+          @click=${onConfigSave}
+        >
+          ${configSaving ? "Saving…" : "Save"}
+        </button>
       </div>
     </section>
   `;

@@ -28,10 +28,6 @@ function renderAgentContextCard(context: AgentContext, subtitle: string) {
           <div class="mono">${context.workspace}</div>
         </div>
         <div class="agent-kv">
-          <div class="label">Primary Model</div>
-          <div class="mono">${context.model}</div>
-        </div>
-        <div class="agent-kv">
           <div class="label">Identity Name</div>
           <div>${context.identityName}</div>
         </div>
@@ -136,7 +132,7 @@ export function renderAgentChannels(params: {
     : "never";
   return html`
     <section class="grid grid-cols-2">
-      ${renderAgentContextCard(params.context, "Workspace, identity, and model configuration.")}
+      ${renderAgentContextCard(params.context, "Workspace and identity.")}
       <section class="card">
         <div class="row" style="justify-content: space-between;">
           <div>

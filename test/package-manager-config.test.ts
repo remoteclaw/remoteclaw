@@ -15,6 +15,7 @@ type PnpmBuildConfig = {
   blockExoticSubdeps?: boolean;
   ignoredBuiltDependencies?: string[];
   onlyBuiltDependencies?: string[];
+  overrides?: Record<string, string | number>;
 };
 
 type RootPackageJson = {
@@ -55,29 +56,33 @@ describe("package manager build policy", () => {
     const packageJson = readJson("package.json") as RootPackageJson;
     const workspace = parse(fs.readFileSync("pnpm-workspace.yaml", "utf8")) as WorkspaceConfig;
 
-    // The fork keeps its pnpm build policy in package.json and gates native builds through an
-    // onlyBuiltDependencies allowlist. It did not adopt upstream's pnpm-workspace.yaml
-    // allowBuilds/blockExoticSubdeps migration, so @discordjs/opus stays disabled by being absent
-    // from the allowlist rather than by an explicit allowBuilds:false entry.
-    expect(packageJson.pnpm).toBeDefined();
+    // The fork gates native builds through an onlyBuiltDependencies allowlist, which lives in
+    // pnpm-workspace.yaml (#3144 — pnpm 10 warns the `pnpm` field in package.json is no longer
+    // read, and the two copies had drifted). It did not adopt upstream's allowBuilds/
+    // blockExoticSubdeps migration, so @discordjs/opus stays disabled by being absent from the
+    // allowlist rather than by an explicit allowBuilds:false entry.
+    //
+    // The legacy `pnpm` block must stay gone: pnpm 10.23 still READS it and it takes precedence
+    // over pnpm-workspace.yaml, so a reintroduced block (e.g. by a wholesale upstream sync)
+    // would silently shadow this file rather than being ignored.
+    expect(packageJson.pnpm).toBeUndefined();
     expect(workspace.allowBuilds).toBeUndefined();
-    const buildAllowlist = [
-      ...(packageJson.pnpm?.onlyBuiltDependencies ?? []),
-      ...(workspace.onlyBuiltDependencies ?? []),
-    ];
+    const buildAllowlist = workspace.onlyBuiltDependencies ?? [];
     expect(buildAllowlist.length).toBeGreaterThan(0);
     expect(buildAllowlist).not.toContain("@discordjs/opus");
   });
 
-  it("keeps the fork's pnpm dependency overrides exact-pinned", () => {
-    // The fork carries dependency overrides in package.json's pnpm block — it ships no root
-    // npm-shrinkwrap.json and no pnpm-workspace.yaml overrides (upstream's model). Every override
-    // must still be an exact pin (semver or npm: alias) so installs stay reproducible.
-    const packageJson = readJson("package.json") as {
-      pnpm?: { overrides?: Record<string, string | number> };
-    };
-    const overrides = packageJson.pnpm?.overrides ?? {};
+  it("keeps the fork's pnpm dependency overrides exact-pinned in pnpm-workspace.yaml", () => {
+    // The fork carries its dependency overrides in pnpm-workspace.yaml — it ships no root
+    // npm-shrinkwrap.json, and since #3144 no package.json `pnpm` block either. Every override
+    // must be an exact pin (semver or npm: alias) so installs stay reproducible, and several are
+    // security pins, so an empty set is a regression rather than a vacuous pass.
+    const packageJson = readJson("package.json") as RootPackageJson;
+    const workspace = parse(fs.readFileSync("pnpm-workspace.yaml", "utf8")) as WorkspaceConfig;
+    const overrides = workspace.overrides ?? {};
 
+    // Same precedence hazard as above: a reintroduced package.json block would win over these.
+    expect(packageJson.pnpm).toBeUndefined();
     expect(Object.keys(overrides).length).toBeGreaterThan(0);
     for (const [name, spec] of Object.entries(overrides)) {
       expect(exactVersionFromOverrideSpec(String(spec)), `${name}=${String(spec)}`).not.toBeNull();

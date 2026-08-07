@@ -13,14 +13,14 @@
 // census that pins this call site's resolved path.
 //
 // Deliberately one implementation rather than one branch per caller: a second copy
-// of this selector is how a portability pass silently misses a call site. Two
-// callers stay outside it on purpose, because their shape differs:
-//   - `commands/onboard-helpers.ts` spawns an argv array and needs the POSIX form
-//     to be `["/usr/bin/env", "which", name]`, not a bare command word;
-//   - the POSIX branch is a bare `which`, which is itself a PATH lookup. Pinning it
-//     the way the Windows branch is pinned would need a separate decision (and a
-//     different absolute path per distro), so it is deliberately left as-is —
-//     this module changes nothing about POSIX behaviour.
+// of this selector is how a portability pass silently misses a call site. One caller
+// stays outside it on purpose — `commands/onboard-helpers.ts` spawns an argv array
+// whose POSIX form is `["/usr/bin/env", "which", name]`, not a bare command word.
+//
+// Scope, stated plainly: this makes the lookup WORK on Windows and pins the Windows
+// command. It changes nothing about POSIX, where the returned `which` is still a bare
+// name resolved through %PATH%. Pinning that too would need its own decision and a
+// different absolute path per distro; it is out of scope here.
 import { resolveWindowsSystem32Path } from "./windows-system-paths.js";
 
 /**

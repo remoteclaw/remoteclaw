@@ -168,7 +168,7 @@ const BARE_FILE_EXTENSIONS = new Set([
   "yml",
   "zsh",
 ]);
-const DOCS_ORIGIN = "https://docs.openclaw.ai";
+const DOCS_ORIGIN = "https://docs.remoteclaw.org";
 const DOCS_ROOT_SEGMENTS = new Set([
   "agent-runtime-architecture",
   "announcements",
@@ -208,6 +208,10 @@ const DOCS_ROOT_SEGMENTS = new Set([
   "vps",
   "web",
 ]);
+// Exact docs paths rewritten to DOCS_ORIGIN (paths matched by first segment live in
+// DOCS_ROOT_SEGMENTS above). The `redirects` map in docs/astro.config.mjs decides
+// which ones actually resolve. Slugs dropped along with the subsystems this fork
+// gutted are deliberately absent — an upstream sync must not restore them.
 const DOCS_SHORTLINK_PATHS = new Set([
   "/AGENTS.default",
   "/RELEASING",
@@ -297,22 +301,16 @@ const DOCS_SHORTLINK_PATHS = new Set([
   "/messages",
   "/minimax",
   "/mistral",
-  "/model",
-  "/model-failover",
-  "/models",
   "/moonshot",
   "/multi-agent",
   "/nix",
   "/northflank",
   "/oauth",
-  "/onboarding",
   "/openai",
   "/opencode",
   "/opencode-go",
   "/openrouter",
   "/pairing",
-  "/pi",
-  "/pi-dev",
   "/plugin",
   "/podman",
   "/poll",
@@ -326,17 +324,12 @@ const DOCS_SHORTLINK_PATHS = new Set([
   "/remote-gateway-readme",
   "/render",
   "/rpc",
-  "/sandbox",
-  "/sandboxing",
   "/session",
   "/session-tool",
   "/sessions",
   "/setup",
   "/showcase",
   "/signal",
-  "/skill-workshop",
-  "/skills",
-  "/skills-config",
   "/slack",
   "/slash-commands",
   "/subagents",

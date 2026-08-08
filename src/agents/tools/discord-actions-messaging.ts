@@ -511,7 +511,7 @@ export async function handleDiscordMessagingAction(
       if (!results || typeof results !== "object") {
         return jsonResult({ ok: true, results });
       }
-      const resultsRecord = results as Record<string, unknown>;
+      const resultsRecord = results;
       const messages = resultsRecord.messages;
       const normalizedMessages = Array.isArray(messages)
         ? messages.map((group) =>

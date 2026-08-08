@@ -1,4 +1,5 @@
 import { type Block, type KnownBlock, type WebClient } from "@slack/web-api";
+import { KeyedAsyncQueue } from "remoteclaw/plugin-sdk/keyed-async-queue";
 import {
   normalizeLowercaseStringOrEmpty,
   normalizeOptionalString,
@@ -36,7 +37,7 @@ const SLACK_UPLOAD_SSRF_POLICY = {
 };
 const SLACK_DM_CHANNEL_CACHE_MAX = 1024;
 const slackDmChannelCache = new Map<string, string>();
-const slackSendQueues = new Map<string, Promise<void>>();
+const slackSendQueue = new KeyedAsyncQueue();
 
 type SlackRecipient =
   | {
@@ -266,22 +267,7 @@ function createSlackSendQueueKey(params: {
 }
 
 async function runQueuedSlackSend<T>(key: string, task: () => Promise<T>): Promise<T> {
-  const previous = slackSendQueues.get(key) ?? Promise.resolve();
-  let releaseCurrent!: () => void;
-  const current = new Promise<void>((resolve) => {
-    releaseCurrent = resolve;
-  });
-  const queuedCurrent = previous.catch(() => undefined).then(() => current);
-  slackSendQueues.set(key, queuedCurrent);
-  await previous.catch(() => undefined);
-  try {
-    return await task();
-  } finally {
-    releaseCurrent();
-    if (slackSendQueues.get(key) === queuedCurrent) {
-      slackSendQueues.delete(key);
-    }
-  }
+  return await slackSendQueue.enqueue(key, task);
 }
 
 function createSlackDmCacheKey(params: {
@@ -343,10 +329,6 @@ async function resolveChannelId(
 
 export function clearSlackDmChannelCache(): void {
   slackDmChannelCache.clear();
-}
-
-export function clearSlackSendQueuesForTest(): void {
-  slackSendQueues.clear();
 }
 
 async function uploadSlackFile(params: {

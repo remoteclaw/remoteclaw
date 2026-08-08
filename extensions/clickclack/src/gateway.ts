@@ -4,6 +4,7 @@
  */
 import type { ChannelGatewayContext } from "remoteclaw/plugin-sdk/clickclack";
 import type { RawData } from "ws";
+import { formatErrorMessage } from "../../../src/infra/errors.js";
 import { resolveClickClackInboundAccess } from "./access.js";
 import { resolveClickClackAccount } from "./accounts.js";
 import { createClickClackClient } from "./http-client.js";
@@ -196,7 +197,15 @@ export async function startClickClackGatewayAccount(
           }
           afterCursor = event.cursor || afterCursor;
           await dispatch(event);
-        })().catch(reject);
+        })().catch((e: unknown) =>
+          reject(
+            e instanceof Error
+              ? e
+              : new Error(`ClickClack ws message failed: ${formatErrorMessage(e)}`, {
+                  cause: e,
+                }),
+          ),
+        );
       });
       socket.on("close", () => {
         ctx.abortSignal.removeEventListener("abort", abort);

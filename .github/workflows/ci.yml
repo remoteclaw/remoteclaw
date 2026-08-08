@@ -203,6 +203,46 @@ jobs:
       - name: Check generated plugin inventory
         run: pnpm plugins:inventory:check
 
+  control-ui-docs-affordance-gate:
+    # Every docs target the Control UI hands a user — DOCS_SHORTLINK_PATHS and
+    # DOCS_ROOT_SEGMENTS in ui/src/components/markdown.ts — must resolve to a
+    # real page under docs/, directly or through the redirects map in
+    # docs/astro.config.mjs.
+    #
+    # This is the *links* third of the defect class #3156-#3159 shared: the
+    # Control UI rendering an affordance for a subsystem this fork gutted. #3157
+    # was its instance — 13 shortlinks naming gutted subsystems, sending a
+    # RemoteClaw user to documentation for features RemoteClaw does not have.
+    # #3160 asked for a gate covering the whole class; the script's header
+    # records why the broader shape is not buildable here and what was measured
+    # to establish that.
+    #
+    # STANDALONE rather than inside `pnpm check`: it is a fork-lifecycle gate
+    # like rebrand-gate and plugin-inventory-gate, its input is a table upstream
+    # sync re-applies wholesale, and it spans ui/ <-> docs/ — neither of which
+    # `pnpm check`'s lint scope owns. A named job also makes a sync-carried
+    # regression legible in the checks list instead of buried inside `lint`.
+    # Runnable locally as `pnpm lint:ui:no-dangling-docs-affordances`.
+    #
+    # Its canary lives in test/scripts/check-control-ui-docs-affordances.test.ts
+    # and runs in the `test` lane: a seeded leak the gate is required to fail on,
+    # plus a zero-cardinality floor, so a broken scan is loud rather than green.
+    # See #3160 and § Fork-integrity gates.
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: false
+
+      - name: Setup Node environment
+        uses: ./.github/actions/setup-node-env
+        with:
+          install-bun: "false"
+
+      - name: Check Control UI docs affordances
+        run: pnpm lint:ui:no-dangling-docs-affordances
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -518,6 +558,7 @@ jobs:
         policy-doctor-boundary-gate,
         raw-channel-fetch-gate,
         plugin-inventory-gate,
+        control-ui-docs-affordance-gate,
         lint,
         build,
         packaged-boot-smoke,
@@ -532,7 +573,7 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.trash-containment-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" || "${{ needs.test-windows.result }}" != "success" ]]; then
+          if [[ "${{ needs.rebrand-gate.result }}" != "success" || "${{ needs.zombie-import-gate.result }}" != "success" || "${{ needs.stub-debt-gate.result }}" != "success" || "${{ needs.throwing-stub-callers-gate.result }}" != "success" || "${{ needs.trash-containment-gate.result }}" != "success" || "${{ needs.obsolescence-audit-gate.result }}" != "success" || "${{ needs.policy-doctor-boundary-gate.result }}" != "success" || "${{ needs.raw-channel-fetch-gate.result }}" != "success" || "${{ needs.plugin-inventory-gate.result }}" != "success" || "${{ needs.control-ui-docs-affordance-gate.result }}" != "success" || "${{ needs.lint.result }}" != "success" || "${{ needs.build.result }}" != "success" || "${{ needs.packaged-boot-smoke.result }}" != "success" || "${{ needs.test.result }}" != "success" || "${{ needs.test-gateway.result }}" != "success" || "${{ needs.test-extensions.result }}" != "success" || "${{ needs.test-auto-reply.result }}" != "success" || "${{ needs.test-ui-smoke.result }}" != "success" || "${{ needs.test-windows.result }}" != "success" ]]; then
             echo "::error::One or more required jobs failed"
             exit 1
           fi

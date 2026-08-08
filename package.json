@@ -336,6 +336,8 @@
     "lint:swift": "swiftlint lint --config .swiftlint.yml && (cd apps/ios && swiftlint lint --config .swiftlint.yml)",
     "lint:tmp:no-random-messaging": "node scripts/check-no-random-messaging-tmp.mjs",
     "lint:ui:no-css-class-drift": "node scripts/audit-css-class-drift.mjs",
+    "lint:ui:no-dangling-docs-affordances": "node scripts/check-control-ui-docs-affordances.mjs",
+    "lint:ui:no-dangling-docs-affordances:inventory": "node scripts/check-control-ui-docs-affordances.mjs --inventory",
     "lint:ui:no-raw-window-open": "node scripts/check-no-raw-window-open.mjs",
     "mac:open": "open dist/RemoteClaw.app",
     "mac:package": "bash scripts/package-mac-app.sh",

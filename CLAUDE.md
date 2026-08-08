@@ -223,6 +223,52 @@ against regressions specific to the fork-sync lifecycle:
   than replaces, so prefer real markers). `plugin-inventory.md` itself has **no**
   manual-marker facility — every line of it is generated, so fork-authored prose
   belongs in the generator template, not the doc. Wired in #3084.
+- **control-ui-docs-affordance-gate**
+  (`pnpm lint:ui:no-dangling-docs-affordances`): every docs target the Control
+  UI hands a user — `DOCS_SHORTLINK_PATHS` and `DOCS_ROOT_SEGMENTS` in
+  `ui/src/components/markdown.ts` — must resolve to a real page under `docs/`,
+  directly or through the `redirects` map in `docs/astro.config.mjs` (which
+  `markdown.ts` already names as authoritative). Standalone job, because it is
+  a fork-lifecycle gate whose input is a table upstream sync re-applies
+  wholesale, and it spans `ui/` ↔ `docs/` — neither of which `pnpm check`'s
+  lint scope owns.
+
+  This is the **links** third of a wider defect class: the Control UI rendering
+  an affordance, link, or string for a subsystem this fork gutted (#3156-#3159;
+  #3157 was the links instance, sending users to docs for features RemoteClaw
+  does not have). It does **not** detect #3156's rendered affordance or #3158's
+  orphan i18n strings, and must not be read as covering them. #3160 asked for a
+  gate over the whole class; the header of
+  `scripts/check-control-ui-docs-affordances.mjs` records why that is not
+  buildable — `ui/` has no static edge to the gutted `src/` subsystems, so
+  there is no vocabulary to derive — and what was measured to establish it.
+
+  The false-positive boundary is satisfied by construction rather than by
+  tuning: the gate matches link targets, never concept words, so live
+  homographs (`resolveEmbedSandbox`, `bg-elevated`, `thinking`, `provider`) are
+  outside what it looks at instead of being allowlisted. Reviewed exceptions
+  live on `KNOWN_DANGLING_UI_DOCS_TARGETS`, pinned to `file:line` so a moved
+  entry re-fails and gets re-reviewed, and a paid-off entry fails as STALE so
+  the ledger drains (#3180 and #3211 own the 47 birth entries). Two extra
+  modes: `--strict` fails even on ledgered entries, to prove a line can be
+  removed before closing its issue; `--inventory` reports every dangling target
+  and fails on no *finding* — but it still fails the cardinality floor below,
+  which is the one thing no mode is exempt from. A third flag, `--repo-root`,
+  exists so the CLI itself can be tested against a fixture; CI runs the gate
+  unflagged.
+
+  Its canary is `test/scripts/check-control-ui-docs-affordances.test.ts`,
+  running in the `test` lane — a seeded leak restoring four gutted-subsystem
+  targets that the gate is *required* to fail on (three shortlinks #3157
+  actually removed, plus the `clawhub` root segment), alongside a
+  zero-cardinality floor. The floor matters as much as the seed: a seeded leak proves the
+  matcher works but says nothing about the vocabulary, and a gate whose
+  shortlink table or redirects map parses to zero entries checks nothing while
+  printing a healthy pass. So the gate reports how many shortlinks, root
+  segments, and redirects it read, and fails when any of those is zero — in
+  every mode, per #3138. Verified by mutation: stubbing the resolver to always
+  resolve turns 5 canary tests red, and emptying the derivation makes the gate
+  exit 1 naming the empty table rather than reporting clean. Wired in #3160.
 - **css-class-drift-gate** (`pnpm lint:ui:no-css-class-drift`, part of
   `pnpm check`): cross-references `class="..."` tokens in
   `ui/src/**/*.{ts,tsx,html}` against the CSS rule definitions reachable

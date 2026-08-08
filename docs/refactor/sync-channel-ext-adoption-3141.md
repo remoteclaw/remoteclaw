@@ -22,11 +22,18 @@ Of the 13 files, **6 were adopted** (one of them partially), **4 are deferred** 
 named missing dependency, and **3 were not reached** in this pass.
 
 The issue's framing — that each file was reclassified because it "depends on upstream
-infrastructure this fork does not carry" — **did not survive re-checking**. Nine of the thirteen
-deltas introduce **no new imports at all**; several were dropped by the sync machinery rather than
-by a decision. Two of the apparent dependencies (`plugin-sdk/provider-http`,
-`plugin-sdk/error-runtime`) turned out to be **repaths, not gaps**: the fork ships the same helpers
-under different module paths.
+infrastructure this fork does not carry" — **did not survive re-checking**. Six of the thirteen
+deltas introduce **no new imports at all** (`slack/actions.ts`, `slack/client.ts`,
+`discord/send.messages.ts`, `irc/client.ts`, `imessage/client.ts`, `whatsapp/inbound/media.ts`);
+several were dropped by the sync machinery rather than by a decision. Two more apparent
+dependencies (`plugin-sdk/provider-http`, `plugin-sdk/error-runtime`) turned out to be **repaths,
+not gaps**: the fork ships the same helpers under different module paths.
+
+> Counting note, because this number is the evidence for the method note at the foot of this file:
+> it must come from diffing the **whole import section** (specifiers _and_ named symbols) between
+> the two tags. A `^[+-]import` grep undercounts — `discord/send.guild.ts` adds
+> `isUnknownDiscordVoiceStateError` _inside an existing import block_, which such a grep cannot
+> see. An earlier revision of this record said "nine" for exactly that reason.
 
 This is not a security backlog. An independent security review of the batch found no declined
 security fixes here; the content is feature work, message chunking, and refactors.

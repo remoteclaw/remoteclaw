@@ -38,7 +38,6 @@ vi.mock("../../whatsapp/src/media.js", () => ({
 
 let sendMessageSlack: typeof import("./send.js").sendMessageSlack;
 let clearSlackDmChannelCache: typeof import("./send.js").clearSlackDmChannelCache;
-let clearSlackSendQueuesForTest: typeof import("./send.js").clearSlackSendQueuesForTest;
 
 type UploadTestClient = WebClient & {
   conversations: { open: ReturnType<typeof vi.fn> };
@@ -73,8 +72,7 @@ describe("sendMessageSlack file upload with user IDs", () => {
 
   beforeAll(async () => {
     vi.resetModules();
-    ({ sendMessageSlack, clearSlackDmChannelCache, clearSlackSendQueuesForTest } =
-      await import("./send.js"));
+    ({ sendMessageSlack, clearSlackDmChannelCache } = await import("./send.js"));
   });
 
   beforeEach(() => {
@@ -83,7 +81,6 @@ describe("sendMessageSlack file upload with user IDs", () => {
     ) as unknown as typeof fetch;
     fetchWithSsrFGuard.mockClear();
     clearSlackDmChannelCache();
-    clearSlackSendQueuesForTest();
     clearSlackThreadParticipationCache();
   });
 

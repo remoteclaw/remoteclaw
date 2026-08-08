@@ -11,6 +11,20 @@ import type {
   DiscordThreadList,
 } from "./send.types.js";
 
+function assertDiscordResponseArray<T>(value: unknown, label: string): T[] {
+  if (!Array.isArray(value)) {
+    throw new Error(`Unexpected Discord response for ${label}: expected array.`);
+  }
+  return value as T[];
+}
+
+function assertDiscordResponseObject(value: unknown, label: string): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    throw new Error(`Unexpected Discord response for ${label}: expected object.`);
+  }
+  return value as Record<string, unknown>;
+}
+
 export async function readMessagesDiscord(
   channelId: string,
   query: DiscordMessageQuery = {},
@@ -35,7 +49,10 @@ export async function readMessagesDiscord(
   if (messageQuery.around) {
     params.around = messageQuery.around;
   }
-  return (await rest.get(Routes.channelMessages(channelId), params)) as APIMessage[];
+  return assertDiscordResponseArray<APIMessage>(
+    await rest.get(Routes.channelMessages(channelId), params),
+    "message read",
+  );
 }
 
 export async function fetchMessageDiscord(
@@ -191,5 +208,8 @@ export async function searchMessagesDiscord(
     const limit = Math.min(Math.max(Math.floor(query.limit), 1), 25);
     params.set("limit", String(limit));
   }
-  return await rest.get(`/guilds/${query.guildId}/messages/search?${params.toString()}`);
+  return assertDiscordResponseObject(
+    await rest.get(`/guilds/${query.guildId}/messages/search?${params.toString()}`),
+    "message search",
+  );
 }

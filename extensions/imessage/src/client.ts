@@ -118,20 +118,31 @@ export class IMessageRpcClient {
       }
     });
 
-    child.on("error", (err) => {
-      this.failAll(err instanceof Error ? err : new Error(String(err)));
-      this.closedResolve?.();
-    });
-
-    // Without this listener, async EPIPE from a dead child crashes the
-    // gateway via uncaughtException. (#75438)
-    child.stdin.on("error", (err) => {
-      this.failAll(err instanceof Error ? err : new Error(String(err)));
-    });
+    // Every process/stdio error is terminal for this RPC transport. Settle the
+    // client once and terminate a helper whose pipe failed; otherwise the
+    // monitor can wait forever on an unusable child. #75438 covered stdin only.
+    const failFromProcessError = (err: unknown) => {
+      if (!this.finish(err instanceof Error ? err : new Error(String(err)))) {
+        return;
+      }
+      try {
+        child.kill("SIGTERM");
+      } catch {
+        // The helper may already be gone.
+      }
+    };
+    child.on("error", failFromProcessError);
+    child.stdin.on("error", failFromProcessError);
+    child.stdout.on("error", failFromProcessError);
+    child.stderr.on("error", failFromProcessError);
+    // Fork structure: this client reads stdout through a readline Interface,
+    // which re-emits the input stream's `error` on itself. Without this listener
+    // that re-emit is unhandled and still crashes the gateway, which is the very
+    // failure the stdout guard above exists to prevent.
+    this.reader.on("error", failFromProcessError);
 
     child.on("close", (code, signal) => {
-      this.failAll(this.buildCloseError(code, signal));
-      this.closedResolve?.();
+      this.finish(this.buildCloseError(code, signal));
     });
   }
 
@@ -290,6 +301,17 @@ export class IMessageRpcClient {
       pending.reject(err);
       this.pending.delete(key);
     }
+  }
+
+  private finish(err: Error): boolean {
+    const resolve = this.closedResolve;
+    if (!resolve) {
+      return false;
+    }
+    this.closedResolve = null;
+    this.failAll(err);
+    resolve();
+    return true;
   }
 }
 
